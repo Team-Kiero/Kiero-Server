@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: kiero
+
+  # Database - Local MySQL
+  datasource:
+    url: jdbc:mysql://localhost:3306/kiero?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: root
+    password: your-local-password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        show_sql: true
+    open-in-view: false
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+aws:
+  s3:
+    bucket: kiero-bucket
+  region: ap-northeast-2
+  credentials:
+    access-key: YOUR_ACCESS_KEY
+    secret-key: YOUR_SECRET_KEY

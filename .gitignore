@@ -44,3 +44,9 @@ bin/
 
 .claude
 docs
+
+### Application Config ###
+# 로컬 개발 환경 설정만 제외 (민감 정보 포함)
+application.yml
+
+# dev, prod는 환경변수 기반이므로 Git에 커밋 가능
