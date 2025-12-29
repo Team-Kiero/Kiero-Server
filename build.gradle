@@ -57,6 +57,11 @@ dependencies {
 
     // H2 Database for testing (in-memory)
     testImplementation 'com.h2database:h2'
+
+    //S3
+    implementation platform('software.amazon.awssdk:bom:2.21.0')
+    implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:auth'
 }
 
 test {
