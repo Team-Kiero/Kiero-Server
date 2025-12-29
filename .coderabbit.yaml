@@ -1,0 +1,87 @@
+# CodeRabbit 설정 파일
+# https://docs.coderabbit.ai/guides/configure-coderabbit
+
+# 한국어로 리뷰
+language: "ko"
+
+reviews:
+  # 한국어 리뷰 (reviews 내부에도 명시)
+  language: "ko"
+
+  # 자동 리뷰 설정
+  auto_review:
+    enabled: true
+    drafts: false  # Draft PR은 리뷰하지 않음
+
+  # 리뷰 스타일: assertive (엄격), chill (보통), relaxed (느슨)
+  profile: "chill"
+
+  # PR에 변경 요청하지 않음 (코멘트만)
+  request_changes_workflow: false
+
+  # 상위 수준 요약 제공
+  high_level_summary: true
+
+  # 리뷰 끝에 시 작성 비활성화
+  poem: false
+
+  # 리뷰 상태 표시
+  review_status: true
+
+  # Walkthrough 섹션 접기
+  collapse_walkthrough: false
+
+  # 리뷰에서 제외할 파일 패턴
+  path_filters:
+    - "!**/*.md"  # Markdown 파일 제외
+    - "!**/docs/**"  # docs 폴더 제외
+    - "!**/*.yml.example"  # example 파일 제외
+    - "!**/build/**"  # 빌드 결과물 제외
+    - "!**/.gradle/**"  # Gradle 캐시 제외
+
+  # 경로별 리뷰 가이드
+  path_instructions:
+    - path: "src/main/java/**/domain/**/*.java"
+      instructions: |
+        - DDD (Domain-Driven Design) 패턴 준수 여부 확인
+        - 도메인 로직이 올바르게 캡슐화되어 있는지 확인
+        - Entity, Value Object, Aggregate 구분이 명확한지 확인
+        - 비즈니스 규칙이 도메인 계층에 있는지 확인
+
+    - path: "src/main/java/**/infrastructure/**/*.java"
+      instructions: |
+        - 인프라 계층이 도메인에 의존하지 않는지 확인
+        - 외부 시스템 연동 시 예외 처리가 적절한지 확인
+        - AWS SDK 사용 시 베스트 프랙티스 준수 확인
+
+    - path: "src/main/java/**/global/**/*.java"
+      instructions: |
+        - Spring Boot 베스트 프랙티스 확인
+        - Configuration 클래스의 적절성 확인
+        - Bean 순환 참조 문제 없는지 확인
+        - 보안 설정이 올바른지 확인 (특히 AWS 자격증명 노출)
+
+    - path: "src/test/**/*.java"
+      instructions: |
+        - 테스트 커버리지 확인 (중요 로직은 반드시 테스트)
+        - 단위 테스트 품질 검토 (Given-When-Then 패턴)
+        - Mock 사용의 적절성 확인 (과도한 Mocking 지양)
+        - 통합 테스트와 단위 테스트 구분이 명확한지 확인
+        - TestContainers 사용이 적절한지 확인
+
+    - path: ".github/workflows/**/*.yml"
+      instructions: |
+        - GitHub Actions 보안 검토 (Secret 노출 여부)
+        - Workflow 최적화 가능 여부 확인
+        - 병렬 실행 가능한 Job이 있는지 확인
+
+    - path: "**/docker-compose*.yml"
+      instructions: |
+        - Docker Compose 베스트 프랙티스 준수
+        - 환경변수 사용이 적절한지 확인
+        - 보안 문제 확인 (민감 정보 노출)
+        - Health check 설정 확인
+
+# 채팅 기능 설정
+chat:
+  auto_reply: true
