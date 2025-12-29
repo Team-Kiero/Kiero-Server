@@ -1,0 +1,80 @@
+name: CD-Dev
+
+on:
+  push:
+    branches: [ develop ]
+
+env:
+  IMAGE_NAME: kiero
+  IMAGE_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/kiero
+
+jobs:
+  build-and-push:
+    name: Build & Push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_REPO }}:dev
+            ${{ env.IMAGE_REPO }}:dev-${{ github.sha }}
+
+  deploy-dev:
+    name: Deploy to Dev Server
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH deploy (dev)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEV_SSH_HOST }}
+          username: ${{ secrets.DEV_SSH_USER }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          port: ${{ secrets.DEV_SSH_PORT || 22 }}
+          envs: DB_URL,DB_USERNAME,DB_PASSWORD,AWS_S3_BUCKET,AWS_REGION,AWS_ACCESS_KEY,AWS_SECRET_KEY,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN
+          script: |
+            set -e
+            docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"
+            cd /opt/kiero
+
+            # Git 최신 변경사항 가져오기 (docker-compose.yml 업데이트)
+            git pull origin develop
+
+            # 환경변수 설정 후 배포
+            export DB_URL="${DB_URL}"
+            export DB_USERNAME="${DB_USERNAME}"
+            export DB_PASSWORD="${DB_PASSWORD}"
+            export AWS_S3_BUCKET="${AWS_S3_BUCKET}"
+            export AWS_REGION="${AWS_REGION}"
+            export AWS_ACCESS_KEY="${AWS_ACCESS_KEY}"
+            export AWS_SECRET_KEY="${AWS_SECRET_KEY}"
+
+            # Docker 이미지 pull 및 재시작
+            docker-compose pull
+            docker-compose up -d
+            docker image prune -f
+        env:
+          DB_URL: ${{ secrets.DEV_DB_URL }}
+          DB_USERNAME: ${{ secrets.DEV_DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DEV_DB_PASSWORD }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

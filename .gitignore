@@ -50,3 +50,4 @@ docs
 application.yml
 
 .env.*
+# dev, prod는 환경변수 기반이므로 Git에 커밋 가능
