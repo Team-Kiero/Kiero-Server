@@ -13,6 +13,7 @@ jobs:
   build-and-push:
     name: Build & Push Production Image
     runs-on: ubuntu-latest
+    environment: prod  # GitHub Environment 사용
     steps:
       - uses: actions/checkout@v4
 
@@ -45,7 +46,7 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     environment:
-      name: production
+      name: prod
       url: https://your-production-domain.com
     steps:
       - name: Wait for manual approval
@@ -54,11 +55,11 @@ jobs:
       - name: SSH deploy (production)
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.PROD_SSH_HOST }}
-          username: ${{ secrets.PROD_SSH_USER }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          port: ${{ secrets.PROD_SSH_PORT || 22 }}
-          envs: DB_URL,DB_USERNAME,DB_PASSWORD,AWS_S3_BUCKET,AWS_REGION,AWS_ACCESS_KEY,AWS_SECRET_KEY,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,IMAGE_REPO
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          envs: PROD_ENV_FILE,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,IMAGE_REPO
           script: |
             set -e
             docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"
@@ -67,14 +68,8 @@ jobs:
             # Git 최신 변경사항 가져오기 (docker-compose.prod.yml 업데이트)
             git pull origin main
 
-            # 환경변수 설정
-            export DB_URL="${DB_URL}"
-            export DB_USERNAME="${DB_USERNAME}"
-            export DB_PASSWORD="${DB_PASSWORD}"
-            export AWS_S3_BUCKET="${AWS_S3_BUCKET}"
-            export AWS_REGION="${AWS_REGION}"
-            export AWS_ACCESS_KEY="${AWS_ACCESS_KEY}"
-            export AWS_SECRET_KEY="${AWS_SECRET_KEY}"
+            # .env.prod 파일 생성 (GitHub Secrets에서 주입)
+            echo "$PROD_ENV_FILE" > .env.prod
 
             # 현재 실행 중인 컨테이너 백업
             export BACKUP_TAG="backup-$(date +%Y%m%d-%H%M%S)"
@@ -99,13 +94,7 @@ jobs:
             # 성공 시 정리
             docker image prune -f
         env:
-          DB_URL: ${{ secrets.PROD_DB_URL }}
-          DB_USERNAME: ${{ secrets.PROD_DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
-          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           IMAGE_REPO: ${{ env.IMAGE_REPO }}

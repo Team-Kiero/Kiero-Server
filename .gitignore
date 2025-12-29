@@ -49,5 +49,14 @@ docs
 # 로컬 개발 환경 설정만 제외 (민감 정보 포함)
 application.yml
 
-.env.*
 # dev, prod는 환경변수 기반이므로 Git에 커밋 가능
+
+### Environment Files ###
+# 실제 환경변수 파일은 Git에서 제외 (민감 정보 포함)
+.env
+.env.dev
+.env.prod
+.env.local
+
+# 템플릿 파일은 Git에 포함
+!.env*.example
