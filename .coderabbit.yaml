@@ -82,6 +82,10 @@ reviews:
         - 보안 문제 확인 (민감 정보 노출)
         - Health check 설정 확인
 
+# 자동 개선 PR 비활성화 (코멘트만 달고 PR 생성 안 함)
+auto_improvements:
+  enabled: false
+
 # 채팅 기능 설정
 chat:
   auto_reply: true
