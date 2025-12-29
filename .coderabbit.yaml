@@ -5,9 +5,6 @@
 language: "ko"
 
 reviews:
-  # 한국어 리뷰 (reviews 내부에도 명시)
-  language: "ko"
-
   # 자동 리뷰 설정
   auto_review:
     enabled: true
