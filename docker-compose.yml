@@ -6,21 +6,12 @@ services:
     container_name: kiero-app
     ports:
       - "${APP_PORT:-8080}:8080"
+    env_file:
+      - .env.dev  # 환경변수 파일 (CD에서 자동 생성)
     environment:
       # Spring Profile
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - TZ=Asia/Seoul
-
-      # Database (GitHub Secrets에서 주입)
-      - DB_URL=${DB_URL}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-
-      # AWS (GitHub Secrets에서 주입)
-      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
-      - AWS_REGION=${AWS_REGION}
-      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
-      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
     restart: unless-stopped
     networks:
       - app-network
