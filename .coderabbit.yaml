@@ -12,6 +12,9 @@ reviews:
   auto_review:
     enabled: true
     drafts: false  # Draft PR은 리뷰하지 않음
+    base_branches:
+      - main
+      - develop
 
   # 리뷰 스타일: assertive (엄격), chill (보통), relaxed (느슨)
   profile: "chill"
