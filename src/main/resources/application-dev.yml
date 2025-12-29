@@ -1,0 +1,72 @@
+spring:
+  application:
+    name: kiero
+
+  # Database - Development RDS
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        show_sql: false
+    open-in-view: false
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+  region: ${AWS_REGION}
+  credentials:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+
+logging:
+  level:
+    root: info
+    org:
+      hibernate:
+        SQL: debug
+        type:
+          descriptor:
+            sql:
+              BasicBinder:
+                TRACE
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expire-time: ${JWT_ACCESS_TOKEN_EXPIRE_TIME}
+  refresh-token-expire-time: ${JWT_REFRESH_TOKEN_EXPIRE_TIME}
+
+cors:
+  allowed-origins: ${ALLOWED_ORIGINS}
+
+springdoc:
+  swagger-ui:
+    enabled: true   # Swagger UI 활성화
+    path: /swagger-ui.html  # Swagger UI 접속 경로
+    operations-sorter: method  # 메서드 기준 정렬
+    tags-sorter: alpha  # 태그를 알파벳순으로 정렬
+  api-docs:
+    path: /v3/api-docs  # OpenAPI 문서의 기본 경로 설정
+  show-actuator: true  # Actuator 관련 문서도 Swagger에서 표시
+
