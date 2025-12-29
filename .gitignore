@@ -1,3 +1,7 @@
+# QueryDSL
+**/Q*.java
+/build/generated/
+
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
