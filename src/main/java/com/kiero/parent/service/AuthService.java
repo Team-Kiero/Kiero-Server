@@ -39,9 +39,6 @@ public class AuthService {
 		String refreshToken = issueAndSaveRefreshToken(member.getId(), authenticationToken);
 		String accessToken = jwtTokenProvider.issueAccessToken(authenticationToken);
 
-		log.info("Login success for authorities: {}, accessToken: {}, refreshToken: {}", authorities, accessToken,
-			refreshToken);
-
 		return ParentLoginResponse.of(member.getName(), member.getEmail(), member.getImage(), member.getRole(), accessToken, refreshToken);
 	}
 
