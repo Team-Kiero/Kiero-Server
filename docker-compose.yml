@@ -32,12 +32,16 @@ services:
     container_name: kiero-redis
     ports:
       - "${REDIS_PORT:-6379}:6379"
-    command: redis-server --requirepass ${REDIS_PASSWORD:-}
     volumes:
       - redis-data:/data
     networks:
       - app-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
 networks:
   app-network:
