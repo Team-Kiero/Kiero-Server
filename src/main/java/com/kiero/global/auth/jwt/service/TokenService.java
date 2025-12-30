@@ -26,10 +26,8 @@ public class TokenService {
 	}
 
 	public Long findIdByRefreshToken(final String refreshToken) {
-		log.info("Searching for memberId using refresh token: {}", refreshToken);
 		Token token = tokenRepository.findByRefreshToken(refreshToken)
 			.orElseThrow(() -> {
-				log.error("Refresh token not found in Redis: {}", refreshToken);
 				return new KieroException(TokenErrorCode.REFRESH_TOKEN_NOT_FOUND);
 			});
 		log.info("Found memberId: {} for refresh token", token.getId());
