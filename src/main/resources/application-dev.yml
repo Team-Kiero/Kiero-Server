@@ -39,3 +39,34 @@ aws:
   credentials:
     access-key: ${AWS_ACCESS_KEY}
     secret-key: ${AWS_SECRET_KEY}
+
+logging:
+  level:
+    root: info
+    org:
+      hibernate:
+        SQL: debug
+        type:
+          descriptor:
+            sql:
+              BasicBinder:
+                TRACE
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expire-time: ${JWT_ACCESS_TOKEN_EXPIRE_TIME}
+  refresh-token-expire-time: ${JWT_REFRESH_TOKEN_EXPIRE_TIME}
+
+cors:
+  allowed-origins: ${ALLOWED_ORIGINS}
+
+springdoc:
+  swagger-ui:
+    enabled: true   # Swagger UI 활성화
+    path: /swagger-ui.html  # Swagger UI 접속 경로
+    operations-sorter: method  # 메서드 기준 정렬
+    tags-sorter: alpha  # 태그를 알파벳순으로 정렬
+  api-docs:
+    path: /v3/api-docs  # OpenAPI 문서의 기본 경로 설정
+  show-actuator: true  # Actuator 관련 문서도 Swagger에서 표시
+
