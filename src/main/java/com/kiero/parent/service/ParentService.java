@@ -2,7 +2,6 @@ package com.kiero.parent.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
 import com.kiero.global.auth.client.dto.SocialLoginResponse;
@@ -38,6 +37,7 @@ public class ParentService {
 
 	}
 
+	@Transactional
 	public ParentLoginResponse loginWithKakaoAccessToken(String kakaoAccessToken) {
 
 		SocialLoginResponse response = kakaoSocialService.loginWithAccessToken(kakaoAccessToken);
