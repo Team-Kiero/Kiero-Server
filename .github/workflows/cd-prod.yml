@@ -68,8 +68,11 @@ jobs:
             # Git 최신 변경사항 가져오기 (docker-compose.prod.yml 업데이트)
             git pull origin main
 
-            # .env.prod 파일 생성 (GitHub Secrets에서 주입)
+            # .env.prod 파일 생성 (컨테이너 환경변수용)
             echo "$PROD_ENV_FILE" > .env.prod
+
+            # DOCKERHUB_USERNAME을 환경변수로 설정 (docker-compose 변수 치환용)
+            export DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
 
             # 현재 실행 중인 컨테이너 백업
             export BACKUP_TAG="backup-$(date +%Y%m%d-%H%M%S)"
@@ -78,16 +81,15 @@ jobs:
             # 새 이미지 pull
             docker-compose -f docker-compose.prod.yml pull
 
-            # 무중단 배포 (recreate)
-            docker-compose -f docker-compose.prod.yml up -d --no-deps --build
+            # 무중단 배포 (recreate, 메타데이터 충돌 방지)
+            docker-compose -f docker-compose.prod.yml up -d --no-deps --force-recreate
 
             # Health check
             sleep 10
             if ! docker exec kiero-prod-app wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health; then
               echo "Health check failed! Rolling back..."
-              docker-compose -f docker-compose.prod.yml down
               docker tag ${IMAGE_REPO}:$BACKUP_TAG ${IMAGE_REPO}:latest
-              docker-compose -f docker-compose.prod.yml up -d
+              docker-compose -f docker-compose.prod.yml up -d --force-recreate
               exit 1
             fi
 

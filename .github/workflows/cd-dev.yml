@@ -57,8 +57,14 @@ jobs:
             # Git 최신 변경사항 가져오기 (docker-compose.yml 업데이트)
             git pull origin develop
 
-            # .env.dev 파일 생성 (GitHub Secrets에서 주입)
+            # .env.dev 파일 생성 (컨테이너 환경변수용)
             echo "$DEV_ENV_FILE" > .env.dev
+
+            # DOCKERHUB_USERNAME을 환경변수로 설정 (docker-compose 변수 치환용)
+            export DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
+
+            # 기존 컨테이너 완전히 제거 (메타데이터 충돌 방지)
+            docker-compose down || true
 
             # Docker 이미지 pull 및 재시작
             docker-compose pull

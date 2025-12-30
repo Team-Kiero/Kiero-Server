@@ -20,6 +20,12 @@ spring:
         show_sql: false
     open-in-view: false
 
+  # Redis
+  data:
+    redis:
+      host: ${REDIS_HOST:kiero-redis}
+      port: ${REDIS_PORT:6379}
+
 server:
   port: 8080
 
