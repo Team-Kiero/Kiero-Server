@@ -46,14 +46,9 @@ public class KakaoSocialService implements SocialService {
 		log.info("카카오 로그인을 시도합니다. - Authorization Code: {}, Provider: {}", authorizationCode,
 			loginRequest.provider());
 
-		// 환경 변수 로그 확인
-		log.info("Kakao clientId: {}", clientId);
-		log.info("Kakao redirectUri: {}", redirectUri);
-
 		String accessToken;
 		try {
 			accessToken = getOAuth2Authentication(authorizationCode);
-			log.info("access token을 성공적으로 획득하였습니다.: {}", accessToken);
 		} catch (FeignException e) {
 			log.error("kakao로부터 access token을 가져오는 데 실패했습니다. Error: {}", e.contentUTF8(), e);
 			throw new KieroException(OAuthErrorCode.O_AUTH_TOKEN_ERROR);
@@ -89,7 +84,6 @@ public class KakaoSocialService implements SocialService {
 	private KakaoUserResponse getUserInfo(
 		final String accessToken
 	) {
-		log.info("access token을 사용해 Kakao API로부터 유저 정보를 불러옵니다.");
 
 		KakaoUserResponse response;
 		try {
