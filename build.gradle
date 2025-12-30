@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.2.4'
+    id 'org.springframework.boot' version '3.5.9'
     id 'io.spring.dependency-management' version '1.1.4'
 }
 
@@ -67,9 +67,6 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-
-    // H2 Database for testing (in-memory)
-    testImplementation 'com.h2database:h2'
 
     // TestContainers for integration tests
     testImplementation 'org.testcontainers:testcontainers:1.19.3'
