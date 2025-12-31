@@ -42,24 +42,6 @@ public class AuthService {
 		return ParentLoginResponse.of(member.getName(), member.getEmail(), member.getImage(), member.getRole(), accessToken, refreshToken);
 	}
 
-	private String issueAndSaveRefreshToken(Long memberId, UsernamePasswordAuthenticationToken authenticationToken) {
-		String refreshToken = jwtTokenProvider.issueRefreshToken(authenticationToken);
-		log.info("Issued new refresh token for memberId: {}", memberId);
-		tokenService.saveRefreshToken(memberId, refreshToken);
-		return refreshToken;
-	}
-
-	private UsernamePasswordAuthenticationToken createAuthenticationToken(Long memberId, Role role,
-		Collection<GrantedAuthority> authorities) {
-		if (role == Role.ADMIN) {
-			log.info("Creating AdminAuthentication for memberId: {}", memberId);
-			return new AdminAuthentication(memberId, null, authorities);
-		} else {
-			log.info("Creating MemberAuthentication for memberId: {}", memberId);
-			return new ParentAuthentication(memberId, null, authorities);
-		}
-	}
-
 	@Transactional
 	public AccessTokenGenerateResponse generateAccessTokenFromRefreshToken(final String refreshToken) {
 		validateRefreshToken(refreshToken);
@@ -92,7 +74,8 @@ public class AuthService {
 		log.info("Generated new refresh token for memberId: {}, role: {}, authorities: {}", memberId,
 			role.getRoleName(), authorities);
 
-		return jwtTokenProvider.issueRefreshToken(authenticationToken);
+
+		return issueAndSaveRefreshToken(memberId, authenticationToken);
 	}
 
 	private void validateRefreshToken(String refreshToken) {
@@ -110,6 +93,24 @@ public class AuthService {
 		}
 	}
 
+	private String issueAndSaveRefreshToken(Long memberId, UsernamePasswordAuthenticationToken authenticationToken) {
+		String refreshToken = jwtTokenProvider.issueRefreshToken(authenticationToken);
+		log.info("Issued new refresh token for memberId: {}", memberId);
+		tokenService.saveRefreshToken(memberId, refreshToken);
+		return refreshToken;
+	}
+
+	private UsernamePasswordAuthenticationToken createAuthenticationToken(Long memberId, Role role,
+		Collection<GrantedAuthority> authorities) {
+		if (role == Role.ADMIN) {
+			log.info("Creating AdminAuthentication for memberId: {}", memberId);
+			return new AdminAuthentication(memberId, null, authorities);
+		} else {
+			log.info("Creating MemberAuthentication for memberId: {}", memberId);
+			return new ParentAuthentication(memberId, null, authorities);
+		}
+	}
+
 	private void verifyMemberIdWithStoredToken(String refreshToken, Long memberId) {
 		Long storedMemberId = tokenService.findIdByRefreshToken(refreshToken);
 
@@ -118,4 +119,5 @@ public class AuthService {
 			throw new KieroException(TokenErrorCode.REFRESH_TOKEN_MEMBER_ID_MISMATCH_ERROR);
 		}
 	}
+
 }
