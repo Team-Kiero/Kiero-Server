@@ -33,24 +33,24 @@ public class Parent extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = ParentTableConstants.COLUMN_NAME)
+	@Column(name = ParentTableConstants.COLUMN_NAME, nullable = false)
 	private String name;
 
-	@Column(name = ParentTableConstants.COLUMN_EMAIL)
+	@Column(name = ParentTableConstants.COLUMN_EMAIL, nullable = false)
 	private String email;
 
-	@Column(name = ParentTableConstants.COLUMN_IMAGE)
+	@Column(name = ParentTableConstants.COLUMN_IMAGE, nullable = true)
 	private String image;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = ParentTableConstants.COLUMN_ROLE)
+	@Column(name = ParentTableConstants.COLUMN_ROLE, nullable = false)
 	private Role role;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = ParentTableConstants.COLUMN_PROVIDER)
+	@Column(name = ParentTableConstants.COLUMN_PROVIDER, nullable = false)
 	private Provider provider;
 
-	@Column(name = ParentTableConstants.COLUMN_SOCIAL_ID)
+	@Column(name = ParentTableConstants.COLUMN_SOCIAL_ID, nullable = false)
 	private String socialId;
 
 	public static Parent create(

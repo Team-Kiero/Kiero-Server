@@ -1,13 +1,12 @@
 package com.kiero.parent.domain;
 
 public class ParentTableConstants {
-	public final static String TABLE_PARENT = "parent";
-	public final static String COLUMN_ID = "id";
-	public final static String COLUMN_NAME = "name";
-	public final static String COLUMN_EMAIL = "email";
-	public final static String COLUMN_ROLE = "role";
-	public final static String COLUMN_PROVIDER = "provider";
-	public final static String COLUMN_SOCIAL_ID = "social_id";
-	public final static String COLUMN_CREATED_AT = "created_at";
-	public final static String COLUMN_IMAGE = "image";
+	public static final String TABLE_PARENT = "parent";
+	public static final String COLUMN_ID = "id";
+	public static final String COLUMN_NAME = "name";
+	public static final String COLUMN_EMAIL = "email";
+	public static final String COLUMN_ROLE = "role";
+	public static final String COLUMN_PROVIDER = "provider";
+	public static final String COLUMN_SOCIAL_ID = "social_id";
+	public static final String COLUMN_IMAGE = "image";
 }
