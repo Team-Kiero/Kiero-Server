@@ -1,4 +1,4 @@
-package com.kiero.global.auth.jwt;
+package com.kiero.global.auth.jwt.service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -13,6 +13,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import com.kiero.global.auth.enums.Role;
+import com.kiero.global.auth.jwt.enums.JwtValidationType;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -38,7 +39,7 @@ public class JwtTokenProvider {
 	@Value("${jwt.refresh-token-expire-time}")
 	private long refreshTokenExpireTime;
 
-	private static final String PARENT_ID = "parentId";
+	private static final String MEMBER_ID = "member_Id";
 	private static final String ROLE_KEY = "role";
 
 	@PostConstruct
@@ -76,9 +77,9 @@ public class JwtTokenProvider {
 		}
 	}
 
-	public Long getParentIdFromJwt(String token) {
+	public Long getMemberIdFromJwt(String token) {
 		Claims claims = getBody(token);
-		return Long.valueOf(claims.get(PARENT_ID).toString());
+		return Long.valueOf(claims.get(MEMBER_ID).toString());
 	}
 
 	public Role getRoleFromJwt(String token) {
@@ -100,7 +101,7 @@ public class JwtTokenProvider {
 			.setIssuedAt(now)
 			.setExpiration(new Date(now.getTime() + expiredTime));
 
-		claims.put(PARENT_ID, authentication.getPrincipal());
+		claims.put(MEMBER_ID, authentication.getPrincipal());
 
 		String role = authentication.getAuthorities()
 			.stream()

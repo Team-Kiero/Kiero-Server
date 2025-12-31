@@ -1,4 +1,4 @@
-package com.kiero.global.auth.jwt;
+package com.kiero.global.auth.jwt.enums;
 
 import lombok.AllArgsConstructor;
 

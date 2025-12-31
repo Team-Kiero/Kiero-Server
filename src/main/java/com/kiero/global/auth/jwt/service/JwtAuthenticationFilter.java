@@ -1,4 +1,4 @@
-package com.kiero.global.auth.jwt;
+package com.kiero.global.auth.jwt.service;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.kiero.global.auth.enums.Role;
+import com.kiero.global.auth.jwt.enums.JwtValidationType;
 import com.kiero.global.auth.security.ParentAuthentication;
 
 import jakarta.servlet.FilterChain;
@@ -46,7 +47,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		}
 
 		JwtValidationType validationType = jwtTokenProvider.validateToken(token);
-
 		if (validationType.isValid()) {
 			setAuthentication(token, request);
 			filterChain.doFilter(request, response);
@@ -56,7 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	}
 
 	private void setAuthentication(String token, HttpServletRequest request) {
-		Long parentId = jwtTokenProvider.getParentIdFromJwt(token);
+		Long parentId = jwtTokenProvider.getMemberIdFromJwt(token);
 		Role role = jwtTokenProvider.getRoleFromJwt(token);
 
 		Collection<GrantedAuthority> authorities = List.of(role.toGrantedAuthority());
