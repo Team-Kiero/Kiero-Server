@@ -8,6 +8,7 @@ import com.kiero.global.auth.client.dto.SocialLoginResponse;
 import com.kiero.global.auth.client.enums.Provider;
 import com.kiero.global.auth.client.exception.ClientErrorCode;
 import com.kiero.global.auth.enums.Role;
+import com.kiero.global.auth.jwt.service.AuthService;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;

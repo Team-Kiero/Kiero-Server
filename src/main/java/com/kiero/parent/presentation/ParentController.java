@@ -3,6 +3,7 @@ package com.kiero.parent.presentation;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +27,7 @@ public class ParentController {
 
 	private static final String REFRESH_TOKEN = "refreshToken";
 	private static final int COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
+
 	private final ParentService parentService;
 
 	@PostMapping("/login")

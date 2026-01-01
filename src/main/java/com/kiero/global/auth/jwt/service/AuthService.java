@@ -1,4 +1,4 @@
-package com.kiero.parent.service;
+package com.kiero.global.auth.jwt.service;
 
 import java.util.Collection;
 import java.util.List;
@@ -9,11 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.global.auth.enums.Role;
-import com.kiero.global.auth.jwt.service.JwtTokenProvider;
 import com.kiero.global.auth.jwt.enums.JwtValidationType;
 import com.kiero.global.auth.jwt.dto.AccessTokenGenerateResponse;
 import com.kiero.global.auth.jwt.exception.TokenErrorCode;
-import com.kiero.global.auth.jwt.service.TokenService;
 import com.kiero.global.auth.security.AdminAuthentication;
 import com.kiero.global.auth.security.ParentAuthentication;
 
@@ -39,7 +37,8 @@ public class AuthService {
 		String refreshToken = issueAndSaveRefreshToken(member.getId(), authenticationToken);
 		String accessToken = jwtTokenProvider.issueAccessToken(authenticationToken);
 
-		return ParentLoginResponse.of(member.getName(), member.getEmail(), member.getImage(), member.getRole(), accessToken, refreshToken);
+		return ParentLoginResponse.of(member.getName(), member.getEmail(), member.getImage(), member.getRole(),
+			accessToken, refreshToken);
 	}
 
 	@Transactional
@@ -47,9 +46,8 @@ public class AuthService {
 		validateRefreshToken(refreshToken);
 
 		Long memberId = jwtTokenProvider.getMemberIdFromJwt(refreshToken);
-		verifyMemberIdWithStoredToken(refreshToken, memberId);
-
 		Role role = jwtTokenProvider.getRoleFromJwt(refreshToken);
+		verifyMemberIdWithStoredToken(refreshToken, memberId, role);
 		Collection<GrantedAuthority> authorities = List.of(role.toGrantedAuthority());
 
 		UsernamePasswordAuthenticationToken authenticationToken = createAuthenticationToken(memberId, role,
@@ -61,21 +59,24 @@ public class AuthService {
 	}
 
 	@Transactional
-	public String generateRefreshTokenFromOldRefreshToken(String oldRefreshToken, Role role) {
+	public String reissueRefreshToken(String oldRefreshToken) {
 		validateRefreshToken(oldRefreshToken);
 
 		Long memberId = jwtTokenProvider.getMemberIdFromJwt(oldRefreshToken);
-		verifyMemberIdWithStoredToken(oldRefreshToken, memberId);
+		Role role = jwtTokenProvider.getRoleFromJwt(oldRefreshToken);
+		verifyMemberIdWithStoredToken(oldRefreshToken, memberId, role);
 
 		Collection<GrantedAuthority> authorities = List.of(role.toGrantedAuthority());
-
 		UsernamePasswordAuthenticationToken authenticationToken = createAuthenticationToken(memberId, role,
 			authorities);
+
+		String newRefreshToken = jwtTokenProvider.issueRefreshToken(authenticationToken);
+		tokenService.saveRefreshToken(memberId, newRefreshToken, role);
+
 		log.info("Generated new refresh token for memberId: {}, role: {}, authorities: {}", memberId,
 			role.getRoleName(), authorities);
 
-
-		return issueAndSaveRefreshToken(memberId, authenticationToken);
+		return newRefreshToken;
 	}
 
 	private void validateRefreshToken(String refreshToken) {
@@ -95,8 +96,9 @@ public class AuthService {
 
 	private String issueAndSaveRefreshToken(Long memberId, UsernamePasswordAuthenticationToken authenticationToken) {
 		String refreshToken = jwtTokenProvider.issueRefreshToken(authenticationToken);
+		Role memberRole = extractRole(authenticationToken);
 		log.info("Issued new refresh token for memberId: {}", memberId);
-		tokenService.saveRefreshToken(memberId, refreshToken);
+		tokenService.saveRefreshToken(memberId, refreshToken, memberRole);
 		return refreshToken;
 	}
 
@@ -111,13 +113,23 @@ public class AuthService {
 		}
 	}
 
-	private void verifyMemberIdWithStoredToken(String refreshToken, Long memberId) {
-		Long storedMemberId = tokenService.findIdByRefreshToken(refreshToken);
+	private void verifyMemberIdWithStoredToken(String refreshToken, Long memberId, Role role) {
+		String storedRefreshToken = tokenService.findRefreshToken(memberId, role);
 
-		if (!memberId.equals(storedMemberId)) {
+		if (!refreshToken.equals(storedRefreshToken)) {
 			log.error("MemberId mismatch: token does not match the stored refresh token");
 			throw new KieroException(TokenErrorCode.REFRESH_TOKEN_MEMBER_ID_MISMATCH_ERROR);
 		}
+	}
+
+	private static Role extractRole(UsernamePasswordAuthenticationToken authenticationToken) {
+		String authority = authenticationToken.getAuthorities()
+			.stream()
+			.map(GrantedAuthority::getAuthority)
+			.findFirst()
+			.orElseThrow(() -> new KieroException(TokenErrorCode.AUTHENTICATION_NOT_VALID));
+
+		return Role.valueOf((authority.replace("ROLE_", "")));
 	}
 
 }

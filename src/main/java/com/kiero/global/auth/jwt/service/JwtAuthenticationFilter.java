@@ -56,12 +56,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	}
 
 	private void setAuthentication(String token, HttpServletRequest request) {
-		Long parentId = jwtTokenProvider.getMemberIdFromJwt(token);
+		Long memberId = jwtTokenProvider.getMemberIdFromJwt(token);
 		Role role = jwtTokenProvider.getRoleFromJwt(token);
 
 		Collection<GrantedAuthority> authorities = List.of(role.toGrantedAuthority());
 		UsernamePasswordAuthenticationToken authentication =
-			new ParentAuthentication(parentId.toString(), null, authorities);
+			new ParentAuthentication(memberId.toString(), null, authorities);
 
 		authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 		SecurityContextHolder.getContext().setAuthentication(authentication);
