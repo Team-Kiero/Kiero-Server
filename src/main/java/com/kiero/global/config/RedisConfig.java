@@ -9,7 +9,7 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 
 @Configuration
-@EnableRedisRepositories(basePackages = "com.kiero.global")
+@EnableRedisRepositories(basePackages = "com.kiero")
 public class RedisConfig {
 
 	@Value("${spring.data.redis.host}")
