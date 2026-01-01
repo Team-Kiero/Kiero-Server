@@ -1,9 +1,12 @@
 package com.kiero.child.domain;
 
+import com.kiero.global.auth.enums.Role;
 import com.kiero.global.entity.BaseTimeEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -30,12 +33,20 @@ public class Child extends BaseTimeEntity {
 	@Column(name = ChildTableConstants.COLUMN_NAME, nullable = false)
 	private String name;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = ChildTableConstants.COLUMN_ROLE, nullable = false)
+	private Role role;
+
 	@Column(name = ChildTableConstants.COLUMN_COIN_AMOUNT, nullable = false)
 	private int coinAmount;
 
-	public static Child create(final String name) {
+	public static Child create(
+            final String name,
+            final Role role
+    ) {
 		return Child.builder()
 			.name(name)
+            .role(role)
 			.coinAmount(0)
 			.build();
 	}
