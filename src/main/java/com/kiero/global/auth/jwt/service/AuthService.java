@@ -45,9 +45,8 @@ public class AuthService {
 		validateRefreshToken(refreshToken);
 
 		Long memberId = jwtTokenProvider.getMemberIdFromJwt(refreshToken);
-		verifyMemberIdWithStoredToken(refreshToken, memberId);
-
 		Role role = jwtTokenProvider.getRoleFromJwt(refreshToken);
+		verifyMemberIdWithStoredToken(refreshToken, memberId, role);
 		Collection<GrantedAuthority> authorities = List.of(role.toGrantedAuthority());
 
 		UsernamePasswordAuthenticationToken authenticationToken = createAuthenticationToken(memberId, role,
@@ -59,11 +58,12 @@ public class AuthService {
 	}
 
 	@Transactional
-	public String generateRefreshTokenFromOldRefreshToken(String oldRefreshToken, Role role) {
+	public String generateRefreshTokenFromOldRefreshToken(String oldRefreshToken) {
 		validateRefreshToken(oldRefreshToken);
 
 		Long memberId = jwtTokenProvider.getMemberIdFromJwt(oldRefreshToken);
-		verifyMemberIdWithStoredToken(oldRefreshToken, memberId);
+		Role role = jwtTokenProvider.getRoleFromJwt(oldRefreshToken);
+		verifyMemberIdWithStoredToken(oldRefreshToken, memberId, role);
 
 		Collection<GrantedAuthority> authorities = List.of(role.toGrantedAuthority());
 
@@ -93,8 +93,9 @@ public class AuthService {
 
 	private String issueAndSaveRefreshToken(Long memberId, UsernamePasswordAuthenticationToken authenticationToken) {
 		String refreshToken = jwtTokenProvider.issueRefreshToken(authenticationToken);
+		Role memberRole = extractRole(authenticationToken);
 		log.info("Issued new refresh token for memberId: {}", memberId);
-		tokenService.saveRefreshToken(memberId, refreshToken);
+		tokenService.saveRefreshToken(memberId, refreshToken, memberRole);
 		return refreshToken;
 	}
 
@@ -109,13 +110,23 @@ public class AuthService {
 		}
 	}
 
-	private void verifyMemberIdWithStoredToken(String refreshToken, Long memberId) {
-		Long storedMemberId = tokenService.findIdByRefreshToken(refreshToken);
+	private void verifyMemberIdWithStoredToken(String refreshToken, Long memberId, Role role) {
+		String storedRefreshToken = tokenService.findRefreshToken(memberId, role);
 
-		if (!memberId.equals(storedMemberId)) {
+		if (!refreshToken.equals(storedRefreshToken)) {
 			log.error("MemberId mismatch: token does not match the stored refresh token");
 			throw new KieroException(TokenErrorCode.REFRESH_TOKEN_MEMBER_ID_MISMATCH_ERROR);
 		}
+	}
+
+	public static Role extractRole(UsernamePasswordAuthenticationToken authenticationToken) {
+		String authority = authenticationToken.getAuthorities()
+			.stream()
+			.map(GrantedAuthority::getAuthority)
+			.findFirst()
+			.orElseThrow(() -> new IllegalArgumentException("No authority found"));
+
+		return Role.valueOf((authority.replace("ROLE_", "")));
 	}
 
 }
