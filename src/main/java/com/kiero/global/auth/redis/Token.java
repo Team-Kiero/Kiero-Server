@@ -1,12 +1,11 @@
 package com.kiero.global.auth.redis;
 
+import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
-import org.springframework.data.redis.core.index.Indexed;
 
 import com.kiero.global.auth.enums.Role;
 import com.kiero.global.auth.redis.util.TokenKeyGenerator;
 
-import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
