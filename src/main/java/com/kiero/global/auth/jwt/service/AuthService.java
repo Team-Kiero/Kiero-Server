@@ -70,8 +70,6 @@ public class AuthService {
 		UsernamePasswordAuthenticationToken authenticationToken = createAuthenticationToken(memberId, role,
 			authorities);
 
-		tokenService.deleteRefreshToken(memberId, role);
-
 		String newRefreshToken = jwtTokenProvider.issueRefreshToken(authenticationToken);
 		tokenService.saveRefreshToken(memberId, newRefreshToken, role);
 
