@@ -36,7 +36,8 @@ public class SecurityConfig {
 					"/v3/api-docs/**",
 					"/health-check",
 					"/api/v1/parents/login",
-					"/api/v1/parents/login/access-token"
+					"/api/v1/parents/login/access-token",
+					"/api/v1/tokens/reissue/*"
 				).permitAll()
 				.anyRequest().authenticated()
 			)
