@@ -11,11 +11,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
-import com.kiero.global.auth.jwt.service.TokenService;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.parent.exception.ParentSuccessCode;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
-import com.kiero.global.auth.jwt.service.AuthService;
 import com.kiero.parent.service.ParentService;
 
 import lombok.RequiredArgsConstructor;
@@ -31,8 +29,6 @@ public class ParentController {
 	private static final int COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 
 	private final ParentService parentService;
-	private final TokenService tokenService;
-	private final AuthService authService;
 
 	@PostMapping("/login")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> login(

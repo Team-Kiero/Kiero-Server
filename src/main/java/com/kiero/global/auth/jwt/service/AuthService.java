@@ -37,7 +37,8 @@ public class AuthService {
 		String refreshToken = issueAndSaveRefreshToken(member.getId(), authenticationToken);
 		String accessToken = jwtTokenProvider.issueAccessToken(authenticationToken);
 
-		return ParentLoginResponse.of(member.getName(), member.getEmail(), member.getImage(), member.getRole(), accessToken, refreshToken);
+		return ParentLoginResponse.of(member.getName(), member.getEmail(), member.getImage(), member.getRole(),
+			accessToken, refreshToken);
 	}
 
 	@Transactional
@@ -58,7 +59,7 @@ public class AuthService {
 	}
 
 	@Transactional
-	public String generateRefreshTokenFromOldRefreshToken(String oldRefreshToken) {
+	public String reissueRefreshToken(String oldRefreshToken) {
 		validateRefreshToken(oldRefreshToken);
 
 		Long memberId = jwtTokenProvider.getMemberIdFromJwt(oldRefreshToken);
@@ -66,14 +67,18 @@ public class AuthService {
 		verifyMemberIdWithStoredToken(oldRefreshToken, memberId, role);
 
 		Collection<GrantedAuthority> authorities = List.of(role.toGrantedAuthority());
-
 		UsernamePasswordAuthenticationToken authenticationToken = createAuthenticationToken(memberId, role,
 			authorities);
+
+		tokenService.deleteRefreshToken(memberId, role);
+
+		String newRefreshToken = jwtTokenProvider.issueRefreshToken(authenticationToken);
+		tokenService.saveRefreshToken(memberId, newRefreshToken, role);
+
 		log.info("Generated new refresh token for memberId: {}, role: {}, authorities: {}", memberId,
 			role.getRoleName(), authorities);
 
-
-		return issueAndSaveRefreshToken(memberId, authenticationToken);
+		return newRefreshToken;
 	}
 
 	private void validateRefreshToken(String refreshToken) {
