@@ -122,12 +122,12 @@ public class AuthService {
 		}
 	}
 
-	public static Role extractRole(UsernamePasswordAuthenticationToken authenticationToken) {
+	private static Role extractRole(UsernamePasswordAuthenticationToken authenticationToken) {
 		String authority = authenticationToken.getAuthorities()
 			.stream()
 			.map(GrantedAuthority::getAuthority)
 			.findFirst()
-			.orElseThrow(() -> new IllegalArgumentException("No authority found"));
+			.orElseThrow(() -> new KieroException(TokenErrorCode.AUTHENTICATION_NOT_VALID));
 
 		return Role.valueOf((authority.replace("ROLE_", "")));
 	}
