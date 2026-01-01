@@ -1,10 +1,8 @@
 package com.kiero.parent.presentation;
 
-import com.kiero.global.auth.security.ParentAuthentication;
 import com.kiero.invitation.service.InviteCodeService;
 import com.kiero.parent.presentation.dto.InviteCodeCreateRequest;
 import com.kiero.parent.presentation.dto.InviteCodeCreateResponse;
-import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -74,15 +72,25 @@ public class ParentController {
 
     @PostMapping("/invite")
     public ResponseEntity<SuccessResponse<InviteCodeCreateResponse>> invite(
-            @AuthenticationPrincipal ParentAuthentication authentication,
-            @Valid @RequestBody InviteCodeCreateRequest request
+            @AuthenticationPrincipal String principal,
+            @RequestBody InviteCodeCreateRequest request
     ) {
-        Long parentId = (Long) authentication.getPrincipal();
-        String code = inviteCodeService.createInviteCode(parentId, request.childName());
-        InviteCodeCreateResponse response = InviteCodeCreateResponse.of(code, request.childName());
+        Long parentId = Long.valueOf(principal);
 
-        return ResponseEntity.ok(
-                SuccessResponse.of(ParentSuccessCode.INVITE_CODE_CREATED, response)
+        String inviteCode = inviteCodeService.createInviteCode(
+                parentId,
+                request.childName()
         );
+
+        InviteCodeCreateResponse response = InviteCodeCreateResponse.of(inviteCode, request.childName());
+
+        return ResponseEntity
+                .status(ParentSuccessCode.INVITE_CODE_CREATED.getHttpStatus())
+                .body(
+                        SuccessResponse.of(
+                                ParentSuccessCode.INVITE_CODE_CREATED,
+                                response
+                        )
+                );
     }
 }
