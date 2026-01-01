@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("api/v1/children")
+@RequestMapping("/api/v1/children")
 public class ChildController {
 
     private static final String REFRESH_TOKEN = "refreshToken";
