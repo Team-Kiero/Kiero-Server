@@ -1,4 +1,4 @@
-package com.kiero.parent.service;
+package com.kiero.global.auth.jwt.service;
 
 import java.util.Collection;
 import java.util.List;
@@ -9,11 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.global.auth.enums.Role;
-import com.kiero.global.auth.jwt.service.JwtTokenProvider;
 import com.kiero.global.auth.jwt.enums.JwtValidationType;
 import com.kiero.global.auth.jwt.dto.AccessTokenGenerateResponse;
 import com.kiero.global.auth.jwt.exception.TokenErrorCode;
-import com.kiero.global.auth.jwt.service.TokenService;
 import com.kiero.global.auth.security.AdminAuthentication;
 import com.kiero.global.auth.security.ParentAuthentication;
 

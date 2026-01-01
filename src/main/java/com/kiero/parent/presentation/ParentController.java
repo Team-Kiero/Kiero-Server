@@ -17,7 +17,7 @@ import com.kiero.global.auth.jwt.service.TokenService;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.parent.exception.ParentSuccessCode;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
-import com.kiero.parent.service.AuthService;
+import com.kiero.global.auth.jwt.service.AuthService;
 import com.kiero.parent.service.ParentService;
 
 import lombok.RequiredArgsConstructor;
