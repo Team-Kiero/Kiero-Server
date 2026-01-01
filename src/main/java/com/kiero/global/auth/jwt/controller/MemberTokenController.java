@@ -10,11 +10,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
+import com.kiero.global.auth.enums.Role;
 import com.kiero.global.auth.jwt.dto.AccessTokenGenerateResponse;
 import com.kiero.global.auth.jwt.exception.TokenSuccessCode;
 import com.kiero.global.auth.jwt.service.TokenService;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.global.auth.jwt.service.AuthService;
+import com.kiero.parent.service.ParentService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,12 +27,19 @@ public class MemberTokenController {
 
 	private final TokenService tokenService;
 	private final AuthService authService;
+	private final ParentService parentService;
 
 	@PostMapping("/logout")
 	public ResponseEntity<SuccessResponse<Void>> logout(
 		@CurrentMember CurrentAuth currentMember
 	) {
-		tokenService.deleteRefreshToken(currentMember.memberId(), currentMember.role());
+		if (currentMember.role() == Role.PARENT) {
+			// 부모 로그아웃 시 부모 + 연결된 모든 자식의 토큰 삭제
+			parentService.logout(currentMember.memberId());
+		} else {
+			// 자식 또는 관리자는 본인 토큰만 삭제
+			tokenService.deleteRefreshToken(currentMember.memberId(), currentMember.role());
+		}
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(TokenSuccessCode.LOGOUT_SUCCESS));
 	}

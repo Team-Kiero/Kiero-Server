@@ -15,6 +15,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.kiero.global.auth.enums.Role;
 import com.kiero.global.auth.jwt.enums.JwtValidationType;
 import com.kiero.global.auth.security.ParentAuthentication;
+import com.kiero.global.auth.security.ChildAuthentication;
+import com.kiero.global.auth.security.AdminAuthentication;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -60,8 +62,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		Role role = jwtTokenProvider.getRoleFromJwt(token);
 
 		Collection<GrantedAuthority> authorities = List.of(role.toGrantedAuthority());
-		UsernamePasswordAuthenticationToken authentication =
-			new ParentAuthentication(memberId.toString(), null, authorities);
+
+		UsernamePasswordAuthenticationToken authentication;
+		if (role == Role.ADMIN) {
+			authentication = new AdminAuthentication(memberId, null, authorities);
+		} else if (role == Role.PARENT) {
+			authentication = new ParentAuthentication(memberId, null, authorities);
+		} else {  // Role.CHILD
+			authentication = new ChildAuthentication(memberId, null, authorities);
+		}
 
 		authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 		SecurityContextHolder.getContext().setAuthentication(authentication);

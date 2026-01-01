@@ -14,10 +14,13 @@ import com.kiero.global.auth.jwt.dto.AccessTokenGenerateResponse;
 import com.kiero.global.auth.jwt.exception.TokenErrorCode;
 import com.kiero.global.auth.security.AdminAuthentication;
 import com.kiero.global.auth.security.ParentAuthentication;
+import com.kiero.global.auth.security.ChildAuthentication;
 
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
+import com.kiero.child.domain.Child;
+import com.kiero.child.presentation.dto.ChildLoginResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +42,16 @@ public class AuthService {
 
 		return ParentLoginResponse.of(member.getName(), member.getEmail(), member.getImage(), member.getRole(),
 			accessToken, refreshToken);
+	}
+
+	public ChildLoginResponse generateLoginResponse(Child child) {
+		Collection<GrantedAuthority> authorities = List.of(child.getRole().toGrantedAuthority());
+		UsernamePasswordAuthenticationToken authenticationToken = createAuthenticationToken(child.getId(),
+			child.getRole(), authorities);
+		String refreshToken = issueAndSaveRefreshToken(child.getId(), authenticationToken);
+		String accessToken = jwtTokenProvider.issueAccessToken(authenticationToken);
+
+		return ChildLoginResponse.of(child.getName(), child.getRole(), accessToken, refreshToken);
 	}
 
 	@Transactional
@@ -107,9 +120,12 @@ public class AuthService {
 		if (role == Role.ADMIN) {
 			log.info("Creating AdminAuthentication for memberId: {}", memberId);
 			return new AdminAuthentication(memberId, null, authorities);
-		} else {
-			log.info("Creating MemberAuthentication for memberId: {}", memberId);
+		} else if (role == Role.PARENT) {
+			log.info("Creating ParentAuthentication for memberId: {}", memberId);
 			return new ParentAuthentication(memberId, null, authorities);
+		} else {  // Role.CHILD
+			log.info("Creating ChildAuthentication for memberId: {}", memberId);
+			return new ChildAuthentication(memberId, null, authorities);
 		}
 	}
 

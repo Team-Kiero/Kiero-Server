@@ -72,10 +72,9 @@ public class ParentController {
 
     @PostMapping("/invite")
     public ResponseEntity<SuccessResponse<InviteCodeCreateResponse>> invite(
-            @AuthenticationPrincipal String principal,
+            @AuthenticationPrincipal Long parentId,
             @RequestBody InviteCodeCreateRequest request
     ) {
-        Long parentId = Long.valueOf(principal);
 
         String inviteCode = inviteCodeService.createInviteCode(
                 parentId,
