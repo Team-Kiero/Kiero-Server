@@ -1,9 +1,14 @@
 package com.kiero.parent.presentation;
 
+import com.kiero.global.auth.security.ParentAuthentication;
+import com.kiero.invitation.service.InviteCodeService;
+import com.kiero.parent.presentation.dto.InviteCodeCreateRequest;
+import com.kiero.parent.presentation.dto.InviteCodeCreateResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,8 +32,8 @@ public class ParentController {
 
 	private static final String REFRESH_TOKEN = "refreshToken";
 	private static final int COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
-
 	private final ParentService parentService;
+    private final InviteCodeService inviteCodeService;
 
 	@PostMapping("/login")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> login(
@@ -67,4 +72,17 @@ public class ParentController {
 			.body(SuccessResponse.of(ParentSuccessCode.LOGIN_SUCCESS, response));
 	}
 
+    @PostMapping("/invite")
+    public ResponseEntity<SuccessResponse<InviteCodeCreateResponse>> invite(
+            @AuthenticationPrincipal ParentAuthentication authentication,
+            @Valid @RequestBody InviteCodeCreateRequest request
+    ) {
+        Long parentId = (Long) authentication.getPrincipal();
+        String code = inviteCodeService.createInviteCode(parentId, request.childName());
+        InviteCodeCreateResponse response = InviteCodeCreateResponse.of(code, request.childName());
+
+        return ResponseEntity.ok(
+                SuccessResponse.of(ParentSuccessCode.INVITE_CODE_CREATED, response)
+        );
+    }
 }
