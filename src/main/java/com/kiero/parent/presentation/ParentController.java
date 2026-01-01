@@ -73,22 +73,4 @@ public class ParentController {
 			.body(SuccessResponse.of(ParentSuccessCode.LOGIN_SUCCESS, response));
 	}
 
-	@PostMapping("/logout")
-	public ResponseEntity<SuccessResponse<Void>> logout(
-		@CurrentMember Long memberId
-	) {
-		tokenService.deleteRefreshToken(memberId);
-		return ResponseEntity.ok()
-			.body(SuccessResponse.of(ParentSuccessCode.LOGOUT_SUCCESS));
-	}
-
-	@PostMapping("/reissue/access-token")
-	public ResponseEntity<SuccessResponse<AccessTokenGenerateResponse>> reissueAccessToken(
-		@CookieValue("refreshToken") String refreshToken
-	) {
-		AccessTokenGenerateResponse response = authService.generateAccessTokenFromRefreshToken(refreshToken);
-		return ResponseEntity.ok()
-			.body(SuccessResponse.of(ParentSuccessCode.ACCESS_TOKEN_REISSUE_SUCCESS, response));
-	}
-
 }
