@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
+import com.kiero.global.auth.jwt.service.TokenService;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.parent.exception.ParentSuccessCode;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
@@ -26,7 +28,9 @@ public class ParentController {
 
 	private static final String REFRESH_TOKEN = "refreshToken";
 	private static final int COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
+
 	private final ParentService parentService;
+	private final TokenService tokenService;
 
 	@PostMapping("/login")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> login(
@@ -63,6 +67,15 @@ public class ParentController {
 		return ResponseEntity.ok()
 			.header(HttpHeaders.SET_COOKIE, cookie.toString())
 			.body(SuccessResponse.of(ParentSuccessCode.LOGIN_SUCCESS, response));
+	}
+
+	@PostMapping("/logout")
+	public ResponseEntity<SuccessResponse<Void>> logout(
+		@CurrentMember Long memberId
+	) {
+		tokenService.deleteRefreshToken(memberId);
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ParentSuccessCode.LOGOUT_SUCCESS));
 	}
 
 }
