@@ -78,22 +78,20 @@ public class ParentService {
 		// 1. 부모 본인의 토큰 삭제
 		tokenService.deleteRefreshToken(parentId, Role.PARENT);
 
-		// 2. 연결된 모든 자식 조회
-		List<ParentChild> parentChildren = parentChildRepository.findAllByParent_Id(parentId);
+		// 2. 연결된 모든 아이ID 조회
+        List<Long> childIds = parentChildRepository.findChildIdsByParentId(parentId);
 
-		// 3. 각 자식의 토큰 삭제
-		parentChildren.forEach(parentChild -> {
-			Long childId = parentChild.getChild().getId();
-			try {
-				tokenService.deleteRefreshToken(childId, Role.CHILD);
-				log.info("Deleted child token for childId: {}", childId);
-			} catch (Exception e) {
-				// 자식 토큰이 이미 없을 수도 있으므로 예외 무시
-				log.warn("Failed to delete child token for childId: {}, reason: {}", childId, e.getMessage());
-			}
-		});
+		// 3. 각 아이의 토큰 삭제
+        childIds.forEach(childId -> {
+            try {
+                tokenService.deleteRefreshToken(childId, Role.CHILD);
+                log.info("Deleted child token for childId: {}", childId);
+            } catch (Exception e) {
+                log.warn("Failed to delete child token for childId: {}, reason: {}", childId, e.getMessage());
+            }
+        });
 
-		log.info("Parent logout completed for parentId: {}, deleted {} child tokens", parentId, parentChildren.size());
+        log.info("Parent logout completed for parentId: {}, deleted {} child tokens", parentId, childIds.size());
 	}
 
 }
