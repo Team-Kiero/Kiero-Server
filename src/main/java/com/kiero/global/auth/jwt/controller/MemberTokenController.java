@@ -35,7 +35,7 @@ public class MemberTokenController {
 	) {
 		if (currentMember.role() == Role.PARENT) {
 			// 부모 로그아웃 시 부모 + 연결된 모든 자식의 토큰 삭제
-			parentService.logout(currentMember.memberId());
+			parentService.logout(currentMember.memberId(), currentMember.role());
 		} else {
 			// 자식 또는 관리자는 본인 토큰만 삭제
 			tokenService.deleteRefreshToken(currentMember.memberId(), currentMember.role());

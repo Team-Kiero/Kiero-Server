@@ -12,7 +12,6 @@ import com.kiero.global.auth.jwt.service.AuthService;
 import com.kiero.global.auth.jwt.service.TokenService;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.domain.Parent;
-import com.kiero.parent.domain.ParentChild;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
 import com.kiero.parent.repository.ParentChildRepository;
 import com.kiero.parent.repository.ParentRepository;
@@ -74,9 +73,9 @@ public class ParentService {
 	}
 
 	@Transactional
-	public void logout(Long parentId) {
+	public void logout(Long parentId, Role role) {
 		// 1. 부모 본인의 토큰 삭제
-		tokenService.deleteRefreshToken(parentId, Role.PARENT);
+		tokenService.deleteRefreshToken(parentId, role);
 
 		// 2. 연결된 모든 아이ID 조회
         List<Long> childIds = parentChildRepository.findChildIdsByParentId(parentId);
