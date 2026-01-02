@@ -54,7 +54,7 @@ dependencies {
 
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.redisson:redisson-spring-boot-starter:3.23.5'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.36.0'
 
     // H2 Database for testing (in-memory)
     testImplementation 'com.h2database:h2'
