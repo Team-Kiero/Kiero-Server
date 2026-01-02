@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
+import com.kiero.global.exception.KieroException;
+import com.kiero.global.response.code.ErrorCode;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -68,9 +70,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			authentication = new AdminAuthentication(memberId, null, authorities);
 		} else if (role == Role.PARENT) {
 			authentication = new ParentAuthentication(memberId, null, authorities);
-		} else {  // Role.CHILD
+		} else if (role == Role.CHILD) {
 			authentication = new ChildAuthentication(memberId, null, authorities);
-		}
+		} else {
+            throw new KieroException(ErrorCode.ACCESS_DENIED);
+        }
 
 		authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 		SecurityContextHolder.getContext().setAuthentication(authentication);
