@@ -6,14 +6,15 @@ import com.kiero.parent.presentation.dto.InviteCodeCreateResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
+import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.parent.exception.ParentSuccessCode;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
@@ -72,12 +73,12 @@ public class ParentController {
 
     @PostMapping("/invite")
     public ResponseEntity<SuccessResponse<InviteCodeCreateResponse>> invite(
-            @AuthenticationPrincipal Long parentId,
+            @CurrentMember CurrentAuth currentAuth,
             @RequestBody InviteCodeCreateRequest request
     ) {
 
         String inviteCode = inviteCodeService.createInviteCode(
-                parentId,
+                currentAuth.memberId(),
                 request.childName()
         );
 
