@@ -36,17 +36,6 @@ public class InviteCodeService {
         return code;
     }
 
-    public InviteCode validateCodeAndGetName(String code, String inputChildName) {
-        InviteCode inviteCode = inviteCodeRepository.findById(code)
-                .orElseThrow(() -> new KieroException(InvitationErrorCode.INVALID_OR_EXPIRED_INVITE_CODE));
-
-        if (!inviteCode.getChildName().equals(inputChildName)) {
-            throw new KieroException(InvitationErrorCode.INVITE_CODE_NAME_MISMATCH);
-        }
-
-        return inviteCode;
-    }
-
     public InviteCode validateAndDeleteWithLock(String code, String inputChildName) {
         String lockKey = "lock:invite:" + code;
         RLock lock = redissonClient.getLock(lockKey);
@@ -58,21 +47,14 @@ public class InviteCodeService {
                 throw new KieroException(InvitationErrorCode.INVITE_CODE_PROCESSING);
             }
 
-            // 초대 코드 검증
-            InviteCode inviteCode = inviteCodeRepository.findById(code)
-                    .orElseThrow(() -> new KieroException(
-                            InvitationErrorCode.INVALID_OR_EXPIRED_INVITE_CODE));
+            // 검증
+            InviteCode inviteCode = validateCodeAndGetName(code, inputChildName);
 
             log.info("Retrieved invite code from Redis: code={}, parentId={}, childName={}",
                     code, inviteCode.getParentId(), inviteCode.getChildName());
 
-            // 이름 일치 확인
-            if (!inviteCode.getChildName().equals(inputChildName)) {
-                throw new KieroException(InvitationErrorCode.INVITE_CODE_NAME_MISMATCH);
-            }
-
-            // 초대 코드 삭제 (원자적 처리)
-            inviteCodeRepository.deleteById(code);
+            // 삭제
+            deleteInviteCode(code);
 
             log.info("Deleted invite code from Redis: {}", code);
 
@@ -82,14 +64,24 @@ public class InviteCodeService {
             Thread.currentThread().interrupt();
             throw new KieroException(InvitationErrorCode.INVITE_CODE_PROCESSING);
         } finally {
-            // 락 해제 (현재 스레드가 보유한 경우에만)
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
         }
     }
 
-    public void deleteInviteCode(String code) {
+    private InviteCode validateCodeAndGetName(String code, String inputChildName) {
+        InviteCode inviteCode = inviteCodeRepository.findById(code)
+                .orElseThrow(() -> new KieroException(InvitationErrorCode.INVALID_OR_EXPIRED_INVITE_CODE));
+
+        if (!inviteCode.getChildName().equals(inputChildName)) {
+            throw new KieroException(InvitationErrorCode.INVITE_CODE_NAME_MISMATCH);
+        }
+
+        return inviteCode;
+    }
+
+    private void deleteInviteCode(String code) {
         inviteCodeRepository.deleteById(code);
     }
 
