@@ -15,9 +15,11 @@ import com.kiero.parent.domain.ParentChild;
 import com.kiero.parent.repository.ParentChildRepository;
 import com.kiero.parent.repository.ParentRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChildService {
@@ -30,28 +32,38 @@ public class ChildService {
 
     @Transactional
     public ChildLoginResponse signup(ChildSignupRequest request) {
-        // 1. 초대 코드 검증
-        InviteCode inviteCode = inviteCodeService.validateCodeAndGetName(
+        log.info("Child signup started: inviteCode={}, childName={}", request.inviteCode(), request.name());
+
+        // 1. 초대 코드 검증 및 삭제 (분산 락으로 원자적 처리)
+        InviteCode inviteCode = inviteCodeService.validateAndDeleteWithLock(
                 request.inviteCode(),
                 request.name()
         );
 
+        log.info("Invite code validated. Searching for parent with ID: {}", inviteCode.getParentId());
+
         // 2. 부모 엔티티 조회
         Parent parent = parentRepository.findById(inviteCode.getParentId())
-                .orElseThrow(() -> new KieroException(InvitationErrorCode.PARENT_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.error("Parent not found in DB with ID: {}", inviteCode.getParentId());
+                    return new KieroException(InvitationErrorCode.PARENT_NOT_FOUND);
+                });
+
+        log.info("Parent found: parentId={}, parentName={}", parent.getId(), parent.getName());
 
         // 3. 아이 엔티티 생성
         Child child = Child.create(request.name(), Role.CHILD);
         Child savedChild = childRepository.save(child);
 
+        log.info("Child created: childId={}, childName={}", savedChild.getId(), savedChild.getName());
+
         // 4. ParentChild 관계 생성
         ParentChild parentChild = ParentChild.create(parent, savedChild);
         parentChildRepository.save(parentChild);
 
-        // 5. 사용한 초대 코드 삭제
-        inviteCodeService.deleteInviteCode(request.inviteCode());
+        log.info("ParentChild relationship created: parentId={}, childId={}", parent.getId(), savedChild.getId());
 
-        // 6. 토큰 발급 및 로그인 응답 반환
+        // 5. 토큰 발급 및 로그인 응답 반환
         return authService.generateLoginResponse(savedChild);
     }
 }

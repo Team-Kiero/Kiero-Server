@@ -15,6 +15,11 @@ public enum InvitationErrorCode implements BaseCode {
     INVITE_CODE_NAME_MISMATCH(HttpStatus.BAD_REQUEST, "초대 코드에 등록된 자녀 이름과 일치하지 않습니다."),
 
     /*
+    409 Conflict
+     */
+    INVITE_CODE_PROCESSING(HttpStatus.CONFLICT, "초대 코드가 현재 처리 중입니다. 잠시 후 다시 시도해주세요."),
+
+    /*
 	500 Internal Server Error
  	*/
     INVITE_CODE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "초대코드 생성에 실패했습니다."),
