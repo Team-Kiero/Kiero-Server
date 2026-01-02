@@ -33,14 +33,14 @@ public class AuthService {
 	private final JwtTokenProvider jwtTokenProvider;
 	private final TokenService tokenService;
 
-	public ParentLoginResponse generateLoginResponse(Parent member) {
-		Collection<GrantedAuthority> authorities = List.of(member.getRole().toGrantedAuthority());
-		UsernamePasswordAuthenticationToken authenticationToken = createAuthenticationToken(member.getId(),
-			member.getRole(), authorities);
-		String refreshToken = issueAndSaveRefreshToken(member.getId(), authenticationToken);
+	public ParentLoginResponse generateLoginResponse(Parent parent) {
+		Collection<GrantedAuthority> authorities = List.of(parent.getRole().toGrantedAuthority());
+		UsernamePasswordAuthenticationToken authenticationToken = createAuthenticationToken(parent.getId(),
+			parent.getRole(), authorities);
+		String refreshToken = issueAndSaveRefreshToken(parent.getId(), authenticationToken);
 		String accessToken = jwtTokenProvider.issueAccessToken(authenticationToken);
 
-		return ParentLoginResponse.of(member.getName(), member.getEmail(), member.getImage(), member.getRole(),
+		return ParentLoginResponse.of(parent.getName(), parent.getEmail(), parent.getImage(), parent.getRole(),
 			accessToken, refreshToken);
 	}
 
