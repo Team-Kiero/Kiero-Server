@@ -9,15 +9,21 @@ import com.kiero.global.auth.client.enums.Provider;
 import com.kiero.global.auth.client.exception.ClientErrorCode;
 import com.kiero.global.auth.enums.Role;
 import com.kiero.global.auth.jwt.service.AuthService;
+import com.kiero.global.auth.jwt.service.TokenService;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
+import com.kiero.parent.repository.ParentChildRepository;
 import com.kiero.parent.repository.ParentRepository;
 import com.kiero.parent.service.socialService.KakaoSocialService;
 import com.kiero.parent.service.socialService.SocialService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ParentService {
@@ -25,6 +31,8 @@ public class ParentService {
 	private final KakaoSocialService kakaoSocialService;
 	private final ParentRepository parentRepository;
 	private final AuthService authService;
+	private final TokenService tokenService;
+	private final ParentChildRepository parentChildRepository;
 
 	@Transactional
 	public ParentLoginResponse loginWithAuthorizationCode(String authorizationCode, SocialLoginRequest request) {
@@ -62,6 +70,29 @@ public class ParentService {
 	private Parent saveSocialInfoToParent(SocialLoginResponse response) {
 		Parent parent = Parent.create(response.name(), response.email(), response.image(), Role.PARENT, response.provider(), response.socialId());
 		return parentRepository.save(parent);
+	}
+
+	@Transactional
+	public void logout(Long parentId, Role role) {
+		// 1. 부모 본인의 토큰 삭제
+		tokenService.deleteRefreshToken(parentId, role);
+
+		// 2. 연결된 모든 아이ID 조회
+		List<Long> childIds = parentChildRepository.findChildIdsByParentId(parentId);
+
+		// 3. 모든 아이의 토큰을 한 번에 벌크 삭제
+		if (!childIds.isEmpty()) {
+			try {
+				tokenService.deleteRefreshTokensBulk(childIds, Role.CHILD);
+				log.info("Parent logout completed for parentId: {}, deleted {} child tokens",
+						parentId, childIds.size());
+			} catch (Exception e) {
+				log.warn("Failed to bulk delete child tokens for parentId: {}, reason: {}",
+						parentId, e.getMessage());
+			}
+		} else {
+			log.info("Parent logout completed for parentId: {}, no child tokens to delete", parentId);
+		}
 	}
 
 }

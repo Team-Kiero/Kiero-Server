@@ -13,6 +13,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -44,5 +46,21 @@ public class TokenService {
 			});
 		tokenRepository.delete(token);
 		log.info("Successfully deleted refresh token for memberId: {}", memberId);
+	}
+
+	@Transactional
+	public void deleteRefreshTokensBulk(final List<Long> memberIds, final Role role) {
+		if (memberIds == null || memberIds.isEmpty()) {
+			log.info("No member IDs provided for bulk deletion");
+			return;
+		}
+
+		List<String> keys = memberIds.stream()
+				.map(id -> TokenKeyGenerator.refreshKey(id, role))
+				.toList();
+
+		tokenRepository.deleteAllById(keys);
+
+		log.info("Bulk deleted {} refresh tokens for role: {}", keys.size(), role);
 	}
 }
