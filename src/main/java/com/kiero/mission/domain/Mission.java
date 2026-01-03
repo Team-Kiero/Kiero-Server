@@ -64,4 +64,8 @@ public class Mission extends BaseTimeEntity {
 			.isCompleted(false)
 			.build();
 	}
+
+    public void complete() {
+        this.isCompleted = true;
+    }
 }
