@@ -50,4 +50,8 @@ public class Child extends BaseTimeEntity {
 			.coinAmount(0)
 			.build();
 	}
+
+    public void addCoin(int amount) {
+        this.coinAmount += amount;
+    }
 }
