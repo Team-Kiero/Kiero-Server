@@ -100,7 +100,7 @@ public class ParentService {
 
 	@Transactional(readOnly = true)
 	public List<ChildInfoResponse> getMyChildren(Long parentId) {
-		List<ParentChild> parentChildren = parentChildRepository.findAllByParent_Id(parentId);
+		List<ParentChild> parentChildren = parentChildRepository.findAllByParentId(parentId);
 
 		return parentChildren.stream()
 				.map(pc -> ChildInfoResponse.of(pc.getChild()))
