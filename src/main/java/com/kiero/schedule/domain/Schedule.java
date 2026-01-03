@@ -1,17 +1,12 @@
 package com.kiero.schedule.domain;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import com.kiero.child.domain.Child;
-import com.kiero.global.entity.BaseTimeEntity;
 import com.kiero.parent.domain.Parent;
-import com.kiero.schedule.enums.StoneType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -31,7 +26,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Table(name = ScheduleTableConstants.TABLE_SCHEDULE)
-public class Schedule extends BaseTimeEntity {
+public class Schedule {
 
 	@Id
 	@Column(name = ScheduleTableConstants.COLUMN_ID)
@@ -39,13 +34,10 @@ public class Schedule extends BaseTimeEntity {
 	private Long id;
 
 	@Column(name = ScheduleTableConstants.COLUMN_START_AT, nullable = false)
-	private LocalDateTime startAt;
+	private LocalTime startTime;
 
 	@Column(name = ScheduleTableConstants.COLUMN_END_AT, nullable = false)
-	private LocalDateTime endAt;
-
-	@Column(name = ScheduleTableConstants.COLUMN_DATE, nullable = false)
-	private LocalDate date;
+	private LocalTime endTime;
 
 	@Column(name = ScheduleTableConstants.COLUMN_NAME, nullable = false)
 	private String name;
@@ -53,15 +45,8 @@ public class Schedule extends BaseTimeEntity {
 	@Column(name = ScheduleTableConstants.COLUMN_COLOR_CODE, nullable = false)
 	private String colorCode;
 
-	@Column(name = ScheduleTableConstants.COLUMN_IS_VERIFIED, nullable = false)
-	private Boolean isVerified;
-
-	@Column(name = ScheduleTableConstants.COLUMN_IMAGE_URL, nullable = true)
-	private String imageUrl;
-
-	@Enumerated(EnumType.STRING)
-	@Column(name = ScheduleTableConstants.COLUMN_STONE_TYPE, nullable = false)
-	private StoneType stoneType;
+	@Column(name = ScheduleTableConstants.COLUMN_IS_RECURRING, nullable = false)
+	private boolean isRecurring;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = ScheduleTableConstants.COLUMN_PARENT_ID, nullable = false)
@@ -75,22 +60,19 @@ public class Schedule extends BaseTimeEntity {
 		Parent parent,
 		Child child,
 		String name,
-		LocalDate date,
-		LocalDateTime startAt,
-		LocalDateTime endAt,
+		LocalTime startTime,
+		LocalTime endTime,
 		String colorCode,
-		StoneType stoneType
+		boolean isRecurring
 	) {
 		return Schedule.builder()
 			.parent(parent)
 			.child(child)
 			.name(name)
-			.date(date)
-			.startAt(startAt)
-			.endAt(endAt)
+			.startTime(startTime)
+			.endTime(endTime)
 			.colorCode(colorCode)
-			.stoneType(stoneType)
-			.isVerified(false)
+			.isRecurring(isRecurring)
 			.build();
 	}
 }
