@@ -4,6 +4,7 @@ import com.kiero.invitation.service.InviteCodeService;
 import com.kiero.parent.presentation.dto.ChildInfoResponse;
 import com.kiero.parent.presentation.dto.InviteCodeCreateRequest;
 import com.kiero.parent.presentation.dto.InviteCodeCreateResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -78,7 +79,7 @@ public class ParentController {
     @PostMapping("/invite")
     public ResponseEntity<SuccessResponse<InviteCodeCreateResponse>> invite(
             @CurrentMember CurrentAuth currentAuth,
-            @RequestBody InviteCodeCreateRequest request
+            @Valid @RequestBody InviteCodeCreateRequest request
     ) {
 
         String inviteCode = inviteCodeService.createInviteCode(
