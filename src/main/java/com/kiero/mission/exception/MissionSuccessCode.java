@@ -12,6 +12,7 @@ public enum MissionSuccessCode implements BaseCode {
     200 OK
     */
     MISSIONS_RETRIEVED(HttpStatus.OK, "미션 목록 조회에 성공하였습니다."),
+    MISSION_COMPLETED(HttpStatus.OK, "미션을 성공적으로 완료했습니다."),
 
     /*
     201 CREATED
