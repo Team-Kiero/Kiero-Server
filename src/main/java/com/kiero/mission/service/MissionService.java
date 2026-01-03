@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -66,24 +67,58 @@ public class MissionService {
     }
 
     public List<MissionResponse> getMissionsByParent(Long parentId, Long childId) {
+        LocalDate today = LocalDate.now();
+
         // Case1. 특정 자녀 조회
         if (childId != null) {
             validateParentChildRelation(parentId, childId);
-            return missionRepository.findAllByChildId(childId).stream()
+            return missionRepository.findAllByChildIdAndDueAtGreaterThanEqual(childId, today).stream()
                     .map(MissionResponse::from)
                     .toList();
         }
 
         // Case2. 전체 자녀 조회
-        return missionRepository.findAllByParentId(parentId).stream()
+        return missionRepository.findAllByParentIdAndDueAtGreaterThanEqual(parentId, today).stream()
                 .map(MissionResponse::from)
                 .toList();
     }
 
     public List<MissionResponse> getMissionsByChild(Long childId) {
-        return missionRepository.findAllByChildId(childId).stream()
+        LocalDate today = LocalDate.now();
+
+        return missionRepository.findAllByChildIdAndDueAtGreaterThanEqual(childId, today).stream()
                 .map(MissionResponse::from)
                 .toList();
+    }
+
+    @Transactional
+    public MissionResponse completeMission(Long childId, Long missionId) {
+        // 1. 미션 조회
+        Mission mission = missionRepository.findById(missionId)
+                .orElseThrow(() -> new KieroException(MissionErrorCode.MISSION_NOT_FOUND));
+
+        // 2. 소유 여부 검증
+        if (!mission.getChild().getId().equals(childId)) {
+            throw new KieroException(MissionErrorCode.NOT_YOUR_MISSION);
+        }
+
+        // 3. 중복 완료 방지
+        if (mission.isCompleted()) {
+            throw new KieroException(MissionErrorCode.MISSION_ALREADY_COMPLETED);
+        }
+
+        // 4. 마감일 체크
+        if (mission.getDueAt().isBefore(LocalDate.now())) {
+            throw new KieroException(MissionErrorCode.MISSION_EXPIRED);
+        }
+
+        // 5. 미션 완료처리
+        mission.complete();
+
+        // 6. 코인 지급
+        mission.getChild().addCoin(mission.getReward());
+
+        return MissionResponse.from(mission);
     }
 
     private void validateParentChildRelation(Long parentId, Long childId) {

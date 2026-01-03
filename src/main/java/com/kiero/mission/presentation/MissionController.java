@@ -54,4 +54,19 @@ public class MissionController {
         return ResponseEntity.ok()
                 .body(SuccessResponse.of(MissionSuccessCode.MISSIONS_RETRIEVED, responses));
     }
+
+    @PatchMapping("/{missionId}/complete")
+    public ResponseEntity<SuccessResponse<MissionResponse>> completeMission(
+            @CurrentMember CurrentAuth currentAuth,
+            @PathVariable Long missionId
+    ) {
+        if (currentAuth.role() != Role.CHILD) {
+            throw new KieroException(ErrorCode.ACCESS_DENIED);
+        }
+
+        MissionResponse response = missionService.completeMission(currentAuth.memberId(), missionId);
+
+        return ResponseEntity.ok()
+                .body(SuccessResponse.of(MissionSuccessCode.MISSION_COMPLETED, response));
+    }
 }
