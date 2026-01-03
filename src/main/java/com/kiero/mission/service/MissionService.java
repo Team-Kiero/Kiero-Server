@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -35,8 +37,6 @@ public class MissionService {
         );
 
         if (!isValidRelation) {
-            log.warn("Invalid parent-child relationship: parentId={}, childId={}",
-                    parentId, request.childId());
             throw new KieroException(MissionErrorCode.NOT_YOUR_CHILD);
         }
 
@@ -63,5 +63,32 @@ public class MissionService {
                 savedMission.getId(), parentId, request.childId(), request.name());
 
         return MissionResponse.from(savedMission);
+    }
+
+    public List<MissionResponse> getMissionsByParent(Long parentId, Long childId) {
+        // Case1. 특정 자녀 조회
+        if (childId != null) {
+            validateParentChildRelation(parentId, childId);
+            return missionRepository.findAllByChildId(childId).stream()
+                    .map(MissionResponse::from)
+                    .toList();
+        }
+
+        // Case2. 전체 자녀 조회
+        return missionRepository.findAllByParentId(parentId).stream()
+                .map(MissionResponse::from)
+                .toList();
+    }
+
+    public List<MissionResponse> getMissionsByChild(Long childId) {
+        return missionRepository.findAllByChildId(childId).stream()
+                .map(MissionResponse::from)
+                .toList();
+    }
+
+    private void validateParentChildRelation(Long parentId, Long childId) {
+        if (!parentChildRepository.existsByParentIdAndChildId(parentId, childId)) {
+            throw new KieroException(MissionErrorCode.NOT_YOUR_CHILD);
+        }
     }
 }
