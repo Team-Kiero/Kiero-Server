@@ -13,10 +13,12 @@ import com.kiero.parent.domain.Parent;
 import com.kiero.parent.exception.ParentErrorCode;
 import com.kiero.parent.repository.ParentRepository;
 import com.kiero.schedule.domain.Schedule;
+import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;
 import com.kiero.schedule.enums.DayOfWeek;
 import com.kiero.schedule.exception.ScheduleErrorCode;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
+import com.kiero.schedule.repository.ScheduleDetailRepository;
 import com.kiero.schedule.repository.ScheduleRepeatDaysRepository;
 import com.kiero.schedule.repository.ScheduleRepository;
 
@@ -30,6 +32,7 @@ public class ScheduleService {
 	private final ChildRepository childRepository;
 	private final ScheduleRepository scheduleRepository;
 	private final ScheduleRepeatDaysRepository scheduleRepeatDaysRepository;
+	private final ScheduleDetailRepository scheduleDetailRepository;
 
 	public void addSchedule(ScheduleAddRequest request, Long parentId, Long childId) {
 
@@ -51,6 +54,11 @@ public class ScheduleService {
 				.toList();
 
 			scheduleRepeatDaysRepository.saveAll(repeatDays);
+		}
+
+		if (request.date()!=null) {
+			ScheduleDetail scheduleDetail = ScheduleDetail.create(request.date(), false, null, null, savedSchedule);
+			scheduleDetailRepository.save(scheduleDetail);
 		}
 	}
 
