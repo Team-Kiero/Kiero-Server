@@ -5,6 +5,7 @@ import com.kiero.child.repository.ChildRepository;
 import com.kiero.global.exception.KieroException;
 import com.kiero.mission.domain.Mission;
 import com.kiero.mission.exception.MissionErrorCode;
+import com.kiero.mission.presentation.dto.MissionBulkCreateRequest;
 import com.kiero.mission.presentation.dto.MissionCreateRequest;
 import com.kiero.mission.presentation.dto.MissionResponse;
 import com.kiero.mission.repository.MissionRepository;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -123,6 +125,43 @@ public class MissionService {
         log.info("Mission completed: missionId={}, childId={}, reward={}", missionId, childId, mission.getReward());
 
         return MissionResponse.from(mission);
+    }
+
+    @Transactional
+    public List<MissionResponse> bulkCreateMissions(Long parentId, MissionBulkCreateRequest request) {
+        // 1. 부모-자녀 관계 검증
+        validateParentChildRelation(parentId, request.childId());
+
+        // 2. 부모 엔티티 조회
+        Parent parent = parentRepository.findById(parentId)
+                .orElseThrow(() -> new KieroException(MissionErrorCode.NOT_YOUR_CHILD));
+
+        // 3. 자녀 엔티티 조회
+        Child child = childRepository.findById(request.childId())
+                .orElseThrow(() -> new KieroException(MissionErrorCode.CHILD_NOT_FOUND));
+
+        // 4. 미션 일괄 생성
+        List<Mission> missions = new ArrayList<>();
+        for (MissionBulkCreateRequest.MissionItem item : request.missions()) {
+            Mission mission = Mission.create(
+                    parent,
+                    child,
+                    item.name(),
+                    item.reward(),
+                    item.dueAt()
+            );
+            missions.add(mission);
+        }
+
+        // 5. 일괄 저장
+        List<Mission> savedMissions = missionRepository.saveAll(missions);
+
+        log.info("Bulk created {} missions for parentId={}, childId={}",
+                savedMissions.size(), parentId, request.childId());
+
+        return savedMissions.stream()
+                .map(MissionResponse::from)
+                .toList();
     }
 
     private void validateParentChildRelation(Long parentId, Long childId) {

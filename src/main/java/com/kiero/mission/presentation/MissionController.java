@@ -7,9 +7,13 @@ import com.kiero.global.exception.KieroException;
 import com.kiero.global.response.code.ErrorCode;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.mission.exception.MissionSuccessCode;
+import com.kiero.mission.presentation.dto.MissionBulkCreateRequest;
 import com.kiero.mission.presentation.dto.MissionCreateRequest;
 import com.kiero.mission.presentation.dto.MissionResponse;
+import com.kiero.mission.presentation.dto.MissionSuggestionRequest;
+import com.kiero.mission.presentation.dto.MissionSuggestionResponse;
 import com.kiero.mission.service.MissionService;
+import com.kiero.mission.service.MissionSuggestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +28,7 @@ import java.util.List;
 @RequestMapping("api/v1/missions")
 public class MissionController {
     private final MissionService missionService;
+    private final MissionSuggestionService missionSuggestionService;
 
     @PostMapping
     public ResponseEntity<SuccessResponse<MissionResponse>> createMission(
@@ -68,5 +73,37 @@ public class MissionController {
 
         return ResponseEntity.ok()
                 .body(SuccessResponse.of(MissionSuccessCode.MISSION_COMPLETED, response));
+    }
+
+    @PostMapping("/suggestions")
+    public ResponseEntity<SuccessResponse<MissionSuggestionResponse>> suggestMissions(
+            @CurrentMember CurrentAuth currentAuth,
+            @Valid @RequestBody MissionSuggestionRequest request
+    ) {
+        if (currentAuth.role() != Role.PARENT) {
+            throw new KieroException(ErrorCode.ACCESS_DENIED);
+        }
+
+        MissionSuggestionResponse response = missionSuggestionService.suggestMissions(request.noticeText());
+
+        log.info("Mission suggestions generated for parentId={}", currentAuth.memberId());
+
+        return ResponseEntity.ok()
+                .body(SuccessResponse.of(MissionSuccessCode.MISSION_SUGGESTIONS_GENERATED, response));
+    }
+
+    @PostMapping("/bulk")
+    public ResponseEntity<SuccessResponse<List<MissionResponse>>> bulkCreateMissions(
+            @CurrentMember CurrentAuth currentAuth,
+            @Valid @RequestBody MissionBulkCreateRequest request
+    ) {
+        if (currentAuth.role() != Role.PARENT) {
+            throw new KieroException(ErrorCode.ACCESS_DENIED);
+        }
+
+        List<MissionResponse> responses = missionService.bulkCreateMissions(currentAuth.memberId(), request);
+
+        return ResponseEntity.ok()
+                .body(SuccessResponse.of(MissionSuccessCode.MISSIONS_BULK_CREATED, responses));
     }
 }
