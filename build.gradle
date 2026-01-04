@@ -15,6 +15,8 @@ java {
 
 repositories {
     mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url 'https://repo.spring.io/snapshot' }
 }
 
 dependencies {
@@ -77,10 +79,14 @@ dependencies {
     //openFeign and OAuth2
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+    // Spring AI - OpenAI
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 }
 
 dependencyManagement {
     imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:1.0.0-M4"
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:2025.0.0"
     }
 }
