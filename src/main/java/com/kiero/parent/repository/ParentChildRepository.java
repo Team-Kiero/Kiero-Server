@@ -14,7 +14,7 @@ public interface ParentChildRepository extends JpaRepository<ParentChild, Long> 
     List<Long> findChildIdsByParentId(@Param("parentId") Long parentId);
 
     @EntityGraph(attributePaths = {"child"})
-    List<ParentChild> findAllByParentId(Long parentId);
+    List<ParentChild> findAllByParent_Id(Long parentId);
 
-    boolean existsByParentIdAndChildId(Long parentId, Long childId);
+    boolean existsByParent_IdAndChild_Id(Long parentId, Long childId);
 }

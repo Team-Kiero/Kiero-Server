@@ -32,7 +32,7 @@ public class MissionService {
     @Transactional
     public MissionResponse createMission(Long parentId, MissionCreateRequest request) {
         // 1. 부모-자녀 관계 검증
-        boolean isValidRelation = parentChildRepository.existsByParentIdAndChildId(
+        boolean isValidRelation = parentChildRepository.existsByParent_IdAndChild_Id(
                 parentId,
                 request.childId()
         );
@@ -66,27 +66,29 @@ public class MissionService {
         return MissionResponse.from(savedMission);
     }
 
+    @Transactional(readOnly = true)
     public List<MissionResponse> getMissionsByParent(Long parentId, Long childId) {
         LocalDate today = LocalDate.now();
 
         // Case1. 특정 자녀 조회
         if (childId != null) {
             validateParentChildRelation(parentId, childId);
-            return missionRepository.findAllByChildIdAndDueAtGreaterThanEqual(childId, today).stream()
+            return missionRepository.findAllByChild_IdAndDueAtGreaterThanEqual(childId, today).stream()
                     .map(MissionResponse::from)
                     .toList();
         }
 
         // Case2. 전체 자녀 조회
-        return missionRepository.findAllByParentIdAndDueAtGreaterThanEqual(parentId, today).stream()
+        return missionRepository.findAllByParent_IdAndDueAtGreaterThanEqual(parentId, today).stream()
                 .map(MissionResponse::from)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<MissionResponse> getMissionsByChild(Long childId) {
         LocalDate today = LocalDate.now();
 
-        return missionRepository.findAllByChildIdAndDueAtGreaterThanEqual(childId, today).stream()
+        return missionRepository.findAllByChild_IdAndDueAtGreaterThanEqual(childId, today).stream()
                 .map(MissionResponse::from)
                 .toList();
     }
@@ -94,7 +96,7 @@ public class MissionService {
     @Transactional
     public MissionResponse completeMission(Long childId, Long missionId) {
         // 1. 미션 조회
-        Mission mission = missionRepository.findById(missionId)
+        Mission mission = missionRepository.findByIdWithLock(missionId)
                 .orElseThrow(() -> new KieroException(MissionErrorCode.MISSION_NOT_FOUND));
 
         // 2. 소유 여부 검증
@@ -118,11 +120,13 @@ public class MissionService {
         // 6. 코인 지급
         mission.getChild().addCoin(mission.getReward());
 
+        log.info("Mission completed: missionId={}, childId={}, reward={}", missionId, childId, mission.getReward());
+
         return MissionResponse.from(mission);
     }
 
     private void validateParentChildRelation(Long parentId, Long childId) {
-        if (!parentChildRepository.existsByParentIdAndChildId(parentId, childId)) {
+        if (!parentChildRepository.existsByParent_IdAndChild_Id(parentId, childId)) {
             throw new KieroException(MissionErrorCode.NOT_YOUR_CHILD);
         }
     }
