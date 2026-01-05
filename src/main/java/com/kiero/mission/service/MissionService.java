@@ -1,6 +1,7 @@
 package com.kiero.mission.service;
 
 import com.kiero.child.domain.Child;
+import com.kiero.child.exception.ChildErrorCode;
 import com.kiero.child.repository.ChildRepository;
 import com.kiero.global.exception.KieroException;
 import com.kiero.mission.domain.Mission;
@@ -49,7 +50,7 @@ public class MissionService {
 
         // 3. 자녀 엔티티 조회
         Child child = childRepository.findById(request.childId())
-                .orElseThrow(() -> new KieroException(MissionErrorCode.CHILD_NOT_FOUND));
+                .orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
         // 4. 미션 생성
         Mission mission = Mission.create(
@@ -138,7 +139,7 @@ public class MissionService {
 
         // 3. 자녀 엔티티 조회
         Child child = childRepository.findById(request.childId())
-                .orElseThrow(() -> new KieroException(MissionErrorCode.CHILD_NOT_FOUND));
+                .orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
         // 4. 미션 일괄 생성
         List<Mission> missions = new ArrayList<>();

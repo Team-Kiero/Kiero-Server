@@ -23,7 +23,6 @@ public enum MissionErrorCode implements BaseCode {
     /*
     404 NOT_FOUND
     */
-    CHILD_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 자녀입니다."),
     MISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 미션입니다."),
     ;
 
