@@ -11,6 +11,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScheduleSuccessCode implements BaseCode {
 	/*
+	200 OK
+	 */
+	SCHEDULE_TAB_GET_SUCCESS(HttpStatus.OK, "일정탭이 조회되었습니다."),
+	/*
 	201 CREATED
 	 */
 	SCHEDULE_CREATED(HttpStatus.CREATED, "일정이 생성되었습니다."),
