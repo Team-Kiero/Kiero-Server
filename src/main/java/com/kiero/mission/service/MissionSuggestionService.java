@@ -44,66 +44,97 @@ public class MissionSuggestionService {
             2. 각 미션은 구체적이고 실행 가능해야 합니다
             3. 미션 이름은 간단명료하게 작성하세요 (15자 이내)
             4. 최대 10개의 미션을 추천하세요
-            5. 마감일(dueAt) 설정 규칙:
-               - 알림장에서 날짜를 찾았다면 해당 날짜로 설정 (YYYY-MM-DD 형식)
-               - 날짜를 찾지 못했다면 오늘 기준 다음날로 설정
-               - "내일", "모레" 등의 표현도 날짜로 변환하세요
-            6. 보상(reward)은 항상 20으로 설정하세요
-            7. 응답은 반드시 JSON 배열 형식으로만 작성하세요:
+            5. 중요: 하나의 할 일은 하나의 미션으로 만드세요
+               - 예: "독후감 3편 써오기" → "독후감 3편 쓰기" (1개 미션)
+               - 분리하지 마세요: "독후감 1편", "독후감 2편", "독후감 3편" (X)
+            6. 마감일(dueAt) 설정 규칙 (중요):
+               - "내일": 오늘 기준 +1일
+               - "모레": 오늘 기준 +2일
+               - "X월 X일": 해당 날짜 그대로
+               - "주말": 이번 주 일요일
+               - "다음주 월요일": 다음 주의 월요일을 찾으세요
+                 예시: 오늘이 2026-01-05(일요일)이면
+                 → 이번주는 1/6(월)~1/12(일)
+                 → 다음주는 1/13(월)~1/19(일)
+                 → 다음주 월요일 = 2026-01-13
+               - "다음주 X요일": 다음 주의 해당 요일
+               - 명시 안됨: 일반적으로 다음날 (+1일)
+               - 주의: 알림장 제목의 날짜(예: "1월 5일 알림장")는 작성일이지 마감일이 아닙니다
+               - 중요: 한국에서 주는 월요일에 시작해서 일요일에 끝납니다
+            7. 보상(reward)은 항상 20으로 설정하세요
+            8. 응답은 반드시 JSON 배열 형식으로만 작성하세요
 
-            [
-              {
-                "name": "수학 숙제 완료하기",
-                "dueAt": "2026-01-10",
-                "reward": 20
-              },
-              {
-                "name": "준비물 챙기기",
-                "dueAt": "2026-01-11",
-                "reward": 20
-              }
-            ]
+            응답 형식:
+            - JSON 배열 (대괄호로 시작/끝)
+            - 각 객체: name(문자열), dueAt(YYYY-MM-DD), reward(숫자 20)
 
-            JSON 배열만 응답하세요. 다른 텍스트는 포함하지 마세요.
+            JSON 배열만 응답하세요. 설명이나 마크다운 없이.
             """;
 
     public MissionSuggestionResponse suggestMissions(String noticeText) {
         log.info("Generating mission suggestions from notice text");
+
+        // 1. 입력값 검증
+        if (noticeText == null || noticeText.isBlank()) {
+            log.warn("Empty notice text provided");
+            return createFallbackResponse();
+        }
 
         try {
             LocalDate today = LocalDate.now();
 
             PromptTemplate promptTemplate = new PromptTemplate(MISSION_SUGGESTION_PROMPT);
             Prompt prompt = promptTemplate.create(Map.of(
-                    "noticeText", noticeText,
+                    "noticeText", noticeText.trim(),
                     "today", today.toString()
             ));
 
+            // 2. AI 호출
             String response = chatClient.prompt(prompt)
                     .call()
                     .content();
 
+            // 3. AI 응답 검증
+            if (response == null || response.isBlank()) {
+                log.warn("AI returned empty response");
+                return createFallbackResponse();
+            }
+
             log.debug("AI Response: {}", response);
 
+            // 4. 파싱 및 검증
             List<MissionSuggestionResponse.SuggestedMission> missions = parseMissions(response);
+
+            if (missions.isEmpty()) {
+                log.warn("No missions parsed from AI response");
+                return createFallbackResponse();
+            }
 
             log.info("Generated {} mission suggestions", missions.size());
             return MissionSuggestionResponse.of(missions);
 
         } catch (Exception e) {
             log.error("Failed to generate mission suggestions", e);
-            // Fallback: 기본값 반환
-            LocalDate tomorrow = LocalDate.now().plusDays(1);
-            return MissionSuggestionResponse.of(List.of(
-                    new MissionSuggestionResponse.SuggestedMission("알림장 내용 확인하기", tomorrow, 20)
-            ));
+            return createFallbackResponse();
         }
+    }
+
+    private MissionSuggestionResponse createFallbackResponse() {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        return MissionSuggestionResponse.of(List.of(
+                new MissionSuggestionResponse.SuggestedMission("알림장 내용 확인하기", tomorrow, 20)
+        ));
     }
 
     private List<MissionSuggestionResponse.SuggestedMission> parseMissions(String response) {
         try {
-            // JSON 배열 추출 (마크다운 코드블록이나 추가 텍스트 제거)
+            // JSON 배열 추출
             String jsonContent = extractJsonArray(response);
+
+            if (jsonContent == null || jsonContent.isBlank()) {
+                log.warn("No JSON content extracted from response");
+                return List.of();
+            }
 
             // JSON 파싱
             List<Map<String, Object>> rawList = objectMapper.readValue(
@@ -111,34 +142,65 @@ public class MissionSuggestionService {
                     new TypeReference<List<Map<String, Object>>>() {}
             );
 
+            if (rawList == null || rawList.isEmpty()) {
+                log.warn("Parsed JSON array is empty");
+                return List.of();
+            }
+
             List<MissionSuggestionResponse.SuggestedMission> missions = new ArrayList<>();
             LocalDate tomorrow = LocalDate.now().plusDays(1);
 
             for (Map<String, Object> item : rawList) {
+                // 필드 검증
                 String name = (String) item.get("name");
-                String dueAtStr = (String) item.get("dueAt");
-                Integer reward = item.get("reward") != null ?
-                        ((Number) item.get("reward")).intValue() : 20;
 
+                // name이 null이거나 빈 경우 스킵
+                if (name == null || name.isBlank()) {
+                    log.warn("Mission name is null or empty, skipping");
+                    continue;
+                }
+
+                // name 길이 제한
+                if (name.length() > 50) {
+                    name = name.substring(0, 50);
+                }
+
+                String dueAtStr = (String) item.get("dueAt");
+
+                // reward는 20으로 고정
+                int reward = 20;
+
+                // 날짜 파싱 (실패 시 내일)
                 LocalDate dueAt;
                 try {
                     dueAt = LocalDate.parse(dueAtStr);
+
+                    // 과거 날짜 방지 (오늘 이전이면 내일로)
+                    if (dueAt.isBefore(LocalDate.now())) {
+                        dueAt = tomorrow;
+                    }
+
+                    // 너무 먼 미래 방지 (1년 이후면 내일로)
+                    if (dueAt.isAfter(LocalDate.now().plusYears(1))) {
+                        dueAt = tomorrow;
+                    }
                 } catch (Exception e) {
+                    log.debug("Failed to parse date: {}, using tomorrow", dueAtStr);
                     dueAt = tomorrow;
                 }
 
-                missions.add(new MissionSuggestionResponse.SuggestedMission(name, dueAt, reward));
+                missions.add(new MissionSuggestionResponse.SuggestedMission(
+                        name.trim(),
+                        dueAt,
+                        reward
+                ));
             }
 
             return missions.stream().limit(10).toList();
 
         } catch (Exception e) {
             log.error("Failed to parse AI response as JSON", e);
-            // Fallback: 기본값 반환
-            LocalDate tomorrow = LocalDate.now().plusDays(1);
-            return List.of(
-                    new MissionSuggestionResponse.SuggestedMission("알림장 내용 확인하기", tomorrow, 20)
-            );
+            return List.of();
         }
     }
 
