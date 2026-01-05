@@ -40,7 +40,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_CREATED));
 	}
 
-	@GetMapping("{childId}")
+	@GetMapping("/{childId}")
 	public ResponseEntity<SuccessResponse<ScheduleTabResponse>> getSchedules(
 		@RequestParam LocalDate startDate,
 		@RequestParam LocalDate endDate,
