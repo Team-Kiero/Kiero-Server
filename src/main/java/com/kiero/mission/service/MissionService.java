@@ -70,13 +70,13 @@ public class MissionService {
         // Case1. 특정 자녀 조회
         if (childId != null) {
             validateParentChildRelation(parentId, childId);
-            return missionRepository.findAllByChild_IdAndDueAtGreaterThanEqual(childId, today).stream()
+            return missionRepository.findAllByChildIdAndDueAtGreaterThanEqual(childId, today).stream()
                     .map(MissionResponse::from)
                     .toList();
         }
 
         // Case2. 전체 자녀 조회
-        return missionRepository.findAllByParent_IdAndDueAtGreaterThanEqual(parentId, today).stream()
+        return missionRepository.findAllByParentIdAndDueAtGreaterThanEqual(parentId, today).stream()
                 .map(MissionResponse::from)
                 .toList();
     }
@@ -85,7 +85,7 @@ public class MissionService {
     public List<MissionResponse> getMissionsByChild(Long childId) {
         LocalDate today = LocalDate.now();
 
-        return missionRepository.findAllByChild_IdAndDueAtGreaterThanEqual(childId, today).stream()
+        return missionRepository.findAllByChildIdAndDueAtGreaterThanEqual(childId, today).stream()
                 .map(MissionResponse::from)
                 .toList();
     }
@@ -160,7 +160,7 @@ public class MissionService {
     }
 
     private void validateParentChildRelation(Long parentId, Long childId) {
-        if (!parentChildRepository.existsByParent_IdAndChild_Id(parentId, childId)) {
+        if (!parentChildRepository.existsByParentIdAndChildId(parentId, childId)) {
             throw new KieroException(MissionErrorCode.NOT_YOUR_CHILD);
         }
     }

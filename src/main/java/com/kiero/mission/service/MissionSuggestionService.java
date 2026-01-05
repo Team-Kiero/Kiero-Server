@@ -161,8 +161,8 @@ public class MissionSuggestionService {
                 }
 
                 // name 길이 제한
-                if (name.length() > 50) {
-                    name = name.substring(0, 50);
+                if (name.length() > 15) {
+                    name = name.substring(0, 15);
                 }
 
                 String dueAtStr = (String) item.get("dueAt");

@@ -14,9 +14,9 @@ import java.util.Optional;
 
 public interface MissionRepository extends JpaRepository<Mission, Long> {
 
-    List<Mission> findAllByChild_IdAndDueAtGreaterThanEqual(Long childId, LocalDate date);
+    List<Mission> findAllByChildIdAndDueAtGreaterThanEqual(Long childId, LocalDate date);
 
-    List<Mission> findAllByParent_IdAndDueAtGreaterThanEqual(Long parentId, LocalDate date);
+    List<Mission> findAllByParentIdAndDueAtGreaterThanEqual(Long parentId, LocalDate date);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = {"child"})
