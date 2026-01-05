@@ -33,23 +33,16 @@ public class MissionService {
     private final ParentChildRepository parentChildRepository;
 
     @Transactional
-    public MissionResponse createMission(Long parentId, MissionCreateRequest request) {
+    public MissionResponse createMission(Long parentId, Long childId, MissionCreateRequest request) {
         // 1. 부모-자녀 관계 검증
-        boolean isValidRelation = parentChildRepository.existsByParent_IdAndChild_Id(
-                parentId,
-                request.childId()
-        );
-
-        if (!isValidRelation) {
-            throw new KieroException(MissionErrorCode.NOT_YOUR_CHILD);
-        }
+        validateParentChildRelation(parentId, childId);
 
         // 2. 부모 엔티티 조회
         Parent parent = parentRepository.findById(parentId)
                 .orElseThrow(() -> new KieroException(MissionErrorCode.NOT_YOUR_CHILD));
 
         // 3. 자녀 엔티티 조회
-        Child child = childRepository.findById(request.childId())
+        Child child = childRepository.findById(childId)
                 .orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
         // 4. 미션 생성
@@ -64,7 +57,7 @@ public class MissionService {
         Mission savedMission = missionRepository.save(mission);
 
         log.info("Mission created: missionId={}, parentId={}, childId={}, name={}",
-                savedMission.getId(), parentId, request.childId(), request.name());
+                savedMission.getId(), parentId, childId, request.name());
 
         return MissionResponse.from(savedMission);
     }
@@ -129,16 +122,16 @@ public class MissionService {
     }
 
     @Transactional
-    public List<MissionResponse> bulkCreateMissions(Long parentId, MissionBulkCreateRequest request) {
+    public List<MissionResponse> bulkCreateMissions(Long parentId, Long childId, MissionBulkCreateRequest request) {
         // 1. 부모-자녀 관계 검증
-        validateParentChildRelation(parentId, request.childId());
+        validateParentChildRelation(parentId, childId);
 
         // 2. 부모 엔티티 조회
         Parent parent = parentRepository.findById(parentId)
                 .orElseThrow(() -> new KieroException(MissionErrorCode.NOT_YOUR_CHILD));
 
         // 3. 자녀 엔티티 조회
-        Child child = childRepository.findById(request.childId())
+        Child child = childRepository.findById(childId)
                 .orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
         // 4. 미션 일괄 생성
@@ -158,7 +151,7 @@ public class MissionService {
         List<Mission> savedMissions = missionRepository.saveAll(missions);
 
         log.info("Bulk created {} missions for parentId={}, childId={}",
-                savedMissions.size(), parentId, request.childId());
+                savedMissions.size(), parentId, childId);
 
         return savedMissions.stream()
                 .map(MissionResponse::from)

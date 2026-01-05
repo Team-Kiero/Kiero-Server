@@ -25,23 +25,36 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("api/v1/missions")
+@RequestMapping("/api/v1")
 public class MissionController {
     private final MissionService missionService;
     private final MissionSuggestionService missionSuggestionService;
 
-    @PostMapping
+    @PostMapping("/children/{childId}/missions")
     public ResponseEntity<SuccessResponse<MissionResponse>> createMission(
             @CurrentMember CurrentAuth currentAuth,
+            @PathVariable Long childId,
             @Valid @RequestBody MissionCreateRequest request
     ) {
-        MissionResponse response = missionService.createMission(currentAuth.memberId(), request);
+        MissionResponse response = missionService.createMission(currentAuth.memberId(), childId, request);
 
         return ResponseEntity.ok()
                 .body(SuccessResponse.of(MissionSuccessCode.MISSION_CREATED, response));
     }
 
-    @GetMapping
+    @PostMapping("/children/{childId}/missions/bulk")
+    public ResponseEntity<SuccessResponse<List<MissionResponse>>> bulkCreateMissions(
+            @CurrentMember CurrentAuth currentAuth,
+            @PathVariable Long childId,
+            @Valid @RequestBody MissionBulkCreateRequest request
+    ) {
+        List<MissionResponse> responses = missionService.bulkCreateMissions(currentAuth.memberId(), childId, request);
+
+        return ResponseEntity.ok()
+                .body(SuccessResponse.of(MissionSuccessCode.MISSIONS_BULK_CREATED, responses));
+    }
+
+    @GetMapping("/missions")
     public ResponseEntity<SuccessResponse<List<MissionResponse>>> getMissions(
             @CurrentMember CurrentAuth currentAuth,
             @RequestParam(required = false) Long childId
@@ -60,7 +73,7 @@ public class MissionController {
                 .body(SuccessResponse.of(MissionSuccessCode.MISSIONS_RETRIEVED, responses));
     }
 
-    @PatchMapping("/{missionId}/complete")
+    @PatchMapping("/missions/{missionId}/complete")
     public ResponseEntity<SuccessResponse<MissionResponse>> completeMission(
             @CurrentMember CurrentAuth currentAuth,
             @PathVariable Long missionId
@@ -71,7 +84,7 @@ public class MissionController {
                 .body(SuccessResponse.of(MissionSuccessCode.MISSION_COMPLETED, response));
     }
 
-    @PostMapping("/suggestions")
+    @PostMapping("/missions/suggestions")
     public ResponseEntity<SuccessResponse<MissionSuggestionResponse>> suggestMissions(
             @CurrentMember CurrentAuth currentAuth,
             @Valid @RequestBody MissionSuggestionRequest request
@@ -82,16 +95,5 @@ public class MissionController {
 
         return ResponseEntity.ok()
                 .body(SuccessResponse.of(MissionSuccessCode.MISSION_SUGGESTIONS_GENERATED, response));
-    }
-
-    @PostMapping("/bulk")
-    public ResponseEntity<SuccessResponse<List<MissionResponse>>> bulkCreateMissions(
-            @CurrentMember CurrentAuth currentAuth,
-            @Valid @RequestBody MissionBulkCreateRequest request
-    ) {
-        List<MissionResponse> responses = missionService.bulkCreateMissions(currentAuth.memberId(), request);
-
-        return ResponseEntity.ok()
-                .body(SuccessResponse.of(MissionSuccessCode.MISSIONS_BULK_CREATED, responses));
     }
 }

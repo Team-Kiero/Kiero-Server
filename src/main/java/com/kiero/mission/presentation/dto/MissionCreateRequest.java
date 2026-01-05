@@ -7,9 +7,6 @@ import jakarta.validation.constraints.Positive;
 import java.time.LocalDate;
 
 public record MissionCreateRequest(
-        @NotNull(message = "자녀 ID는 필수입니다.")
-        Long childId,
-
         @NotBlank(message = "미션 이름은 필수입니다.")
         String name,
 
