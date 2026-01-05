@@ -65,10 +65,6 @@ public class MissionController {
             @CurrentMember CurrentAuth currentAuth,
             @PathVariable Long missionId
     ) {
-        if (currentAuth.role() != Role.CHILD) {
-            throw new KieroException(ErrorCode.ACCESS_DENIED);
-        }
-
         MissionResponse response = missionService.completeMission(currentAuth.memberId(), missionId);
 
         return ResponseEntity.ok()
@@ -80,10 +76,6 @@ public class MissionController {
             @CurrentMember CurrentAuth currentAuth,
             @Valid @RequestBody MissionSuggestionRequest request
     ) {
-        if (currentAuth.role() != Role.PARENT) {
-            throw new KieroException(ErrorCode.ACCESS_DENIED);
-        }
-
         MissionSuggestionResponse response = missionSuggestionService.suggestMissions(request.noticeText());
 
         log.info("Mission suggestions generated for parentId={}", currentAuth.memberId());
@@ -97,10 +89,6 @@ public class MissionController {
             @CurrentMember CurrentAuth currentAuth,
             @Valid @RequestBody MissionBulkCreateRequest request
     ) {
-        if (currentAuth.role() != Role.PARENT) {
-            throw new KieroException(ErrorCode.ACCESS_DENIED);
-        }
-
         List<MissionResponse> responses = missionService.bulkCreateMissions(currentAuth.memberId(), request);
 
         return ResponseEntity.ok()
