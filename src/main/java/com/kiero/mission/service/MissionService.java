@@ -11,6 +11,7 @@ import com.kiero.mission.presentation.dto.MissionCreateRequest;
 import com.kiero.mission.presentation.dto.MissionResponse;
 import com.kiero.mission.repository.MissionRepository;
 import com.kiero.parent.domain.Parent;
+import com.kiero.parent.exception.ParentErrorCode;
 import com.kiero.parent.repository.ParentChildRepository;
 import com.kiero.parent.repository.ParentRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +40,7 @@ public class MissionService {
 
         // 2. 부모 엔티티 조회
         Parent parent = parentRepository.findById(parentId)
-                .orElseThrow(() -> new KieroException(MissionErrorCode.NOT_YOUR_CHILD));
+                .orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
 
         // 3. 자녀 엔티티 조회
         Child child = childRepository.findById(childId)
@@ -128,7 +129,7 @@ public class MissionService {
 
         // 2. 부모 엔티티 조회
         Parent parent = parentRepository.findById(parentId)
-                .orElseThrow(() -> new KieroException(MissionErrorCode.NOT_YOUR_CHILD));
+                .orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
 
         // 3. 자녀 엔티티 조회
         Child child = childRepository.findById(childId)
