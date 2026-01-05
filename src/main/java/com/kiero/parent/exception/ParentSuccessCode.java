@@ -14,6 +14,7 @@ public enum ParentSuccessCode implements BaseCode {
 	200 OK
 	*/
 	LOGIN_SUCCESS(HttpStatus.OK, "로그인에 성공하였습니다."),
+	GET_CHILDREN_SUCCESS(HttpStatus.OK, "자녀 목록 조회에 성공하였습니다."),
 
     /*
     201 CREATED

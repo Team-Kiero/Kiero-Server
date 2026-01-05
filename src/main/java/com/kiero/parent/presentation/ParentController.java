@@ -1,19 +1,23 @@
 package com.kiero.parent.presentation;
 
 import com.kiero.invitation.service.InviteCodeService;
+import com.kiero.parent.presentation.dto.ChildInfoResponse;
 import com.kiero.parent.presentation.dto.InviteCodeCreateRequest;
 import com.kiero.parent.presentation.dto.InviteCodeCreateResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
+import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.parent.exception.ParentSuccessCode;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
@@ -21,6 +25,8 @@ import com.kiero.parent.service.ParentService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -72,12 +78,12 @@ public class ParentController {
 
     @PostMapping("/invite")
     public ResponseEntity<SuccessResponse<InviteCodeCreateResponse>> invite(
-            @AuthenticationPrincipal Long parentId,
-            @RequestBody InviteCodeCreateRequest request
+            @CurrentMember CurrentAuth currentAuth,
+            @Valid @RequestBody InviteCodeCreateRequest request
     ) {
 
         String inviteCode = inviteCodeService.createInviteCode(
-                parentId,
+                currentAuth.memberId(),
                 request.childName()
         );
 
@@ -91,5 +97,15 @@ public class ParentController {
                                 response
                         )
                 );
+    }
+
+    @GetMapping("/children")
+    public ResponseEntity<SuccessResponse<List<ChildInfoResponse>>> getMyChildren(
+            @CurrentMember CurrentAuth currentAuth
+    ) {
+        List<ChildInfoResponse> children = parentService.getMyChildren(currentAuth.memberId());
+
+        return ResponseEntity.ok()
+                .body(SuccessResponse.of(ParentSuccessCode.GET_CHILDREN_SUCCESS, children));
     }
 }

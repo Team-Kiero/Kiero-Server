@@ -37,6 +37,21 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
+  # Redis
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+
+  # Spring AI - OpenAI
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.1
+
 server:
   port: 8080
 
@@ -56,3 +71,25 @@ aws:
   credentials:
     access-key: ${AWS_ACCESS_KEY}
     secret-key: ${AWS_SECRET_KEY}
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expire-time: ${JWT_ACCESS_TOKEN_EXPIRE_TIME}
+  refresh-token-expire-time: ${JWT_REFRESH_TOKEN_EXPIRE_TIME}
+
+cors:
+  allowed-origins: ${ALLOWED_ORIGINS}
+
+logging:
+  level:
+    root: warn
+    com.kiero: info
+    org:
+      hibernate:
+        SQL: warn
+
+springdoc:
+  swagger-ui:
+    enabled: false  # 운영 환경에서는 Swagger UI 비활성화
+  api-docs:
+    enabled: false

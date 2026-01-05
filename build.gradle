@@ -77,10 +77,14 @@ dependencies {
     //openFeign and OAuth2
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+    // Spring AI - OpenAI
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 }
 
 dependencyManagement {
     imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:1.1.2"
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:2025.0.0"
     }
 }

@@ -44,7 +44,7 @@ public class Mission extends BaseTimeEntity {
 	private LocalDate dueAt;
 
 	@Column(name = MissionTableConstants.COLUMN_IS_COMPLETED, nullable = false)
-	private Boolean isCompleted;
+	private boolean isCompleted;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = MissionTableConstants.COLUMN_PARENT_ID, nullable = false)
@@ -64,4 +64,8 @@ public class Mission extends BaseTimeEntity {
 			.isCompleted(false)
 			.build();
 	}
+
+    public void complete() {
+        this.isCompleted = true;
+    }
 }
