@@ -20,7 +20,8 @@ import com.kiero.parent.repository.ParentRepository;
 import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;
-import com.kiero.schedule.enums.DayOfWeek;
+import com.kiero.schedule.domain.enums.DayOfWeek;
+import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.exception.ScheduleErrorCode;
 import com.kiero.schedule.presentation.dto.NormalScheduleDto;
 import com.kiero.schedule.presentation.dto.RecurringScheduleDto;
@@ -72,7 +73,7 @@ public class ScheduleService {
 		}
 
 		if (request.date() != null) {
-			ScheduleDetail scheduleDetail = ScheduleDetail.create(request.date(), false, null, null, savedSchedule);
+			ScheduleDetail scheduleDetail = ScheduleDetail.create(request.date(), null, null, ScheduleStatus.PENDING, null,  savedSchedule);
 			scheduleDetailRepository.save(scheduleDetail);
 		}
 	}
