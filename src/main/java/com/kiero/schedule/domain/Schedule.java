@@ -3,6 +3,7 @@ package com.kiero.schedule.domain;
 import java.time.LocalTime;
 
 import com.kiero.child.domain.Child;
+import com.kiero.global.entity.BaseTimeEntity;
 import com.kiero.parent.domain.Parent;
 
 import jakarta.persistence.Column;
@@ -26,7 +27,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Table(name = ScheduleTableConstants.TABLE_SCHEDULE)
-public class Schedule {
+public class Schedule extends BaseTimeEntity {
 
 	@Id
 	@Column(name = ScheduleTableConstants.COLUMN_ID)
