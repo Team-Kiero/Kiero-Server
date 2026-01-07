@@ -12,6 +12,8 @@ import com.kiero.global.auth.jwt.service.AuthService;
 import com.kiero.global.auth.jwt.service.TokenService;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.domain.Parent;
+import com.kiero.parent.domain.ParentChild;
+import com.kiero.parent.presentation.dto.ChildInfoResponse;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
 import com.kiero.parent.repository.ParentChildRepository;
 import com.kiero.parent.repository.ParentRepository;
@@ -22,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -93,6 +96,15 @@ public class ParentService {
 		} else {
 			log.info("Parent logout completed for parentId: {}, no child tokens to delete", parentId);
 		}
+	}
+
+	@Transactional(readOnly = true)
+	public List<ChildInfoResponse> getMyChildren(Long parentId) {
+		List<ParentChild> parentChildren = parentChildRepository.findAllByParentId(parentId);
+
+		return parentChildren.stream()
+				.map(pc -> ChildInfoResponse.of(pc.getChild()))
+				.collect(Collectors.toList());
 	}
 
 }

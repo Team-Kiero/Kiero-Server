@@ -42,6 +42,15 @@ spring:
       host: ${REDIS_HOST:kiero-redis}
       port: ${REDIS_PORT:6379}
 
+  # Spring AI - OpenAI
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.1
+
 server:
   port: 8080
 
