@@ -1,6 +1,6 @@
 package com.kiero.schedule.domain;
 
-import com.kiero.schedule.enums.DayOfWeek;
+import com.kiero.schedule.domain.enums.DayOfWeek;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
