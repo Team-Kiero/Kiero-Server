@@ -15,9 +15,11 @@ import com.kiero.schedule.domain.ScheduleDetail;
 @Repository
 public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, Long> {
 	@Query("""
-		      select sd from ScheduleDetail sd
-		      where sd.schedule.id in :scheduleIds
-		and sd.date between :startDate and :endDate
+		      select sd
+			  from ScheduleDetail sd
+		      join fetch sd.schedule s
+			  where s.id in :scheduleIds
+				and sd.date between :startDate and :endDate
 		""")
 	List<ScheduleDetail> findAllByScheduleIdInAndDateBetween(
 		@Param("scheduleIds") List<Long> scheduleIds,

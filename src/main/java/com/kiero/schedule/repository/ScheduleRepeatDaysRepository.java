@@ -15,8 +15,8 @@ public interface ScheduleRepeatDaysRepository extends JpaRepository<ScheduleRepe
 	@Query("""
 		select srd
 		from ScheduleRepeatDays srd
-		where srd.schedule.id
-		in :scheduleIds
+		join fetch srd.schedule s
+		where s.id in :scheduleIds
 		""")
 	List<ScheduleRepeatDays> findAllByScheduleIdsIn(
 		@Param("scheduleIds") List<Long> scheduleIds

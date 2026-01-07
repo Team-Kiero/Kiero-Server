@@ -43,6 +43,7 @@ public class ScheduleService {
 	private final ScheduleRepeatDaysRepository scheduleRepeatDaysRepository;
 	private final ScheduleDetailRepository scheduleDetailRepository;
 
+	@Transactional
 	public void addSchedule(ScheduleAddRequest request, Long parentId, Long childId) {
 
 		Parent parent = parentRepository.findById(parentId)
