@@ -1,4 +1,4 @@
-package com.kiero.child.exception;
+package com.kiero.schedule.exception;
 
 import org.springframework.http.HttpStatus;
 
@@ -9,14 +9,13 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum ChildErrorCode implements BaseCode {
+public enum ScheduleErrorCode implements BaseCode {
 	/*
-	404 NOT FOUND
+	400 BAD REQUEST
 	 */
-	CHILD_NOT_FOUND(HttpStatus.NOT_FOUND, "아이 정보를 찾을 수 없습니다."),
+	INVALID_DAY_OF_WEEK(HttpStatus.BAD_REQUEST, "형식에 맞지 않는 요일 입력입니다."),
 	;
 
 	private final HttpStatus httpStatus;
 	private final String message;
-
 }
