@@ -92,7 +92,13 @@ public class ScheduleService {
 
 		List<Schedule> schedules = scheduleRepository.findAllByChildId(childId);
 		if (schedules.isEmpty())
-			return ScheduleTabResponse.of(List.of(), List.of());
+			return ScheduleTabResponse.of(false, List.of(), List.of());
+
+		List<Long> scheduleIds = schedules.stream()
+			.map(Schedule::getId)
+			.toList();
+
+		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds, LocalDate.now());
 
 		List<Long> recurringIds = schedules.stream()
 			.filter(Schedule::isRecurring)
@@ -153,7 +159,7 @@ public class ScheduleService {
 				.toList();
 		}
 
-		return ScheduleTabResponse.of(recurringScheduleDtos, normalScheduleDtos);
+		return ScheduleTabResponse.of(isFireLitToday, recurringScheduleDtos, normalScheduleDtos);
 
 	}
 
