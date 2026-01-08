@@ -87,4 +87,8 @@ public class ScheduleDetail {
 		this.imageUrl = imageUrl;
 	}
 
+	public void changeStoneUsedAt(LocalDateTime stoneUsedAt) {
+		this.stoneUsedAt = stoneUsedAt;
+	}
+
 }
