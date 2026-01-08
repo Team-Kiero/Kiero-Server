@@ -58,7 +58,7 @@ public class ScheduleController {
 	}
 
 	@PatchMapping("/today")
-	public ResponseEntity<SuccessResponse<TodayScheduleResponse>> getTodaySchedule(
+	public ResponseEntity<SuccessResponse<TodayScheduleResponse>> updateAndGetTodaySchedule(
 		@CurrentMember CurrentAuth currentAuth
 	) {
 		TodayScheduleResponse response = scheduleService.getTodaySchedule(currentAuth.memberId());
