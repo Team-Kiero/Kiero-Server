@@ -32,7 +32,9 @@ import com.kiero.schedule.repository.ScheduleRepeatDaysRepository;
 import com.kiero.schedule.repository.ScheduleRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {
@@ -161,6 +163,21 @@ public class ScheduleService {
 
 		return ScheduleTabResponse.of(isFireLitToday, recurringScheduleDtos, normalScheduleDtos);
 
+	}
+
+	@Transactional
+	public void createTodayScheduleDetail() {
+		LocalDate today = LocalDate.now();
+		DayOfWeek customDayOfWeek = DayOfWeek.valueOf(today.getDayOfWeek().name().substring(0, 3));
+
+		log.info("customDayOfWeek: " + customDayOfWeek + "today: " + today);
+
+		List<Schedule> schedules = scheduleRepeatDaysRepository.findSchedulesToCreateTodayDetail(customDayOfWeek, today);
+		List<ScheduleDetail> scheduleDetails = schedules.stream()
+			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
+			.toList();
+
+		scheduleDetailRepository.saveAll(scheduleDetails);
 	}
 
 	private List<DayOfWeek> dayOfWeekParser(String dayOfWeek) {
