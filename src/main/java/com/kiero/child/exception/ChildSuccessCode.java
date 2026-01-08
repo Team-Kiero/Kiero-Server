@@ -9,6 +9,11 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ChildSuccessCode implements BaseCode {
     /*
+    200 OK
+    */
+    GET_INFO_SUCCESS(HttpStatus.OK, "정보 조회에 성공하였습니다."),
+
+    /*
     201 CREATED
     */
     SIGNUP_SUCCESS(HttpStatus.CREATED, "가입에 성공하였습니다."),
