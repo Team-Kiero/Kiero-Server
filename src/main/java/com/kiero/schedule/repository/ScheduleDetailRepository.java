@@ -10,8 +10,6 @@ import org.springframework.stereotype.Repository;
 
 import com.kiero.schedule.domain.ScheduleDetail;
 
-
-
 @Repository
 public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, Long> {
 	@Query("""
@@ -28,14 +26,28 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 	);
 
 	@Query("""
-		select (count(sd) > 0)
-		from ScheduleDetail sd
-		where sd.schedule.id in :scheduleIds
-		  and sd.date = :date
-		  and sd.stoneUsedAt is not null
-""")
+				select (count(sd) > 0)
+				from ScheduleDetail sd
+				where sd.schedule.id in :scheduleIds
+				  and sd.date = :date
+				  and sd.stoneUsedAt is not null
+		""")
 	boolean existsStoneUsedToday(
 		@Param("scheduleIds") List<Long> scheduleIds,
 		@Param("date") LocalDate date
+	);
+
+	@Query("""
+		select sd
+		from ScheduleDetail sd
+		join fetch sd.schedule s
+		where sd.date = :date
+		  and s.child.id = :childId
+		order by s.startTime asc
+		"""
+	)
+	List<ScheduleDetail> findByDateAndChildId(
+		@Param("date") LocalDate date,
+		@Param("childId") Long childId
 	);
 }

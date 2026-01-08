@@ -17,6 +17,7 @@ import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.schedule.exception.ScheduleSuccessCode;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
 import com.kiero.schedule.presentation.dto.ScheduleTabResponse;
+import com.kiero.schedule.presentation.dto.TodayScheduleResponse;
 import com.kiero.schedule.service.ScheduleService;
 
 import jakarta.validation.Valid;
@@ -50,5 +51,14 @@ public class ScheduleController {
 		ScheduleTabResponse response = scheduleService.getSchedules(startDate, endDate, currentAuth.memberId(), childId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_TAB_GET_SUCCESS, response));
+	}
+
+	@GetMapping("/today")
+	public ResponseEntity<SuccessResponse<TodayScheduleResponse>> getTodaySchedule(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		TodayScheduleResponse response = scheduleService.getTodaySchedule(currentAuth.memberId());
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.TODAY_SCHEDULE_GET_SUCCESS, response));
 	}
 }

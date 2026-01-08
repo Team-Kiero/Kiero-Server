@@ -1,8 +1,11 @@
 package com.kiero.schedule.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,14 +25,18 @@ import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;
 import com.kiero.schedule.domain.enums.DayOfWeek;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
+import com.kiero.schedule.domain.enums.StoneType;
+import com.kiero.schedule.domain.enums.TodayScheduleStatus;
 import com.kiero.schedule.exception.ScheduleErrorCode;
 import com.kiero.schedule.presentation.dto.NormalScheduleDto;
 import com.kiero.schedule.presentation.dto.RecurringScheduleDto;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
 import com.kiero.schedule.presentation.dto.ScheduleTabResponse;
+import com.kiero.schedule.presentation.dto.TodayScheduleResponse;
 import com.kiero.schedule.repository.ScheduleDetailRepository;
 import com.kiero.schedule.repository.ScheduleRepeatDaysRepository;
 import com.kiero.schedule.repository.ScheduleRepository;
+import com.kiero.schedule.service.resolver.TodayScheduleStatusResolver;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,6 +50,73 @@ public class ScheduleService {
 	private final ScheduleRepository scheduleRepository;
 	private final ScheduleRepeatDaysRepository scheduleRepeatDaysRepository;
 	private final ScheduleDetailRepository scheduleDetailRepository;
+
+	@Transactional
+	public TodayScheduleResponse getTodaySchedule(Long childId) {
+		LocalDate today = LocalDate.now();
+
+		// 오늘 일정들을 startTime이 이른 것부터 정렬하여 모두 가져옴
+		List<ScheduleDetail> allScheduleDetails =
+			scheduleDetailRepository.findByDateAndChildId(today, childId);
+
+		List<ScheduleDetail> pendingScheduleDetails = allScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING)
+			.toList();
+
+		// 오늘 일정들의 stoneUsedAt을 통해 불피우기 시행 여부를 조사하고, 가장 빠른 불피우기 시행 시각을 추출함 (없으면 null)
+		LocalDateTime earliestStoneUsedAt = allScheduleDetails.stream()
+			.map(ScheduleDetail::getStoneUsedAt)
+			.filter(Objects::nonNull)
+			.min(LocalDateTime::compareTo)
+			.orElse(null);
+
+		// 당일 생성된 일정들에 한해 필터를 적용함
+		List<ScheduleDetail> filteredPendingScheduleDetails = filterTodayCreatedSchedules(today, pendingScheduleDetails,
+			earliestStoneUsedAt);
+		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails,
+			earliestStoneUsedAt);
+
+		// PENDING 일정 중 일정 종료 시간이 지난 일정은 일정 상태 FAILED로 변경
+		markPassedSchedulesAsFailed(filteredPendingScheduleDetails);
+
+		// 제일 먼저 진행되어야 하는 PENDING 스케쥴
+		ScheduleDetail todoScheduleDetail = findNextTodoSchedule(filteredPendingScheduleDetails);
+
+		// 얻을 불조각 종류를 호출될 때마다 동적으로 계산함
+		stoneTypeCalculateAndSetter(filteredPendingScheduleDetails, todoScheduleDetail);
+
+		// 총 일정 수, 얻은 불조각 수(인증 완료한 일정 수), 현재 일정 순서를 계산함
+		int totalSchedule = filteredAllScheduleDetails.size();
+		int earnedStones = (int)filteredAllScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
+			.count();
+
+		TodayScheduleStatus todayScheduleStatus = TodayScheduleStatusResolver.resolve(
+			todoScheduleDetail,
+			filteredAllScheduleDetails,
+			earliestStoneUsedAt
+		);
+
+		if (todoScheduleDetail == null) {
+			return TodayScheduleResponse.of(
+				null, null, null, null, null,
+				totalSchedule,
+				earnedStones,
+				todayScheduleStatus
+			);
+		} else {
+			return TodayScheduleResponse.of(
+				todoScheduleDetail.getId(),
+				todoScheduleDetail.getSchedule().getStartTime(),
+				todoScheduleDetail.getSchedule().getEndTime(),
+				todoScheduleDetail.getSchedule().getName(),
+				todoScheduleDetail.getStoneType(),
+				totalSchedule,
+				earnedStones,
+				todayScheduleStatus
+			);
+		}
+	}
 
 	@Transactional
 	public void addSchedule(ScheduleAddRequest request, Long parentId, Long childId) {
@@ -73,7 +147,8 @@ public class ScheduleService {
 		}
 
 		if (request.date() != null) {
-			ScheduleDetail scheduleDetail = ScheduleDetail.create(request.date(), null, null, ScheduleStatus.PENDING, null,  savedSchedule);
+			ScheduleDetail scheduleDetail = ScheduleDetail.create(request.date(), null, null, ScheduleStatus.PENDING,
+				null, savedSchedule);
 			scheduleDetailRepository.save(scheduleDetail);
 		}
 	}
@@ -174,5 +249,50 @@ public class ScheduleService {
 			throw new KieroException(ScheduleErrorCode.INVALID_DAY_OF_WEEK);
 		}
 
+	}
+
+	private void stoneTypeCalculateAndSetter(List<ScheduleDetail> scheduleDetails, ScheduleDetail todoSchedule) {
+		if (todoSchedule != null) {
+			switch (scheduleDetails.indexOf(todoSchedule) % 3) {
+				case 0 -> todoSchedule.changeStoneType(StoneType.GRIT);
+				case 1 -> todoSchedule.changeStoneType(StoneType.COURAGE);
+				case 2 -> todoSchedule.changeStoneType(StoneType.WISDOM);
+			}
+		}
+	}
+
+	private List<ScheduleDetail> filterTodayCreatedSchedules(LocalDate today, List<ScheduleDetail> scheduleDetails,
+		LocalDateTime earliestStoneUsedAt) {
+		return scheduleDetails.stream()
+			.filter(sd -> {
+				Schedule schedule = sd.getSchedule();
+				LocalDateTime createdAt = schedule.getCreatedAt();
+
+				// 오늘 생성된 일정이 아닌 경우, 필터를 적용하지 않고 유지
+				if (!createdAt.toLocalDate().equals(today))
+					return true;
+
+				// 제약1: createdAt 시간이 startTime 이후면 제외
+				if (createdAt.toLocalTime().isAfter(schedule.getStartTime()))
+					return false;
+
+				// 제약2: 불피우기가 완료되었고, createdAt이 불피우기를 시행한 시각 이후면 제외
+				return earliestStoneUsedAt == null || !createdAt.isAfter(earliestStoneUsedAt);
+			})
+			.toList();
+	}
+
+	private void markPassedSchedulesAsFailed(List<ScheduleDetail> scheduleDetails) {
+		LocalTime now = LocalTime.now();
+		scheduleDetails.stream()
+			.filter(sd -> sd.getSchedule().getEndTime().isBefore(now))
+			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.FAILED));
+	}
+
+	private ScheduleDetail findNextTodoSchedule(List<ScheduleDetail> scheduleDetails) {
+		return scheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING)
+			.findFirst()
+			.orElse(null);
 	}
 }
