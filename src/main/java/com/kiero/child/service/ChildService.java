@@ -1,7 +1,9 @@
 package com.kiero.child.service;
 
 import com.kiero.child.domain.Child;
+import com.kiero.child.exception.ChildErrorCode;
 import com.kiero.child.presentation.dto.ChildLoginResponse;
+import com.kiero.child.presentation.dto.ChildMeResponse;
 import com.kiero.child.presentation.dto.ChildSignupRequest;
 import com.kiero.child.repository.ChildRepository;
 import com.kiero.global.auth.enums.Role;
@@ -65,5 +67,16 @@ public class ChildService {
 
         // 5. 토큰 발급 및 로그인 응답 반환
         return authService.generateLoginResponse(savedChild);
+    }
+
+    @Transactional(readOnly = true)
+    public ChildMeResponse getMyInfo(Long childId) {
+        Child child = childRepository.findById(childId)
+                .orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+
+        log.info("Retrieved child info: childId={}, name={}, coinAmount={}",
+                child.getId(), child.getName(), child.getCoinAmount());
+
+        return ChildMeResponse.from(child);
     }
 }
