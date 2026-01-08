@@ -15,6 +15,8 @@ public enum ScheduleSuccessCode implements BaseCode {
 	 */
 	SCHEDULE_TAB_GET_SUCCESS(HttpStatus.OK, "일정탭이 조회되었습니다."),
 	TODAY_SCHEDULE_GET_SUCCESS(HttpStatus.OK, "오늘의 일정이 조회되었습니다."),
+	NOW_SCHEDULE_SKIP_SUCCESS(HttpStatus.OK, "현재 일정 넘어가기 처리가 완료되었습니다."),
+
 	/*
 	201 CREATED
 	 */
