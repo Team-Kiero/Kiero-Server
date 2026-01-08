@@ -30,7 +30,7 @@ public class MissionController {
     private final MissionService missionService;
     private final MissionSuggestionService missionSuggestionService;
 
-    @PostMapping("/children/{childId}/missions")
+    @PostMapping("/missions/{childId}")
     public ResponseEntity<SuccessResponse<MissionResponse>> createMission(
             @CurrentMember CurrentAuth currentAuth,
             @PathVariable Long childId,
@@ -42,7 +42,7 @@ public class MissionController {
                 .body(SuccessResponse.of(MissionSuccessCode.MISSION_CREATED, response));
     }
 
-    @PostMapping("/children/{childId}/missions/bulk")
+    @PostMapping("/missions/{childId}/bulk")
     public ResponseEntity<SuccessResponse<List<MissionResponse>>> bulkCreateMissions(
             @CurrentMember CurrentAuth currentAuth,
             @PathVariable Long childId,
