@@ -29,6 +29,7 @@ import com.kiero.schedule.domain.enums.StoneType;
 import com.kiero.schedule.domain.enums.TodayScheduleStatus;
 import com.kiero.schedule.exception.ScheduleErrorCode;
 import com.kiero.schedule.presentation.dto.CompleteNowScheduleRequest;
+import com.kiero.schedule.presentation.dto.FireLitResponse;
 import com.kiero.schedule.presentation.dto.NormalScheduleDto;
 import com.kiero.schedule.presentation.dto.RecurringScheduleDto;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
@@ -54,6 +55,8 @@ public class ScheduleService {
 	private final ScheduleRepeatDaysRepository scheduleRepeatDaysRepository;
 	private final ScheduleDetailRepository scheduleDetailRepository;
 
+	private final int ALL_SCHEDULE_SUCCESS_REWARD = 10;
+
 	@Transactional
 	public TodayScheduleResponse getTodaySchedule(Long childId) {
 		LocalDate today = LocalDate.now();
@@ -67,11 +70,7 @@ public class ScheduleService {
 			.toList();
 
 		// 오늘 일정들의 stoneUsedAt을 통해 불피우기 시행 여부를 조사하고, 가장 빠른 불피우기 시행 시각을 추출함 (없으면 null)
-		LocalDateTime earliestStoneUsedAt = allScheduleDetails.stream()
-			.map(ScheduleDetail::getStoneUsedAt)
-			.filter(Objects::nonNull)
-			.min(LocalDateTime::compareTo)
-			.orElse(null);
+		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(allScheduleDetails);
 
 		// 당일 생성된 일정들에 한해 필터를 적용함
 		List<ScheduleDetail> filteredPendingScheduleDetails = filterTodayCreatedSchedules(today, pendingScheduleDetails,
@@ -153,6 +152,41 @@ public class ScheduleService {
 		scheduleDetail.changeScheduleStatus(ScheduleStatus.VERIFIED);
 		scheduleDetail.changeImageUrl(request.imageUrl());
 
+	}
+
+	@Transactional
+	public FireLitResponse fireLit(Long childId) {
+		LocalDate today = LocalDate.now();
+
+		Child child = childRepository.findById(childId)
+			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+
+		List<ScheduleDetail> allScheduleDetails =
+			scheduleDetailRepository.findByDateAndChildId(today, childId);
+
+		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(allScheduleDetails);
+
+		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails,
+			earliestStoneUsedAt);
+
+		int totalSchedule = filteredAllScheduleDetails.size();
+
+		List<StoneType> gotStones = filteredAllScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus().equals(ScheduleStatus.VERIFIED))
+			.map(ScheduleDetail::getStoneType)
+			.toList();
+
+		filteredAllScheduleDetails.forEach(sd -> sd.changeStoneUsedAt(LocalDateTime.now()));
+
+		int gotStonesCount = gotStones.size();
+		int earnedCoinAmount = 0;
+
+		if (totalSchedule == gotStonesCount) {
+			child.addCoin(ALL_SCHEDULE_SUCCESS_REWARD);
+			earnedCoinAmount = ALL_SCHEDULE_SUCCESS_REWARD;
+		}
+
+		return FireLitResponse.of(gotStones, earnedCoinAmount);
 	}
 
 	@Transactional
@@ -331,5 +365,13 @@ public class ScheduleService {
 			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING)
 			.limit(2)
 			.toList();
+	}
+
+	private LocalDateTime findEarliestStoneUsedAt(List<ScheduleDetail> scheduleDetails) {
+		return scheduleDetails.stream()
+			.map(ScheduleDetail::getStoneUsedAt)
+			.filter(Objects::nonNull)
+			.min(LocalDateTime::compareTo)
+			.orElse(null);
 	}
 }

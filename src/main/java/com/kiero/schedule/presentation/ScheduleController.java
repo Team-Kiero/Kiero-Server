@@ -17,6 +17,7 @@ import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.schedule.exception.ScheduleSuccessCode;
 import com.kiero.schedule.presentation.dto.CompleteNowScheduleRequest;
+import com.kiero.schedule.presentation.dto.FireLitResponse;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
 import com.kiero.schedule.presentation.dto.ScheduleTabResponse;
 import com.kiero.schedule.presentation.dto.TodayScheduleResponse;
@@ -84,5 +85,14 @@ public class ScheduleController {
 		scheduleService.completeNowSchedule(currentAuth.memberId(), scheduleDetailId, request);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_COMPLETE_SUCCESS));
+	}
+
+	@PatchMapping("/fire-lit")
+	public ResponseEntity<SuccessResponse<FireLitResponse>> fireLit(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		FireLitResponse response = scheduleService.fireLit(currentAuth.memberId());
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.FIRE_LIT_SUCCESS, response));
 	}
 }
