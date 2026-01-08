@@ -79,8 +79,10 @@ public class ScheduleService {
 		// PENDING 일정 중 일정 종료 시간이 지난 일정은 일정 상태 FAILED로 변경
 		markPassedSchedulesAsFailed(filteredPendingScheduleDetails);
 
-		// 제일 먼저 진행되어야 하는 PENDING 스케쥴
-		ScheduleDetail todoScheduleDetail = findNextTodoSchedule(filteredPendingScheduleDetails);
+		// 제일 먼저 진행되어야 하는 PENDING 스케쥴, 그 다음 PENDING 스케쥴
+		List<ScheduleDetail> todoScheduleDetails = findTodoScheduleAndNextTodoSchedule((filteredPendingScheduleDetails));
+		ScheduleDetail todoScheduleDetail = todoScheduleDetails.size() > 0 ? todoScheduleDetails.get(0) : null;
+		ScheduleDetail NextTodoScheduleDetail = todoScheduleDetails.size() > 1 ? todoScheduleDetails.get(1) : null;
 
 		// 얻을 불조각 종류를 호출될 때마다 동적으로 계산함
 		stoneTypeCalculateAndSetter(filteredPendingScheduleDetails, todoScheduleDetail);
@@ -90,6 +92,7 @@ public class ScheduleService {
 		int earnedStones = (int)filteredAllScheduleDetails.stream()
 			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
 			.count();
+		boolean isNextScheduleExists = NextTodoScheduleDetail != null;
 
 		TodayScheduleStatus todayScheduleStatus = TodayScheduleStatusResolver.resolve(
 			todoScheduleDetail,
@@ -102,7 +105,8 @@ public class ScheduleService {
 				null, null, null, null, null,
 				totalSchedule,
 				earnedStones,
-				todayScheduleStatus
+				todayScheduleStatus,
+				isNextScheduleExists
 			);
 		} else {
 			return TodayScheduleResponse.of(
@@ -113,7 +117,8 @@ public class ScheduleService {
 				todoScheduleDetail.getStoneType(),
 				totalSchedule,
 				earnedStones,
-				todayScheduleStatus
+				todayScheduleStatus,
+				isNextScheduleExists
 			);
 		}
 	}
@@ -289,10 +294,10 @@ public class ScheduleService {
 			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.FAILED));
 	}
 
-	private ScheduleDetail findNextTodoSchedule(List<ScheduleDetail> scheduleDetails) {
+	private List<ScheduleDetail> findTodoScheduleAndNextTodoSchedule(List<ScheduleDetail> scheduleDetails) {
 		return scheduleDetails.stream()
 			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING)
-			.findFirst()
-			.orElse(null);
+			.limit(2)
+			.toList();
 	}
 }

@@ -13,7 +13,8 @@ public record TodayScheduleResponse(
 	StoneType stoneType,
 	int totalSchedule,
 	int earnedStones,
-	TodayScheduleStatus scheduleStatus
+	TodayScheduleStatus scheduleStatus,
+	boolean isNextScheduleExists
 ) {
 	public static TodayScheduleResponse of(
 		Long scheduleDetailId,
@@ -23,7 +24,8 @@ public record TodayScheduleResponse(
 		StoneType stoneType,
 		int totalSchedule,
 		int earnedStones,
-		TodayScheduleStatus scheduleStatus
+		TodayScheduleStatus scheduleStatus,
+		boolean isNextScheduleExists
 	) {
 		return new TodayScheduleResponse(
 			scheduleDetailId,
@@ -33,6 +35,7 @@ public record TodayScheduleResponse(
 			stoneType,
 			totalSchedule,
 			earnedStones,
-			scheduleStatus);
+			scheduleStatus,
+			isNextScheduleExists);
 	}
 }
