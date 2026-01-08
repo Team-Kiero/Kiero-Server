@@ -54,4 +54,12 @@ public class Child extends BaseTimeEntity {
     public void addCoin(int amount) {
         this.coinAmount += amount;
     }
+
+    public void deductCoin(int amount) {
+        this.coinAmount -= amount;
+    }
+
+    public boolean hasEnoughCoin(int amount) {
+        return this.coinAmount >= amount;
+    }
 }
