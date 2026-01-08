@@ -1,4 +1,4 @@
-package com.kiero.schedule.enums;
+package com.kiero.schedule.domain.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

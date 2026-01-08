@@ -1,8 +1,10 @@
 package com.kiero.schedule.domain;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-import com.kiero.schedule.enums.StoneType;
+import com.kiero.schedule.domain.enums.ScheduleStatus;
+import com.kiero.schedule.domain.enums.StoneType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,11 +39,15 @@ public class ScheduleDetail {
 	@Column(name = ScheduleDetailTableConstants.COLUMN_DATE, nullable = false)
 	private LocalDate date;
 
-	@Column(name = ScheduleDetailTableConstants.COLUMN_IS_VERIFIED, nullable = false)
-	private boolean isVerified;
-
 	@Column(name = ScheduleDetailTableConstants.COLUMN_IMAGE_URL, nullable = true)
 	private String imageUrl;
+
+	@Column(name = ScheduleDetailTableConstants.COLUMN_STONE_USED_AT, nullable = true)
+	private LocalDateTime stoneUsedAt;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = ScheduleDetailTableConstants.COLUMN_SCHEDULE_STATUS, nullable = false)
+	private ScheduleStatus scheduleStatus;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = ScheduleDetailTableConstants.COLUMN_STONE_TYPE, nullable = true)
@@ -53,15 +59,17 @@ public class ScheduleDetail {
 
 	public static ScheduleDetail create(
 		LocalDate date,
-		boolean isVerified,
 		String imageUrl,
+		LocalDateTime stoneUsedAt,
+		ScheduleStatus scheduleStatus,
 		StoneType stoneType,
 		Schedule schedule
 	) {
 		return ScheduleDetail.builder()
 			.date(date)
-			.isVerified(isVerified)
 			.imageUrl(imageUrl)
+			.stoneUsedAt(stoneUsedAt)
+			.scheduleStatus(scheduleStatus)
 			.stoneType(stoneType)
 			.schedule(schedule)
 			.build();
