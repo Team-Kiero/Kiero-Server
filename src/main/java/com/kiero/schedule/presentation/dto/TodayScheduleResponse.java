@@ -14,7 +14,7 @@ public record TodayScheduleResponse(
 	int totalSchedule,
 	int earnedStones,
 	TodayScheduleStatus scheduleStatus,
-	boolean isNextScheduleExists
+	boolean isSkippable
 ) {
 	public static TodayScheduleResponse of(
 		Long scheduleDetailId,
@@ -25,7 +25,7 @@ public record TodayScheduleResponse(
 		int totalSchedule,
 		int earnedStones,
 		TodayScheduleStatus scheduleStatus,
-		boolean isNextScheduleExists
+		boolean isSkippable
 	) {
 		return new TodayScheduleResponse(
 			scheduleDetailId,
@@ -36,6 +36,6 @@ public record TodayScheduleResponse(
 			totalSchedule,
 			earnedStones,
 			scheduleStatus,
-			isNextScheduleExists);
+			isSkippable);
 	}
 }

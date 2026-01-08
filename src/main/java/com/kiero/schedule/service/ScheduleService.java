@@ -39,7 +39,9 @@ import com.kiero.schedule.repository.ScheduleRepository;
 import com.kiero.schedule.service.resolver.TodayScheduleStatusResolver;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {
@@ -85,14 +87,14 @@ public class ScheduleService {
 		ScheduleDetail NextTodoScheduleDetail = todoScheduleDetails.size() > 1 ? todoScheduleDetails.get(1) : null;
 
 		// 얻을 불조각 종류를 호출될 때마다 동적으로 계산함
-		stoneTypeCalculateAndSetter(filteredPendingScheduleDetails, todoScheduleDetail);
+		stoneTypeCalculateAndSetter(filteredAllScheduleDetails, todoScheduleDetail);
 
 		// 총 일정 수, 얻은 불조각 수(인증 완료한 일정 수), 현재 일정 순서를 계산함
 		int totalSchedule = filteredAllScheduleDetails.size();
 		int earnedStones = (int)filteredAllScheduleDetails.stream()
 			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
 			.count();
-		boolean isNextScheduleExists = NextTodoScheduleDetail != null;
+		boolean isSkippable = NextTodoScheduleDetail != null;
 
 		TodayScheduleStatus todayScheduleStatus = TodayScheduleStatusResolver.resolve(
 			todoScheduleDetail,
@@ -106,7 +108,7 @@ public class ScheduleService {
 				totalSchedule,
 				earnedStones,
 				todayScheduleStatus,
-				isNextScheduleExists
+				isSkippable
 			);
 		} else {
 			return TodayScheduleResponse.of(
@@ -118,7 +120,7 @@ public class ScheduleService {
 				totalSchedule,
 				earnedStones,
 				todayScheduleStatus,
-				isNextScheduleExists
+				isSkippable
 			);
 		}
 	}
@@ -259,9 +261,9 @@ public class ScheduleService {
 	private void stoneTypeCalculateAndSetter(List<ScheduleDetail> scheduleDetails, ScheduleDetail todoSchedule) {
 		if (todoSchedule != null) {
 			switch (scheduleDetails.indexOf(todoSchedule) % 3) {
-				case 0 -> todoSchedule.changeStoneType(StoneType.GRIT);
-				case 1 -> todoSchedule.changeStoneType(StoneType.COURAGE);
-				case 2 -> todoSchedule.changeStoneType(StoneType.WISDOM);
+				case 0 -> todoSchedule.changeStoneType(StoneType.COURAGE);
+				case 1 -> todoSchedule.changeStoneType(StoneType.WISDOM);
+				case 2 -> todoSchedule.changeStoneType(StoneType.GRIT);
 			}
 		}
 	}
