@@ -62,4 +62,14 @@ public class ScheduleController {
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.TODAY_SCHEDULE_GET_SUCCESS, response));
 	}
+
+	@PatchMapping("/skip/{scheduleDetailId}")
+	public ResponseEntity<SuccessResponse<Void>> skipNowSchedule(
+		@PathVariable("scheduleDetailId") Long scheduleDetailId,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		scheduleService.skipNowSchedule(currentAuth.memberId(), scheduleDetailId);
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_SKIP_SUCCESS));
+	}
 }

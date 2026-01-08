@@ -82,7 +82,8 @@ public class ScheduleService {
 		markPassedSchedulesAsFailed(filteredPendingScheduleDetails);
 
 		// 제일 먼저 진행되어야 하는 PENDING 스케쥴, 그 다음 PENDING 스케쥴
-		List<ScheduleDetail> todoScheduleDetails = findTodoScheduleAndNextTodoSchedule((filteredPendingScheduleDetails));
+		List<ScheduleDetail> todoScheduleDetails = findTodoScheduleAndNextTodoSchedule(
+			(filteredPendingScheduleDetails));
 		ScheduleDetail todoScheduleDetail = todoScheduleDetails.size() > 0 ? todoScheduleDetails.get(0) : null;
 		ScheduleDetail NextTodoScheduleDetail = todoScheduleDetails.size() > 1 ? todoScheduleDetails.get(1) : null;
 
@@ -123,6 +124,19 @@ public class ScheduleService {
 				isSkippable
 			);
 		}
+	}
+
+	@Transactional
+	public void skipNowSchedule(Long childId, Long scheduleDetailId) {
+
+		ScheduleDetail scheduleDetail = scheduleDetailRepository.findById(scheduleDetailId)
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
+
+		if (!childId.equals(scheduleDetail.getSchedule().getChild().getId())) {
+			throw new KieroException((ScheduleErrorCode.SCHEDULE_ACCESS_DENIED));
+		}
+
+		scheduleDetail.changeScheduleStatus(ScheduleStatus.SKIPPED);
 	}
 
 	@Transactional
