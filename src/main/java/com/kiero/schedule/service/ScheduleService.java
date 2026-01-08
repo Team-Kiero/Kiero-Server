@@ -176,7 +176,8 @@ public class ScheduleService {
 			.map(ScheduleDetail::getStoneType)
 			.toList();
 
-		filteredAllScheduleDetails.forEach(sd -> sd.changeStoneUsedAt(LocalDateTime.now()));
+		LocalDateTime now = LocalDateTime.now();
+		filteredAllScheduleDetails.forEach(sd -> sd.changeStoneUsedAt(now));
 
 		int gotStonesCount = gotStones.size();
 		int earnedCoinAmount = 0;
