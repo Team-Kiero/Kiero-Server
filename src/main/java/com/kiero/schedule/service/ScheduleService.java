@@ -1,6 +1,7 @@
 package com.kiero.schedule.service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -167,7 +168,7 @@ public class ScheduleService {
 
 	@Transactional
 	public void createTodayScheduleDetail() {
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
 		DayOfWeek customDayOfWeek = DayOfWeek.valueOf(today.getDayOfWeek().name().substring(0, 3));
 
 		log.info("customDayOfWeek: " + customDayOfWeek + "today: " + today);
