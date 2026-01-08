@@ -20,9 +20,15 @@ public class InviteCode {
     @Indexed
     private Long parentId;
 
-    private String childName;
+    private String childLastName;
 
-    public static InviteCode of(String code, Long parentId, String childName) {
-        return new InviteCode(code, parentId, childName);
+    private String childFirstName;
+
+    public static InviteCode of(String code, Long parentId, String childLastName, String childFirstName) {
+        return new InviteCode(code, parentId, childLastName, childFirstName);
+    }
+
+    public String getChildFullName() {
+        return childLastName + childFirstName;
     }
 }

@@ -34,12 +34,14 @@ public class ChildService {
 
     @Transactional
     public ChildLoginResponse signup(ChildSignupRequest request) {
-        log.info("Child signup started: inviteCode={}, childName={}", request.inviteCode(), request.name());
+        log.info("Child signup started: inviteCode={}, childName={} {}",
+                request.inviteCode(), request.lastName(), request.firstName());
 
         // 1. 초대 코드 검증 및 삭제 (분산 락으로 원자적 처리)
         InviteCode inviteCode = inviteCodeService.validateAndDeleteWithLock(
                 request.inviteCode(),
-                request.name()
+                request.lastName(),
+                request.firstName()
         );
 
         log.info("Invite code validated. Searching for parent with ID: {}", inviteCode.getParentId());
@@ -54,10 +56,10 @@ public class ChildService {
         log.info("Parent found: parentId={}, parentName={}", parent.getId(), parent.getName());
 
         // 3. 아이 엔티티 생성
-        Child child = Child.create(request.name(), Role.CHILD);
+        Child child = Child.create(request.lastName(), request.firstName(), Role.CHILD);
         Child savedChild = childRepository.save(child);
 
-        log.info("Child created: childId={}, childName={}", savedChild.getId(), savedChild.getName());
+        log.info("Child created: childId={}, childName={}", savedChild.getId(), savedChild.getFullName());
 
         // 4. ParentChild 관계 생성
         ParentChild parentChild = ParentChild.create(parent, savedChild);
@@ -75,7 +77,7 @@ public class ChildService {
                 .orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
         log.info("Retrieved child info: childId={}, name={}, coinAmount={}",
-                child.getId(), child.getName(), child.getCoinAmount());
+                child.getId(), child.getFullName(), child.getCoinAmount());
 
         return ChildMeResponse.from(child);
     }

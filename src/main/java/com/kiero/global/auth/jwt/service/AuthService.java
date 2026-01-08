@@ -51,7 +51,7 @@ public class AuthService {
 		String refreshToken = issueAndSaveRefreshToken(child.getId(), authenticationToken);
 		String accessToken = jwtTokenProvider.issueAccessToken(authenticationToken);
 
-		return ChildLoginResponse.of(child.getName(), child.getRole(), accessToken, refreshToken);
+		return ChildLoginResponse.of(child.getLastName(), child.getFirstName(), child.getRole(), accessToken, refreshToken);
 	}
 
 	@Transactional

@@ -84,10 +84,15 @@ public class ParentController {
 
         String inviteCode = inviteCodeService.createInviteCode(
                 currentAuth.memberId(),
-                request.childName()
+                request.childLastName(),
+                request.childFirstName()
         );
 
-        InviteCodeCreateResponse response = InviteCodeCreateResponse.of(inviteCode, request.childName());
+        InviteCodeCreateResponse response = InviteCodeCreateResponse.of(
+                inviteCode,
+                request.childLastName(),
+                request.childFirstName()
+        );
 
         return ResponseEntity
                 .status(ParentSuccessCode.INVITE_CODE_CREATED.getHttpStatus())
