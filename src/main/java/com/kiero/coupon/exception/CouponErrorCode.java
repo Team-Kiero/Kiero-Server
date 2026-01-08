@@ -7,12 +7,16 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public enum CouponSuccessCode implements BaseCode {
+public enum CouponErrorCode implements BaseCode {
     /*
-    200 OK
+    400 Bad Request
     */
-    COUPONS_RETRIEVED(HttpStatus.OK, "쿠폰 목록을 조회했습니다."),
-    COUPON_PURCHASED(HttpStatus.OK, "쿠폰 구매에 성공하였습니다."),
+    INSUFFICIENT_COINS(HttpStatus.BAD_REQUEST, "금화가 부족합니다."),
+
+    /*
+    404 Not Found
+    */
+    COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
     ;
 
     private final HttpStatus httpStatus;
