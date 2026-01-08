@@ -55,7 +55,7 @@ public class ScheduleService {
 	private final ScheduleRepeatDaysRepository scheduleRepeatDaysRepository;
 	private final ScheduleDetailRepository scheduleDetailRepository;
 
-	private final int ALL_SCHEDULE_SUCCESS_REWARD = 10;
+	private final static int ALL_SCHEDULE_SUCCESS_REWARD = 10;
 
 	@Transactional
 	public TodayScheduleResponse getTodaySchedule(Long childId) {
@@ -85,7 +85,7 @@ public class ScheduleService {
 		List<ScheduleDetail> todoScheduleDetails = findTodoScheduleAndNextTodoSchedule(
 			(filteredPendingScheduleDetails));
 		ScheduleDetail todoScheduleDetail = todoScheduleDetails.size() > 0 ? todoScheduleDetails.get(0) : null;
-		ScheduleDetail NextTodoScheduleDetail = todoScheduleDetails.size() > 1 ? todoScheduleDetails.get(1) : null;
+		ScheduleDetail nextTodoScheduleDetail = todoScheduleDetails.size() > 1 ? todoScheduleDetails.get(1) : null;
 
 		// 얻을 불조각 종류를 호출될 때마다 동적으로 계산함
 		stoneTypeCalculateAndSetter(filteredAllScheduleDetails, todoScheduleDetail);
@@ -95,7 +95,7 @@ public class ScheduleService {
 		int earnedStones = (int)filteredAllScheduleDetails.stream()
 			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
 			.count();
-		boolean isSkippable = NextTodoScheduleDetail != null;
+		boolean isSkippable = nextTodoScheduleDetail != null;
 
 		TodayScheduleStatus todayScheduleStatus = TodayScheduleStatusResolver.resolve(
 			todoScheduleDetail,
