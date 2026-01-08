@@ -83,4 +83,8 @@ public class ScheduleDetail {
 		this.stoneType = stoneType;
 	}
 
+	public void changeImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
 }
