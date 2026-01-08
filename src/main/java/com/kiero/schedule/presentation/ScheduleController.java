@@ -16,6 +16,7 @@ import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.schedule.exception.ScheduleSuccessCode;
+import com.kiero.schedule.presentation.dto.CompleteNowScheduleRequest;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
 import com.kiero.schedule.presentation.dto.ScheduleTabResponse;
 import com.kiero.schedule.presentation.dto.TodayScheduleResponse;
@@ -49,7 +50,8 @@ public class ScheduleController {
 		@PathVariable Long childId,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		ScheduleTabResponse response = scheduleService.getSchedules(startDate, endDate, currentAuth.memberId(), childId);
+		ScheduleTabResponse response = scheduleService.getSchedules(startDate, endDate, currentAuth.memberId(),
+			childId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_TAB_GET_SUCCESS, response));
 	}
@@ -71,5 +73,16 @@ public class ScheduleController {
 		scheduleService.skipNowSchedule(currentAuth.memberId(), scheduleDetailId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_SKIP_SUCCESS));
+	}
+
+	@PatchMapping("/{scheduleDetailId}")
+	public ResponseEntity<SuccessResponse<Void>> completeNowSchedule(
+		@Valid @RequestBody CompleteNowScheduleRequest request,
+		@PathVariable("scheduleDetailId") Long scheduleDetailId,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		scheduleService.completeNowSchedule(currentAuth.memberId(), scheduleDetailId, request);
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_COMPLETE_SUCCESS));
 	}
 }

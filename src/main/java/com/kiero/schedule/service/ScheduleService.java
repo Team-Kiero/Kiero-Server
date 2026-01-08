@@ -28,6 +28,7 @@ import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
 import com.kiero.schedule.domain.enums.TodayScheduleStatus;
 import com.kiero.schedule.exception.ScheduleErrorCode;
+import com.kiero.schedule.presentation.dto.CompleteNowScheduleRequest;
 import com.kiero.schedule.presentation.dto.NormalScheduleDto;
 import com.kiero.schedule.presentation.dto.RecurringScheduleDto;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
@@ -137,6 +138,21 @@ public class ScheduleService {
 		}
 
 		scheduleDetail.changeScheduleStatus(ScheduleStatus.SKIPPED);
+	}
+
+	@Transactional
+	public void completeNowSchedule(Long childId, Long scheduleDetailId, CompleteNowScheduleRequest request) {
+
+		ScheduleDetail scheduleDetail = scheduleDetailRepository.findById(scheduleDetailId)
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
+
+		if (!childId.equals(scheduleDetail.getSchedule().getChild().getId())) {
+			throw new KieroException((ScheduleErrorCode.SCHEDULE_ACCESS_DENIED));
+		}
+
+		scheduleDetail.changeScheduleStatus(ScheduleStatus.VERIFIED);
+		scheduleDetail.changeImageUrl(request.imageUrl());
+
 	}
 
 	@Transactional
