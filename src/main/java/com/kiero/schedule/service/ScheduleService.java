@@ -3,6 +3,7 @@ package com.kiero.schedule.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -308,6 +309,21 @@ public class ScheduleService {
 
 		return ScheduleTabResponse.of(isFireLitToday, recurringScheduleDtos, normalScheduleDtos);
 
+	}
+
+	@Transactional
+	public void createTodayScheduleDetail() {
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+		DayOfWeek customDayOfWeek = DayOfWeek.valueOf(today.getDayOfWeek().name().substring(0, 3));
+
+		log.info("customDayOfWeek: " + customDayOfWeek + "today: " + today);
+
+		List<Schedule> schedules = scheduleRepeatDaysRepository.findSchedulesToCreateTodayDetail(customDayOfWeek, today);
+		List<ScheduleDetail> scheduleDetails = schedules.stream()
+			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
+			.toList();
+
+		scheduleDetailRepository.saveAll(scheduleDetails);
 	}
 
 	private List<DayOfWeek> dayOfWeekParser(String dayOfWeek) {
