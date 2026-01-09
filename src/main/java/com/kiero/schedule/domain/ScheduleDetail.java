@@ -75,4 +75,20 @@ public class ScheduleDetail {
 			.build();
 	}
 
+	public void changeScheduleStatus(ScheduleStatus scheduleStatus) {
+		this.scheduleStatus = scheduleStatus;
+	}
+
+	public void changeStoneType(StoneType stoneType) {
+		this.stoneType = stoneType;
+	}
+
+	public void changeImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
+	public void changeStoneUsedAt(LocalDateTime stoneUsedAt) {
+		this.stoneUsedAt = stoneUsedAt;
+	}
+
 }

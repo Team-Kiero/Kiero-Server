@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,8 +16,11 @@ import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.schedule.exception.ScheduleSuccessCode;
+import com.kiero.schedule.presentation.dto.CompleteNowScheduleRequest;
+import com.kiero.schedule.presentation.dto.FireLitResponse;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
 import com.kiero.schedule.presentation.dto.ScheduleTabResponse;
+import com.kiero.schedule.presentation.dto.TodayScheduleResponse;
 import com.kiero.schedule.service.ScheduleService;
 
 import jakarta.validation.Valid;
@@ -47,8 +51,48 @@ public class ScheduleController {
 		@PathVariable Long childId,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		ScheduleTabResponse response = scheduleService.getSchedules(startDate, endDate, currentAuth.memberId(), childId);
+		ScheduleTabResponse response = scheduleService.getSchedules(startDate, endDate, currentAuth.memberId(),
+			childId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_TAB_GET_SUCCESS, response));
+	}
+
+	@PatchMapping("/today")
+	public ResponseEntity<SuccessResponse<TodayScheduleResponse>> updateAndGetTodaySchedule(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		TodayScheduleResponse response = scheduleService.getTodaySchedule(currentAuth.memberId());
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.TODAY_SCHEDULE_GET_SUCCESS, response));
+	}
+
+	@PatchMapping("/skip/{scheduleDetailId}")
+	public ResponseEntity<SuccessResponse<Void>> skipNowSchedule(
+		@PathVariable("scheduleDetailId") Long scheduleDetailId,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		scheduleService.skipNowSchedule(currentAuth.memberId(), scheduleDetailId);
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_SKIP_SUCCESS));
+	}
+
+	@PatchMapping("/{scheduleDetailId}")
+	public ResponseEntity<SuccessResponse<Void>> completeNowSchedule(
+		@Valid @RequestBody CompleteNowScheduleRequest request,
+		@PathVariable("scheduleDetailId") Long scheduleDetailId,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		scheduleService.completeNowSchedule(currentAuth.memberId(), scheduleDetailId, request);
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_COMPLETE_SUCCESS));
+	}
+
+	@PatchMapping("/fire-lit")
+	public ResponseEntity<SuccessResponse<FireLitResponse>> fireLit(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		FireLitResponse response = scheduleService.fireLit(currentAuth.memberId());
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.FIRE_LIT_SUCCESS, response));
 	}
 }
