@@ -21,7 +21,7 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		where f.parent.id = :parentId
 		and f.child.id = :childId
 	    and (
-				:cursorCreatedAt is null
+				:cursorOccurredAt is null
 				or f.occurredAt < :cursorOccurredAt
 				or (f.occurredAt = :cursorOccurredAt and f.id < :cursorId)
 		  )
