@@ -166,9 +166,12 @@ public class ScheduleService {
 			scheduleDetailRepository.findByDateAndChildId(today, childId);
 
 		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(allScheduleDetails);
+		if (earliestStoneUsedAt != null) {
+			throw new KieroException(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETE);
+		}
 
 		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails,
-			earliestStoneUsedAt);
+			null);
 
 		int totalSchedule = filteredAllScheduleDetails.size();
 
