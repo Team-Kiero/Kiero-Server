@@ -37,7 +37,7 @@ public class CouponService {
     @Transactional
     public CouponResponse purchaseCoupon(Long childId, Long couponId) {
         // 1. 자녀 조회
-        Child child = childRepository.findById(childId)
+        Child child = childRepository.findByIdWithLock(childId)
                 .orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
         // 2. 쿠폰 조회
