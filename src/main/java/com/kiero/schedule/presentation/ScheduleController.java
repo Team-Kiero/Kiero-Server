@@ -16,7 +16,7 @@ import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.schedule.exception.ScheduleSuccessCode;
-import com.kiero.schedule.presentation.dto.CompleteNowScheduleRequest;
+import com.kiero.schedule.presentation.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.presentation.dto.FireLitResponse;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
 import com.kiero.schedule.presentation.dto.ScheduleTabResponse;
@@ -78,7 +78,7 @@ public class ScheduleController {
 
 	@PatchMapping("/{scheduleDetailId}")
 	public ResponseEntity<SuccessResponse<Void>> completeNowSchedule(
-		@Valid @RequestBody CompleteNowScheduleRequest request,
+		@Valid @RequestBody NowScheduleCompleteRequest request,
 		@PathVariable("scheduleDetailId") Long scheduleDetailId,
 		@CurrentMember CurrentAuth currentAuth
 	) {
