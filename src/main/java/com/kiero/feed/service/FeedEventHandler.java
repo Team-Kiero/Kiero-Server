@@ -34,7 +34,7 @@ public class FeedEventHandler {
 	private final ParentChildRepository parentChildRepository;
 	private final ObjectMapper objectMapper;
 
-	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
 	public void handle(NowScheduleCompleteEvent event) {
 		Child childRef = entityManager.getReference(Child.class, event.childId());
 		List<Parent> parents = parentChildRepository.findParentsByChildId(event.childId());
@@ -56,7 +56,7 @@ public class FeedEventHandler {
 		feedItemRepository.saveAll(feedItems);
 	}
 
-	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
 	public void handle(FireLitEvent event) {
 		Child childRef = entityManager.getReference(Child.class, event.childId());
 		List<Parent> parents = parentChildRepository.findParentsByChildId(event.childId());
@@ -77,7 +77,7 @@ public class FeedEventHandler {
 		feedItemRepository.saveAll(feedItems);
 	}
 
-	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
 	public void handle(MissionCompleteEvent event) {
 		Child childRef = entityManager.getReference(Child.class, event.childId());
 		List<Parent> parents = parentChildRepository.findParentsByChildId(event.childId());
@@ -99,7 +99,7 @@ public class FeedEventHandler {
 		feedItemRepository.saveAll(feedItems);
 	}
 
-	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
 	public void handle(CouponPurchaseEvent event) {
 		Child childRef = entityManager.getReference(Child.class, event.childId());
 		List<Parent> parents = parentChildRepository.findParentsByChildId(event.childId());
