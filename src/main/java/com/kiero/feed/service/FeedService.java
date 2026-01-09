@@ -38,13 +38,13 @@ public class FeedService {
 
 		FeedCursor feedCursor = FeedCursor.parse(cursor);
 
-		LocalDateTime cursorCreatedAt = (feedCursor == null ? null : feedCursor.createdAt());
+		LocalDateTime cursorOccurredAt = (feedCursor == null ? null : feedCursor.occurredAt());
 		Long cursorId = (feedCursor == null ? null : feedCursor.id());
 
 		List<FeedItem> feedItems = feedItemRepository.findFeedItemsByCursor(
 			parentId,
 			childId,
-			cursorCreatedAt,
+			cursorOccurredAt,
 			cursorId,
 			PageRequest.of(0, size + 1)
 		);
@@ -59,7 +59,7 @@ public class FeedService {
 		String nextCursor = null;
 		if (hasNext && !feedItems.isEmpty()) {
 			FeedItem lastFeedItem = feedItems.get(feedItems.size() - 1);
-			nextCursor = new FeedCursor(lastFeedItem.getCreatedAt(), lastFeedItem.getId()).toCursorString();
+			nextCursor = new FeedCursor(lastFeedItem.getOccurredAt(), lastFeedItem.getId()).toCursorString();
 		}
 
 		return new FeedGetResponse(items, nextCursor);

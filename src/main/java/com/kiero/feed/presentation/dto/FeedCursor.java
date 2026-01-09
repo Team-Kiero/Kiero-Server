@@ -6,7 +6,7 @@ import com.kiero.feed.exception.FeedErrorCode;
 import com.kiero.global.exception.KieroException;
 
 public record FeedCursor(
-	LocalDateTime createdAt,
+	LocalDateTime occurredAt,
 	Long id
 ) {
 	public static FeedCursor parse(String cursor) {
@@ -22,6 +22,6 @@ public record FeedCursor(
 	}
 
 	public String toCursorString() {
-		return createdAt.toString() + "|" + id;
+		return occurredAt.toString() + "|" + id;
 	}
 }

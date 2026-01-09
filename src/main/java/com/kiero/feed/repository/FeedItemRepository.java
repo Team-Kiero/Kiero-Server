@@ -22,18 +22,16 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		and f.child.id = :childId
 	    and (
 				:cursorCreatedAt is null
-				or f.createdAt < :cursorCreatedAt
-				or (f.createdAt = :cursorCreatedAt and f.id < :cursorId)
+				or f.occurredAt < :cursorOccurredAt
+				or (f.occurredAt = :cursorOccurredAt and f.id < :cursorId)
 		  )
-		order by f.createdAt desc, f.id desc
+		order by f.occurredAt desc, f.id desc
 """)
 	List<FeedItem> findFeedItemsByCursor(
 		@Param("parentId") Long parentId,
 		@Param("childId") Long childId,
-		@Param("cursorCreatedAt") LocalDateTime cursorCreatedAt,
+		@Param("cursorOccurredAt") LocalDateTime cursorOccurredAt,
 		@Param("cursorId") Long cursorId,
 		Pageable pageable
 	);
-
-	Long child(Child child);
 }
