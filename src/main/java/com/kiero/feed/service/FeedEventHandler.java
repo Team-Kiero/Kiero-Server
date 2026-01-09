@@ -9,6 +9,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kiero.child.domain.Child;
+import com.kiero.coupon.presentation.dto.CouponPurchaseEvent;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.feed.domain.enums.EventType;
 import com.kiero.feed.repository.FeedItemRepository;
@@ -91,6 +92,28 @@ public class FeedEventHandler {
 				childRef,
 				event.occurredAt(),
 				EventType.MISSION,
+				metadata.deepCopy()
+			))
+			.toList();
+
+		feedItemRepository.saveAll(feedItems);
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handle(CouponPurchaseEvent event) {
+		Child childRef = entityManager.getReference(Child.class, event.childId());
+		List<Parent> parents = parentChildRepository.findParentsByChildId(event.childId());
+
+		ObjectNode metadata = objectMapper.createObjectNode();
+		metadata.put("content", event.name());
+		metadata.put("amount", event.amount());
+
+		List<FeedItem> feedItems = parents.stream()
+			.map(parent -> FeedItem.create(
+				parent,
+				childRef,
+				event.occurredAt(),
+				EventType.COUPON,
 				metadata.deepCopy()
 			))
 			.toList();
