@@ -1,5 +1,6 @@
-package com.kiero.global.infrastructure.s3;
+package com.kiero.global.infrastructure.s3.service;
 
+import com.kiero.global.infrastructure.s3.dto.PresignedUrlResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -109,8 +110,5 @@ public class S3Service {
     // UUID를 사용해 고유한 파일명 생성
     private String generateFileName(String originalFileName) {
         return UUID.randomUUID() + "_" + originalFileName;
-    }
-
-    public record PresignedUrlResponse(String presignedUrl, String fileName) {
     }
 }
