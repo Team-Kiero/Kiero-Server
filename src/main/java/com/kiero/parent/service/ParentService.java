@@ -3,6 +3,7 @@ package com.kiero.parent.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kiero.child.domain.Child;
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
 import com.kiero.global.auth.client.dto.SocialLoginResponse;
 import com.kiero.global.auth.client.enums.Provider;
@@ -14,6 +15,7 @@ import com.kiero.global.exception.KieroException;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.domain.ParentChild;
 import com.kiero.parent.presentation.dto.ChildInfoResponse;
+import com.kiero.parent.presentation.dto.InviteStatusResponse;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
 import com.kiero.parent.repository.ParentChildRepository;
 import com.kiero.parent.repository.ParentRepository;
@@ -24,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -105,6 +108,28 @@ public class ParentService {
 		return parentChildren.stream()
 				.map(pc -> ChildInfoResponse.of(pc.getChild()))
 				.collect(Collectors.toList());
+	}
+
+	@Transactional(readOnly = true)
+	public InviteStatusResponse checkInviteStatus(Long parentId, String childLastName, String childFirstName) {
+		List<ParentChild> parentChildren = parentChildRepository.findAllByParentId(parentId);
+
+		Optional<Child> matchedChild = parentChildren.stream()
+				.map(ParentChild::getChild)
+				.filter(child -> child.getLastName().equals(childLastName) &&
+								 child.getFirstName().equals(childFirstName))
+				.findFirst();
+
+		if (matchedChild.isPresent()) {
+			Child child = matchedChild.get();
+			log.info("Child found: parentId={}, childId={}, name={} {}",
+					parentId, child.getId(), childLastName, childFirstName);
+			return InviteStatusResponse.registered(child.getId());
+		} else {
+			log.info("Child not found: parentId={}, name={} {}",
+					parentId, childLastName, childFirstName);
+			return InviteStatusResponse.notRegistered();
+		}
 	}
 
 }

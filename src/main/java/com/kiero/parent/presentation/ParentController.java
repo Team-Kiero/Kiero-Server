@@ -4,6 +4,7 @@ import com.kiero.invitation.service.InviteCodeService;
 import com.kiero.parent.presentation.dto.ChildInfoResponse;
 import com.kiero.parent.presentation.dto.InviteCodeCreateRequest;
 import com.kiero.parent.presentation.dto.InviteCodeCreateResponse;
+import com.kiero.parent.presentation.dto.InviteStatusResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -102,6 +103,22 @@ public class ParentController {
                                 response
                         )
                 );
+    }
+
+    @GetMapping("/invite/status")
+    public ResponseEntity<SuccessResponse<InviteStatusResponse>> checkInviteStatus(
+            @CurrentMember CurrentAuth currentAuth,
+            @RequestParam String childLastName,
+            @RequestParam String childFirstName
+    ) {
+        InviteStatusResponse response = parentService.checkInviteStatus(
+                currentAuth.memberId(),
+                childLastName,
+                childFirstName
+        );
+
+        return ResponseEntity.ok()
+                .body(SuccessResponse.of(ParentSuccessCode.INVITE_STATUS_CHECKED, response));
     }
 
     @GetMapping("/children")
