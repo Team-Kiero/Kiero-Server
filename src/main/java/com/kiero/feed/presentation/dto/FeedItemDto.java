@@ -10,6 +10,6 @@ public record FeedItemDto(
 	EventType eventType,
 
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-	LocalDateTime createdAt,
+	LocalDateTime occurredAt,
 	JsonNode metadata
 ) {}
