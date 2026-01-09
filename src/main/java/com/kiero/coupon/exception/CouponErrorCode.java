@@ -1,4 +1,4 @@
-package com.kiero.child.exception;
+package com.kiero.coupon.exception;
 
 import com.kiero.global.response.base.BaseCode;
 import lombok.Getter;
@@ -7,16 +7,16 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public enum ChildSuccessCode implements BaseCode {
+public enum CouponErrorCode implements BaseCode {
     /*
-    200 OK
+    400 Bad Request
     */
-    GET_INFO_SUCCESS(HttpStatus.OK, "정보 조회에 성공하였습니다."),
+    INSUFFICIENT_COINS(HttpStatus.BAD_REQUEST, "금화가 부족합니다."),
 
     /*
-    201 CREATED
+    404 Not Found
     */
-    SIGNUP_SUCCESS(HttpStatus.CREATED, "가입에 성공하였습니다."),
+    COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
     ;
 
     private final HttpStatus httpStatus;

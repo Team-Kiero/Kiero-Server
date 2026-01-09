@@ -1,4 +1,4 @@
-package com.kiero.child.exception;
+package com.kiero.coupon.exception;
 
 import com.kiero.global.response.base.BaseCode;
 import lombok.Getter;
@@ -7,16 +7,12 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public enum ChildSuccessCode implements BaseCode {
+public enum CouponSuccessCode implements BaseCode {
     /*
     200 OK
     */
-    GET_INFO_SUCCESS(HttpStatus.OK, "정보 조회에 성공하였습니다."),
-
-    /*
-    201 CREATED
-    */
-    SIGNUP_SUCCESS(HttpStatus.CREATED, "가입에 성공하였습니다."),
+    COUPONS_RETRIEVED(HttpStatus.OK, "쿠폰 목록을 조회했습니다."),
+    COUPON_PURCHASED(HttpStatus.OK, "쿠폰 구매에 성공하였습니다."),
     ;
 
     private final HttpStatus httpStatus;

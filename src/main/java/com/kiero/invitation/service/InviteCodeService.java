@@ -25,18 +25,18 @@ public class InviteCodeService {
     private static final int MAX_GENERATION_ATTEMPTS = 10;
 
     @Transactional
-    public String createInviteCode(Long parentId, String childName) {
+    public String createInviteCode(Long parentId, String childLastName, String childFirstName) {
         String code = generateUniqueCode();
 
-        InviteCode inviteCode = InviteCode.of(code, parentId, childName);
+        InviteCode inviteCode = InviteCode.of(code, parentId, childLastName, childFirstName);
         inviteCodeRepository.save(inviteCode);
 
-        log.info("Created invite code: {}, parentId: {}, childName: {}", code, parentId, childName);
+        log.info("Created invite code: {}, parentId: {}, childName: {} {}", code, parentId, childLastName, childFirstName);
 
         return code;
     }
 
-    public InviteCode validateAndDeleteWithLock(String code, String inputChildName) {
+    public InviteCode validateAndDeleteWithLock(String code, String inputLastName, String inputFirstName) {
         String lockKey = "lock:invite:" + code;
         RLock lock = redissonClient.getLock(lockKey);
 
@@ -48,10 +48,10 @@ public class InviteCodeService {
             }
 
             // 검증
-            InviteCode inviteCode = validateCodeAndGetName(code, inputChildName);
+            InviteCode inviteCode = validateCodeAndGetName(code, inputLastName, inputFirstName);
 
-            log.info("Retrieved invite code from Redis: code={}, parentId={}, childName={}",
-                    code, inviteCode.getParentId(), inviteCode.getChildName());
+            log.info("Retrieved invite code from Redis: code={}, parentId={}, childName={} {}",
+                    code, inviteCode.getParentId(), inviteCode.getChildLastName(), inviteCode.getChildFirstName());
 
             // 삭제
             deleteInviteCode(code);
@@ -70,11 +70,11 @@ public class InviteCodeService {
         }
     }
 
-    private InviteCode validateCodeAndGetName(String code, String inputChildName) {
+    private InviteCode validateCodeAndGetName(String code, String inputLastName, String inputFirstName) {
         InviteCode inviteCode = inviteCodeRepository.findById(code)
                 .orElseThrow(() -> new KieroException(InvitationErrorCode.INVALID_OR_EXPIRED_INVITE_CODE));
 
-        if (!inviteCode.getChildName().equals(inputChildName)) {
+        if (!inviteCode.getChildLastName().equals(inputLastName) || !inviteCode.getChildFirstName().equals(inputFirstName)) {
             throw new KieroException(InvitationErrorCode.INVITE_CODE_NAME_MISMATCH);
         }
 

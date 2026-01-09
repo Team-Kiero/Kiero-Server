@@ -2,8 +2,11 @@ package com.kiero.child.presentation;
 
 import com.kiero.child.exception.ChildSuccessCode;
 import com.kiero.child.presentation.dto.ChildLoginResponse;
+import com.kiero.child.presentation.dto.ChildMeResponse;
 import com.kiero.child.presentation.dto.ChildSignupRequest;
 import com.kiero.child.service.ChildService;
+import com.kiero.global.auth.annotation.CurrentMember;
+import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,5 +47,15 @@ public class ChildController {
                 .status(ChildSuccessCode.SIGNUP_SUCCESS.getHttpStatus())
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(SuccessResponse.of(ChildSuccessCode.SIGNUP_SUCCESS, response));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<SuccessResponse<ChildMeResponse>> getMyInfo(
+            @CurrentMember CurrentAuth currentAuth
+    ) {
+        ChildMeResponse response = childService.getMyInfo(currentAuth.memberId());
+
+        return ResponseEntity.ok()
+                .body(SuccessResponse.of(ChildSuccessCode.GET_INFO_SUCCESS, response));
     }
 }

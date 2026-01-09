@@ -30,8 +30,11 @@ public class Child extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = ChildTableConstants.COLUMN_NAME, nullable = false)
-	private String name;
+	@Column(name = ChildTableConstants.COLUMN_LAST_NAME, nullable = false)
+	private String lastName;
+
+	@Column(name = ChildTableConstants.COLUMN_FIRST_NAME, nullable = false)
+	private String firstName;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = ChildTableConstants.COLUMN_ROLE, nullable = false)
@@ -41,17 +44,31 @@ public class Child extends BaseTimeEntity {
 	private int coinAmount;
 
 	public static Child create(
-            final String name,
+            final String lastName,
+            final String firstName,
             final Role role
     ) {
 		return Child.builder()
-			.name(name)
+			.lastName(lastName)
+			.firstName(firstName)
             .role(role)
 			.coinAmount(0)
 			.build();
 	}
 
+	public String getFullName() {
+		return lastName + firstName;
+	}
+
     public void addCoin(int amount) {
         this.coinAmount += amount;
+    }
+
+    public void deductCoin(int amount) {
+        this.coinAmount -= amount;
+    }
+
+    public boolean hasEnoughCoin(int amount) {
+        return this.coinAmount >= amount;
     }
 }

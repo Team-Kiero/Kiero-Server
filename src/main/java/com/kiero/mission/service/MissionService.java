@@ -111,13 +111,18 @@ public class MissionService {
             throw new KieroException(MissionErrorCode.MISSION_EXPIRED);
         }
 
-        // 5. 미션 완료처리
+        // 5. 자녀 조회
+        Child child = childRepository.findByIdWithLock(childId)
+                .orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+
+        // 6. 미션 완료처리
         mission.complete();
 
-        // 6. 코인 지급
-        mission.getChild().addCoin(mission.getReward());
+        // 7. 코인 지급
+        child.addCoin(mission.getReward());
 
-        log.info("Mission completed: missionId={}, childId={}, reward={}", missionId, childId, mission.getReward());
+        log.info("Mission completed: missionId={}, childId={}, reward={}, newCoinAmount={}",
+                missionId, childId, mission.getReward(), child.getCoinAmount());
 
         return MissionResponse.from(mission);
     }
