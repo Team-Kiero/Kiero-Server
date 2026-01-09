@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +30,9 @@ import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
 import com.kiero.schedule.domain.enums.TodayScheduleStatus;
 import com.kiero.schedule.exception.ScheduleErrorCode;
-import com.kiero.schedule.presentation.dto.CompleteNowScheduleRequest;
+import com.kiero.schedule.presentation.dto.NowScheduleCompleteEvent;
+import com.kiero.schedule.presentation.dto.NowScheduleCompleteRequest;
+import com.kiero.schedule.presentation.dto.FireLitEvent;
 import com.kiero.schedule.presentation.dto.FireLitResponse;
 import com.kiero.schedule.presentation.dto.NormalScheduleDto;
 import com.kiero.schedule.presentation.dto.RecurringScheduleDto;
@@ -55,6 +58,8 @@ public class ScheduleService {
 	private final ScheduleRepository scheduleRepository;
 	private final ScheduleRepeatDaysRepository scheduleRepeatDaysRepository;
 	private final ScheduleDetailRepository scheduleDetailRepository;
+
+	private final ApplicationEventPublisher eventPublisher;
 
 	private final static int ALL_SCHEDULE_SUCCESS_REWARD = 10;
 
@@ -141,7 +146,7 @@ public class ScheduleService {
 	}
 
 	@Transactional
-	public void completeNowSchedule(Long childId, Long scheduleDetailId, CompleteNowScheduleRequest request) {
+	public void completeNowSchedule(Long childId, Long scheduleDetailId, NowScheduleCompleteRequest request) {
 
 		ScheduleDetail scheduleDetail = scheduleDetailRepository.findById(scheduleDetailId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
@@ -153,6 +158,12 @@ public class ScheduleService {
 		scheduleDetail.changeScheduleStatus(ScheduleStatus.VERIFIED);
 		scheduleDetail.changeImageUrl(request.imageUrl());
 
+		eventPublisher.publishEvent(new NowScheduleCompleteEvent(
+			scheduleDetail.getSchedule().getChild().getId(),
+			scheduleDetail.getSchedule().getName(),
+			scheduleDetail.getImageUrl(),
+			LocalDateTime.now()
+		));
 	}
 
 	@Transactional
@@ -190,6 +201,12 @@ public class ScheduleService {
 			child.addCoin(ALL_SCHEDULE_SUCCESS_REWARD);
 			earnedCoinAmount = ALL_SCHEDULE_SUCCESS_REWARD;
 		}
+
+		eventPublisher.publishEvent(new FireLitEvent(
+			child.getId(),
+			earnedCoinAmount,
+			LocalDateTime.now()
+		));
 
 		return FireLitResponse.of(gotStones, earnedCoinAmount);
 	}
