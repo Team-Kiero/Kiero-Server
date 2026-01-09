@@ -7,6 +7,7 @@ import com.kiero.global.exception.KieroException;
 import com.kiero.mission.domain.Mission;
 import com.kiero.mission.exception.MissionErrorCode;
 import com.kiero.mission.presentation.dto.MissionBulkCreateRequest;
+import com.kiero.mission.presentation.dto.MissionCompleteEvent;
 import com.kiero.mission.presentation.dto.MissionCreateRequest;
 import com.kiero.mission.presentation.dto.MissionResponse;
 import com.kiero.mission.repository.MissionRepository;
@@ -16,10 +17,13 @@ import com.kiero.parent.repository.ParentChildRepository;
 import com.kiero.parent.repository.ParentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +31,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class MissionService {
+
+    private final ApplicationEventPublisher eventPublisher;
 
     private final MissionRepository missionRepository;
     private final ParentRepository parentRepository;
@@ -120,6 +126,13 @@ public class MissionService {
 
         // 7. 코인 지급
         child.addCoin(mission.getReward());
+
+        eventPublisher.publishEvent(new MissionCompleteEvent(
+            child.getId(),
+            mission.getReward(),
+            mission.getName(),
+            LocalDateTime.now()
+        ));
 
         log.info("Mission completed: missionId={}, childId={}, reward={}, newCoinAmount={}",
                 missionId, childId, mission.getReward(), child.getCoinAmount());
