@@ -39,6 +39,7 @@ public class JwtTokenProvider {
 	@Value("${jwt.refresh-token-expire-time}")
 	private long refreshTokenExpireTime;
 
+	private static final long temporaryAccessTokenExpireTime = 60 * 5 * 1000L;
 	private static final String MEMBER_ID = "member_Id";
 	private static final String ROLE_KEY = "role";
 
@@ -49,6 +50,10 @@ public class JwtTokenProvider {
 
 	public String issueAccessToken(final Authentication authentication) {
 		return issueToken(authentication, accessTokenExpireTime);
+	}
+
+	public String issueTemporaryAccessToken(final Authentication authentication) {
+		return issueToken(authentication, temporaryAccessTokenExpireTime);
 	}
 
 	public String issueRefreshToken(final Authentication authentication) {
