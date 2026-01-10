@@ -6,8 +6,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.kiero.feed.exception.FeedSuccessCode;
+import com.kiero.feed.infrastructure.sse.FeedSseService;
 import com.kiero.feed.presentation.dto.FeedGetResponse;
 import com.kiero.feed.service.FeedService;
 import com.kiero.global.auth.annotation.CurrentMember;
@@ -22,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class FeedController {
 
 	private final FeedService feedService;
+	private final FeedSseService feedSseService;
 
 	@GetMapping("/{childId}")
 	public ResponseEntity<SuccessResponse<FeedGetResponse>> getFeed(
@@ -33,5 +36,14 @@ public class FeedController {
 		FeedGetResponse response = feedService.getFeed(currentAuth.memberId(), childId, size, cursor);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(FeedSuccessCode.FEED_GET_SUCCESS, response));
+	}
+
+	@GetMapping(value = "/{childId}/subscribe", produces = "text/event-stream")
+	public SseEmitter subscribe(
+		@PathVariable("childId") Long childId,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		Long parentId = currentAuth.memberId();
+		return feedSseService.subscribe(parentId, childId);
 	}
 }

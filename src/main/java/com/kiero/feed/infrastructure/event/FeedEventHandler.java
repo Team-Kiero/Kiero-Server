@@ -1,4 +1,4 @@
-package com.kiero.feed.service;
+package com.kiero.feed.infrastructure.event;
 
 import java.util.List;
 
@@ -12,6 +12,8 @@ import com.kiero.child.domain.Child;
 import com.kiero.coupon.presentation.dto.CouponPurchaseEvent;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.feed.domain.enums.EventType;
+import com.kiero.feed.infrastructure.sse.FeedSseService;
+import com.kiero.feed.infrastructure.sse.dto.FeedPushPayload;
 import com.kiero.feed.repository.FeedItemRepository;
 import com.kiero.mission.presentation.dto.MissionCompleteEvent;
 import com.kiero.parent.domain.Parent;
@@ -30,6 +32,7 @@ public class FeedEventHandler {
 	@PersistenceContext
 	private EntityManager entityManager;
 
+	private final FeedSseService feedSseService;
 	private final FeedItemRepository feedItemRepository;
 	private final ParentChildRepository parentChildRepository;
 	private final ObjectMapper objectMapper;
@@ -53,7 +56,8 @@ public class FeedEventHandler {
 			))
 			.toList();
 
-		feedItemRepository.saveAll(feedItems);
+		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
+		pushSseEvent(saved);
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
@@ -74,7 +78,8 @@ public class FeedEventHandler {
 			))
 			.toList();
 
-		feedItemRepository.saveAll(feedItems);
+		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
+		pushSseEvent(saved);
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
@@ -96,7 +101,8 @@ public class FeedEventHandler {
 			))
 			.toList();
 
-		feedItemRepository.saveAll(feedItems);
+		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
+		pushSseEvent(saved);
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
@@ -118,7 +124,23 @@ public class FeedEventHandler {
 			))
 			.toList();
 
-		feedItemRepository.saveAll(feedItems);
+		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
+		pushSseEvent(saved);
+	}
+
+	private void pushSseEvent(List<FeedItem> feedItems) {
+		for (FeedItem fi : feedItems) {
+			feedSseService.push(
+				fi.getParent().getId(),
+				fi.getChild().getId(),
+				new FeedPushPayload(
+					fi.getId(),
+					fi.getEventType(),
+					fi.getOccurredAt(),
+					fi.getMetadata()
+				)
+			);
+		}
 	}
 
 }
