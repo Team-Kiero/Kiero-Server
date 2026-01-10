@@ -9,11 +9,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.kiero.feed.exception.FeedSuccessCode;
-import com.kiero.feed.infrastructure.sse.FeedSseService;
+import com.kiero.feed.service.FeedSseService;
 import com.kiero.feed.presentation.dto.FeedGetResponse;
 import com.kiero.feed.service.FeedService;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
+import com.kiero.global.infrastructure.sse.service.SseService;
 import com.kiero.global.response.dto.SuccessResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/feeds")
 public class FeedController {
 
+	private final SseService sseService;
 	private final FeedService feedService;
 	private final FeedSseService feedSseService;
 
@@ -44,6 +46,6 @@ public class FeedController {
 		@CurrentMember CurrentAuth currentAuth
 	) {
 		Long parentId = currentAuth.memberId();
-		return feedSseService.subscribe(parentId, childId);
+		return sseService.subscribe(feedSseService.key(parentId, childId));
 	}
 }

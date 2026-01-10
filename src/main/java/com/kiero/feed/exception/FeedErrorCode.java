@@ -18,7 +18,6 @@ public enum FeedErrorCode implements BaseCode {
 	/*
 	500 INTERNAL SERVER ERROR
 	 */
-	FEED_SSE_SUBSCRIBE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "피드 sse 구독이 실패하였습니다."),
 	JSON_CONVERT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "json 형식 변환 과정이 실패하였습니다.")
 	;
 

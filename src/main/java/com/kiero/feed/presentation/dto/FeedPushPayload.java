@@ -1,4 +1,4 @@
-package com.kiero.feed.infrastructure.sse.dto;
+package com.kiero.feed.presentation.dto;
 
 import java.time.LocalDateTime;
 
