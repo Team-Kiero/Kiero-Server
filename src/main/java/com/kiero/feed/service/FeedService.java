@@ -33,6 +33,9 @@ public class FeedService {
 	@Transactional(readOnly = true)
 	public FeedGetResponse getFeed(Long parentId, Long childId, Integer size, String cursor) {
 
+		Child child = childRepository.findById(childId)
+			.orElseThrow(()-> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+
 		boolean parentChildExists = parentChildRepository.existsByParentIdAndChildId(parentId, childId);
 		if (!parentChildExists) throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
 
@@ -62,7 +65,7 @@ public class FeedService {
 			nextCursor = new FeedCursor(lastFeedItem.getOccurredAt(), lastFeedItem.getId()).toCursorString();
 		}
 
-		return new FeedGetResponse(items, nextCursor);
+		return new FeedGetResponse(child.getFirstName(), items, nextCursor);
 	}
 
 	private FeedItemDto toItemDto(FeedItem feedItem) {
