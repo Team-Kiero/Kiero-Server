@@ -12,13 +12,18 @@ public record FeedCursor(
 	public static FeedCursor parse(String cursor) {
 		if (cursor == null || cursor.isBlank()) return null;
 
-		String[] parts = cursor.split("\\|");
-		if (parts.length != 2) throw new KieroException(FeedErrorCode.CURSOR_NOT_VALID);
+		try {
+			String[] parts = cursor.split("\\|");
+			if (parts.length != 2)
+				throw new KieroException(FeedErrorCode.CURSOR_NOT_VALID);
 
-		return new FeedCursor(
-			LocalDateTime.parse(parts[0]),
-			Long.parseLong(parts[1])
-		);
+			return new FeedCursor(
+				LocalDateTime.parse(parts[0]),
+				Long.parseLong(parts[1])
+			);
+		} catch (Exception e) {
+			throw new KieroException(FeedErrorCode.CURSOR_NOT_VALID);
+		}
 	}
 
 	public String toCursorString() {

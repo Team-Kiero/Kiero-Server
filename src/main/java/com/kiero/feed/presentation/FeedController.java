@@ -46,6 +46,7 @@ public class FeedController {
 		@CurrentMember CurrentAuth currentAuth
 	) {
 		Long parentId = currentAuth.memberId();
+		feedService.isParentChildValid(parentId, childId);
 		return sseService.subscribe(feedSseService.key(parentId, childId));
 	}
 }

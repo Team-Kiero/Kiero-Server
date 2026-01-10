@@ -2,7 +2,6 @@ package com.kiero.feed.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -36,8 +35,7 @@ public class FeedService {
 		Child child = childRepository.findById(childId)
 			.orElseThrow(()-> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
-		boolean parentChildExists = parentChildRepository.existsByParentIdAndChildId(parentId, childId);
-		if (!parentChildExists) throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+		isParentChildValid(parentId, childId);
 
 		FeedCursor feedCursor = FeedCursor.parse(cursor);
 
@@ -66,6 +64,11 @@ public class FeedService {
 		}
 
 		return new FeedGetResponse(child.getFirstName(), items, nextCursor);
+	}
+
+	public void isParentChildValid(Long parentId, Long childId) {
+		boolean parentChildExists = parentChildRepository.existsByParentIdAndChildId(parentId, childId);
+		if (!parentChildExists) throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
 	}
 
 	private FeedItemDto toItemDto(FeedItem feedItem) {
