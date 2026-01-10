@@ -1,5 +1,6 @@
 package com.kiero.global.infrastructure.s3;
 
+import com.kiero.global.infrastructure.s3.dto.PresignedUrlResponse;
 import com.kiero.global.infrastructure.s3.service.S3Service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,7 +75,7 @@ class S3ServiceTest {
                 .thenReturn(mockPresignedRequest);
 
         // When
-        S3Service.PresignedUrlResponse response = s3Service.generatePresignedUploadUrl(
+        PresignedUrlResponse response = s3Service.generatePresignedUploadUrl(
                 originalFileName, contentType
         );
 
