@@ -9,12 +9,14 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ParentSseService {
+
+	private final static String EVENT_NAME = "invite";
 	private final SseService sseService;
 
 	public void push(Long parentId, Long childId) {
 		sseService.push(
 			key(parentId),
-			"invite",
+			EVENT_NAME,
 			childId
 		);
 	}

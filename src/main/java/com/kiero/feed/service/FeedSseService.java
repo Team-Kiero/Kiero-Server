@@ -12,12 +12,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class FeedSseService {
 
+	private final static String EVENT_NAME = "feed";
 	private final SseService sseService;
 
 	public void push(FeedItem feedItem) {
 		sseService.push(
 			key(feedItem.getParent().getId(), feedItem.getChild().getId()),
-			"feed",
+			EVENT_NAME,
 			new FeedPushPayload(
 				feedItem.getId(),
 				feedItem.getEventType(),
