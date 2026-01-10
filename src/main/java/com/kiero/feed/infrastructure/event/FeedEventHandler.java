@@ -2,6 +2,7 @@ package com.kiero.feed.infrastructure.event;
 
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -12,7 +13,7 @@ import com.kiero.child.domain.Child;
 import com.kiero.coupon.presentation.dto.CouponPurchaseEvent;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.feed.domain.enums.EventType;
-import com.kiero.feed.service.FeedSseService;
+import com.kiero.feed.infrastructure.event.dto.FeedItemsCreatedEvent;
 import com.kiero.feed.repository.FeedItemRepository;
 import com.kiero.mission.presentation.dto.MissionCompleteEvent;
 import com.kiero.parent.domain.Parent;
@@ -31,7 +32,7 @@ public class FeedEventHandler {
 	@PersistenceContext
 	private EntityManager entityManager;
 
-	private final FeedSseService feedSseService;
+	private final ApplicationEventPublisher publisher;
 	private final FeedItemRepository feedItemRepository;
 	private final ParentChildRepository parentChildRepository;
 	private final ObjectMapper objectMapper;
@@ -56,7 +57,9 @@ public class FeedEventHandler {
 			.toList();
 
 		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
-		saved.forEach(feedSseService::push);
+
+		List<Long> ids = saved.stream().map(FeedItem::getId).toList();
+		publisher.publishEvent(new FeedItemsCreatedEvent(ids));
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
@@ -78,7 +81,9 @@ public class FeedEventHandler {
 			.toList();
 
 		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
-		saved.forEach(feedSseService::push);
+
+		List<Long> ids = saved.stream().map(FeedItem::getId).toList();
+		publisher.publishEvent(new FeedItemsCreatedEvent(ids));
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
@@ -101,7 +106,9 @@ public class FeedEventHandler {
 			.toList();
 
 		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
-		saved.forEach(feedSseService::push);
+
+		List<Long> ids = saved.stream().map(FeedItem::getId).toList();
+		publisher.publishEvent(new FeedItemsCreatedEvent(ids));
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
@@ -124,7 +131,9 @@ public class FeedEventHandler {
 			.toList();
 
 		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
-		saved.forEach(feedSseService::push);
+
+		List<Long> ids = saved.stream().map(FeedItem::getId).toList();
+		publisher.publishEvent(new FeedItemsCreatedEvent(ids));
 	}
 
 }
