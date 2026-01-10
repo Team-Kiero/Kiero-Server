@@ -72,7 +72,7 @@ public class AuthService {
 	}
 
 	@Transactional
-	public AccessTokenGenerateResponse generateTemporaryAccessTokenFromRefreshToken(final String refreshToken) {
+	public AccessTokenGenerateResponse generateTemporaryAccessTokenFromRefreshToken(final String refreshToken, final String scope) {
 		validateRefreshToken(refreshToken);
 
 		Long memberId = jwtTokenProvider.getMemberIdFromJwt(refreshToken);
@@ -85,7 +85,7 @@ public class AuthService {
 		log.info("Generated new temporary access token for memberId: {}, role: {}, authorities: {}", memberId, role.getRoleName(),
 			authorities);
 
-		return AccessTokenGenerateResponse.of(jwtTokenProvider.issueTemporaryAccessToken(authenticationToken));
+		return AccessTokenGenerateResponse.of(jwtTokenProvider.issueTemporaryAccessToken(authenticationToken, List.of(scope)));
 	}
 
 	@Transactional
