@@ -16,6 +16,8 @@ import com.kiero.parent.domain.Parent;
 import com.kiero.parent.domain.ParentChild;
 import com.kiero.parent.repository.ParentChildRepository;
 import com.kiero.parent.repository.ParentRepository;
+import com.kiero.parent.service.ParentSseService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class ChildService {
     private final ChildRepository childRepository;
     private final ParentChildRepository parentChildRepository;
     private final AuthService authService;
+    private final ParentSseService parentSseService;
 
     @Transactional
     public ChildLoginResponse signup(ChildSignupRequest request) {
@@ -66,6 +69,8 @@ public class ChildService {
         parentChildRepository.save(parentChild);
 
         log.info("ParentChild relationship created: parentId={}, childId={}", parent.getId(), savedChild.getId());
+
+        parentSseService.push(parentChild.getParent().getId(), parentChild.getChild().getId());
 
         // 5. 토큰 발급 및 로그인 응답 반환
         return authService.generateLoginResponse(savedChild);

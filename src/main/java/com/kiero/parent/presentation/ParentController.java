@@ -1,5 +1,6 @@
 package com.kiero.parent.presentation;
 
+import com.kiero.global.infrastructure.sse.service.SseService;
 import com.kiero.invitation.service.InviteCodeService;
 import com.kiero.parent.presentation.dto.ChildInfoResponse;
 import com.kiero.parent.presentation.dto.InviteCodeCreateRequest;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
@@ -22,6 +24,7 @@ import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.parent.exception.ParentSuccessCode;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
 import com.kiero.parent.service.ParentService;
+import com.kiero.parent.service.ParentSseService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +41,8 @@ public class ParentController {
 	private static final int COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 	private final ParentService parentService;
     private final InviteCodeService inviteCodeService;
+	private final SseService sseService;
+	private final ParentSseService parentSseService;
 
 	@PostMapping("/login")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> login(
@@ -113,4 +118,12 @@ public class ParentController {
         return ResponseEntity.ok()
                 .body(SuccessResponse.of(ParentSuccessCode.GET_CHILDREN_SUCCESS, children));
     }
+
+	@GetMapping("/invite/subscribe")
+	public SseEmitter subscribe(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		Long parentId = currentAuth.memberId();
+		return sseService.subscribe(parentSseService.key(parentId));
+	}
 }
