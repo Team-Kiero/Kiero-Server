@@ -3,6 +3,8 @@ package com.kiero.schedule.presentation.dto;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import com.kiero.schedule.domain.enums.ScheduleColor;
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -11,7 +13,7 @@ public record ScheduleAddRequest(
 	@NotNull Boolean isRecurring,
 	@NotNull LocalTime startTime,
 	@NotNull LocalTime endTime,
-	@NotNull String colorCode,
+	@NotNull ScheduleColor scheduleColor,
 	String dayOfWeek,
 	LocalDate date
 ) {

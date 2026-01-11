@@ -1,0 +1,17 @@
+package com.kiero.schedule.domain.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum ScheduleColor {
+	SCHEDULE1("#CFFFFA"),
+	SCHEDULE2("#FFFEE9"),
+	SCHEDULE3("#BFFFE3"),
+	SCHEDULE4("#34D9D3"),
+	SCHEDULE5("#7BBDFF"),
+	;
+
+	private final String colorCode;
+}

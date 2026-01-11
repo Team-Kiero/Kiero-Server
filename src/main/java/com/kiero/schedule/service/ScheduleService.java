@@ -237,7 +237,7 @@ public class ScheduleService {
 		}
 
 		Schedule schedule = Schedule.create(parent, child, request.name(), request.startTime(), request.endTime(),
-			request.colorCode(), request.isRecurring());
+			request.scheduleColor(), request.isRecurring());
 		Schedule savedSchedule = scheduleRepository.save(schedule);
 
 		if (request.isRecurring()
@@ -311,7 +311,7 @@ public class ScheduleService {
 						schedule.getStartTime(),
 						schedule.getEndTime(),
 						schedule.getName(),
-						schedule.getColorCode(),
+						schedule.getScheduleColor().getColorCode(),
 						dayOfWeek
 					);
 				})
@@ -333,7 +333,7 @@ public class ScheduleService {
 						schedule.getStartTime(),
 						schedule.getEndTime(),
 						schedule.getName(),
-						schedule.getColorCode(),
+						schedule.getScheduleColor().getColorCode(),
 						detail.getDate()
 					);
 				})

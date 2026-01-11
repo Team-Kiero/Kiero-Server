@@ -5,9 +5,12 @@ import java.time.LocalTime;
 import com.kiero.child.domain.Child;
 import com.kiero.global.entity.BaseTimeEntity;
 import com.kiero.parent.domain.Parent;
+import com.kiero.schedule.domain.enums.ScheduleColor;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -43,8 +46,9 @@ public class Schedule extends BaseTimeEntity {
 	@Column(name = ScheduleTableConstants.COLUMN_NAME, nullable = false)
 	private String name;
 
-	@Column(name = ScheduleTableConstants.COLUMN_COLOR_CODE, nullable = false)
-	private String colorCode;
+	@Enumerated(EnumType.STRING)
+	@Column(name = ScheduleTableConstants.COLUMN_SCHEDULE_COLOR, nullable = false)
+	private ScheduleColor scheduleColor;
 
 	@Column(name = ScheduleTableConstants.COLUMN_IS_RECURRING, nullable = false)
 	private boolean isRecurring;
@@ -63,7 +67,7 @@ public class Schedule extends BaseTimeEntity {
 		String name,
 		LocalTime startTime,
 		LocalTime endTime,
-		String colorCode,
+		ScheduleColor scheduleColor,
 		boolean isRecurring
 	) {
 		return Schedule.builder()
@@ -72,7 +76,7 @@ public class Schedule extends BaseTimeEntity {
 			.name(name)
 			.startTime(startTime)
 			.endTime(endTime)
-			.colorCode(colorCode)
+			.scheduleColor(scheduleColor)
 			.isRecurring(isRecurring)
 			.build();
 	}
