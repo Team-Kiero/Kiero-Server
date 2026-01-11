@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,6 +49,7 @@ public class ParentController {
 	private final SseService sseService;
 	private final ParentSseService parentSseService;
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@PostMapping("/login")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> login(
 		@RequestParam("authorizationCode") String authorizationCode,
@@ -67,6 +69,7 @@ public class ParentController {
 			.body(SuccessResponse.of(ParentSuccessCode.LOGIN_SUCCESS, response));
 	}
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@PostMapping("/login/access-token")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> loginWithAccessToken(
 		@RequestParam("accessToken") String accessToken
@@ -85,6 +88,7 @@ public class ParentController {
 			.body(SuccessResponse.of(ParentSuccessCode.LOGIN_SUCCESS, response));
 	}
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
     @PostMapping("/invite")
     public ResponseEntity<SuccessResponse<InviteCodeCreateResponse>> invite(
             @CurrentMember CurrentAuth currentAuth,
@@ -113,6 +117,7 @@ public class ParentController {
                 );
     }
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
     @GetMapping("/invite/status")
     public ResponseEntity<SuccessResponse<InviteStatusResponse>> checkInviteStatus(
             @CurrentMember CurrentAuth currentAuth,
@@ -129,6 +134,7 @@ public class ParentController {
                 .body(SuccessResponse.of(ParentSuccessCode.INVITE_STATUS_CHECKED, response));
     }
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
     @GetMapping("/children")
     public ResponseEntity<SuccessResponse<List<ChildInfoResponse>>> getMyChildren(
             @CurrentMember CurrentAuth currentAuth
@@ -139,6 +145,7 @@ public class ParentController {
                 .body(SuccessResponse.of(ParentSuccessCode.GET_CHILDREN_SUCCESS, children));
     }
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@GetMapping("/invite/subscribe")
 	public SseEmitter subscribe(
 		@CurrentMember CurrentAuth currentAuth
