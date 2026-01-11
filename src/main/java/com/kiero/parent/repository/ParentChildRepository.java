@@ -12,13 +12,20 @@ import java.util.List;
 
 public interface ParentChildRepository extends JpaRepository<ParentChild, Long> {
 
-    @Query("SELECT pc.child.id FROM ParentChild pc WHERE pc.parent.id = :parentId")
-    List<Long> findChildIdsByParentId(@Param("parentId") Long parentId);
+	@Query("SELECT pc.child.id FROM ParentChild pc WHERE pc.parent.id = :parentId")
+	List<Long> findChildIdsByParentId(@Param("parentId") Long parentId);
 
-    boolean existsByParentAndChild(Parent parent, Child child);
-  
-    @EntityGraph(attributePaths = {"child"})
-    List<ParentChild> findAllByParentId(Long parentId);
+	boolean existsByParentAndChild(Parent parent, Child child);
 
-    boolean existsByParentIdAndChildId(Long parentId, Long childId);
+	@EntityGraph(attributePaths = {"child"})
+	List<ParentChild> findAllByParentId(Long parentId);
+
+	boolean existsByParentIdAndChildId(Long parentId, Long childId);
+
+	@Query("""
+		select pc.parent
+		from ParentChild pc
+		where pc.child.id = :childId
+		""")
+	List<Parent> findParentsByChildId(@Param("childId") Long childId);
 }

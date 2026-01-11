@@ -72,6 +72,23 @@ public class AuthService {
 	}
 
 	@Transactional
+	public AccessTokenGenerateResponse generateTemporaryAccessTokenFromRefreshToken(final String refreshToken, final String scope) {
+		validateRefreshToken(refreshToken);
+
+		Long memberId = jwtTokenProvider.getMemberIdFromJwt(refreshToken);
+		Role role = jwtTokenProvider.getRoleFromJwt(refreshToken);
+		verifyMemberIdWithStoredToken(refreshToken, memberId, role);
+		Collection<GrantedAuthority> authorities = List.of(role.toGrantedAuthority());
+
+		UsernamePasswordAuthenticationToken authenticationToken = createAuthenticationToken(memberId, role,
+			authorities);
+		log.info("Generated new temporary access token for memberId: {}, role: {}, authorities: {}", memberId, role.getRoleName(),
+			authorities);
+
+		return AccessTokenGenerateResponse.of(jwtTokenProvider.issueTemporaryAccessToken(authenticationToken, List.of(scope)));
+	}
+
+	@Transactional
 	public String reissueRefreshToken(String oldRefreshToken) {
 		validateRefreshToken(oldRefreshToken);
 

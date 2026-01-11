@@ -7,6 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
@@ -74,4 +75,14 @@ public class MemberTokenController {
 			.body(SuccessResponse.of(TokenSuccessCode.TOKENS_REISSUE_SUCCESS, response));
 	}
 
+	@PostMapping("/subscribe-token")
+	public ResponseEntity<SuccessResponse<AccessTokenGenerateResponse>> issueSubscribeToken(
+		@CookieValue("refreshToken") String refreshToken,
+		@RequestParam("scope") String scope
+	) {
+		AccessTokenGenerateResponse response = authService.generateTemporaryAccessTokenFromRefreshToken(refreshToken, scope);
+
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(TokenSuccessCode.SUBSCRIBE_TOKEN_ISSUE_SUCCESS, response));
+	}
 }

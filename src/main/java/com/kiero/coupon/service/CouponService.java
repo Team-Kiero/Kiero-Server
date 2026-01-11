@@ -5,20 +5,26 @@ import com.kiero.child.exception.ChildErrorCode;
 import com.kiero.child.repository.ChildRepository;
 import com.kiero.coupon.domain.Coupon;
 import com.kiero.coupon.exception.CouponErrorCode;
+import com.kiero.coupon.presentation.dto.CouponPurchaseEvent;
 import com.kiero.coupon.presentation.dto.CouponResponse;
 import com.kiero.coupon.repository.CouponRepository;
 import com.kiero.global.exception.KieroException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CouponService {
+
+    private final ApplicationEventPublisher eventPublisher;
 
     private final CouponRepository couponRepository;
     private final ChildRepository childRepository;
@@ -53,6 +59,13 @@ public class CouponService {
 
         // 4. 금화 차감
         child.deductCoin(coupon.getPrice());
+
+        eventPublisher.publishEvent(new CouponPurchaseEvent(
+            child.getId(),
+            coupon.getName(),
+            coupon.getPrice(),
+            LocalDateTime.now()
+        ));
 
         log.info("Coupon purchased: childId={}, couponId={}, price={}, remainingCoins={}",
                 childId, couponId, coupon.getPrice(), child.getCoinAmount());

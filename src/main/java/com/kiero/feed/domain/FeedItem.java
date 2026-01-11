@@ -1,13 +1,16 @@
 package com.kiero.feed.domain;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.kiero.child.domain.Child;
 import com.kiero.feed.domain.enums.EventType;
+import com.kiero.feed.infrastructure.converter.JsonNodeConverter;
 import com.kiero.global.entity.BaseTimeEntity;
 import com.kiero.parent.domain.Parent;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -18,7 +21,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,43 +32,44 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Table(name = FeedTableConstants.TABLE_FEED)
-public class Feed extends BaseTimeEntity {
+@Table(name = FeedItemTableConstants.TABLE_FEED_ITEM)
+public class FeedItem extends BaseTimeEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = FeedTableConstants.COLUMN_ID)
+	@Column(name = FeedItemTableConstants.COLUMN_ID)
 	private Long id;
 
-	@Column(name = FeedTableConstants.COLUMN_DATE, nullable = false)
-	private LocalDate date;
+	@Column(name = FeedItemTableConstants.COLUMN_OCCURRED_AT, nullable = false)
+	private LocalDateTime occurredAt;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = FeedTableConstants.COLUMN_EVENT_TYPE, nullable = false)
+	@Column(name = FeedItemTableConstants.COLUMN_EVENT_TYPE, nullable = false)
 	private EventType eventType;
 
-	@Column(name = FeedTableConstants.COLUMN_METADATA, columnDefinition = "json", nullable = false)
-	private String metadata;
+	@Convert(converter = JsonNodeConverter.class)
+	@Column(name = FeedItemTableConstants.COLUMN_METADATA, columnDefinition = "json", nullable = false)
+	private JsonNode metadata;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = FeedTableConstants.COLUMN_PARENT_ID, nullable = false)
+	@JoinColumn(name = FeedItemTableConstants.COLUMN_PARENT_ID, nullable = false)
 	private Parent parent;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = FeedTableConstants.COLUMN_CHILD_ID, nullable = false)
+	@JoinColumn(name = FeedItemTableConstants.COLUMN_CHILD_ID, nullable = false)
 	private Child child;
 
-	public static Feed create(
+	public static FeedItem create(
 		Parent parent,
 		Child child,
-		LocalDate date,
+		LocalDateTime occurredAt,
 		EventType eventType,
-		String metadata
+		JsonNode metadata
 	) {
-		return Feed.builder()
+		return FeedItem.builder()
 			.parent(parent)
 			.child(child)
-			.date(date)
+			.occurredAt(occurredAt)
 			.eventType(eventType)
 			.metadata(metadata)
 			.build();

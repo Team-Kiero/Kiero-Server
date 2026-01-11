@@ -38,8 +38,16 @@ public class SecurityConfig {
 					"/api/v1/parents/login",
 					"/api/v1/parents/login/access-token",
 					"/api/v1/children/signup",
-					"/api/v1/tokens/reissue/*"
+					"/api/v1/tokens/reissue/*",
+					"/api/v1/tokens/subscribe-token"
 				).permitAll()
+
+				.requestMatchers(HttpMethod.GET, "/api/v1/feeds/*/subscribe")
+				.hasAuthority("SCOPE_FEED_SUBSCRIBE")
+
+				.requestMatchers(HttpMethod.GET, "/api/v1/parents/invite/subscribe")
+				.hasAuthority("SCOPE_INVITE_SUBSCRIBE")
+
 				.anyRequest().authenticated()
 			)
 			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
