@@ -116,8 +116,8 @@ public class ParentService {
 
 		Optional<Child> matchedChild = parentChildren.stream()
 				.map(ParentChild::getChild)
-				.filter(child -> child.getLastName().equals(childLastName) &&
-								 child.getFirstName().equals(childFirstName))
+				.filter(child -> child.getLastName().trim().equals(childLastName.trim()) &&
+								 child.getFirstName().trim().equals(childFirstName.trim()))
 				.findFirst();
 
 		if (matchedChild.isPresent()) {

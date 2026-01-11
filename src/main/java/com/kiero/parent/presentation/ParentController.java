@@ -35,7 +35,7 @@ import java.util.List;
 @RestController
 @Validated
 @RequiredArgsConstructor
-@RequestMapping("api/v1/parents")
+@RequestMapping("/api/v1/parents")
 public class ParentController {
 
 	private static final String REFRESH_TOKEN = "refreshToken";
@@ -111,8 +111,8 @@ public class ParentController {
     @GetMapping("/invite/status")
     public ResponseEntity<SuccessResponse<InviteStatusResponse>> checkInviteStatus(
             @CurrentMember CurrentAuth currentAuth,
-            @RequestParam @NotBlank(message = "자녀의 성은 필수입니다.") String childLastName,
-            @RequestParam @NotBlank(message = "자녀의 이름은 필수입니다.") String childFirstName
+            @RequestParam("childLastName") @NotBlank(message = "자녀의 성은 필수입니다.") String childLastName,
+            @RequestParam("childFirstName") @NotBlank(message = "자녀의 이름은 필수입니다.") String childFirstName
     ) {
         InviteStatusResponse response = parentService.checkInviteStatus(
                 currentAuth.memberId(),
