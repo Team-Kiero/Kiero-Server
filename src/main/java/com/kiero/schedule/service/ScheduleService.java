@@ -134,7 +134,11 @@ public class ScheduleService {
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
 
 		if (!childId.equals(scheduleDetail.getSchedule().getChild().getId())) {
-			throw new KieroException((ScheduleErrorCode.SCHEDULE_ACCESS_DENIED));
+			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
+		}
+
+		if (!scheduleDetail.getScheduleStatus().equals(ScheduleStatus.PENDING)) {
+			throw new KieroException(ScheduleErrorCode.SCHEDULE_COULD_NOT_BE_SKIPPED);
 		}
 
 		scheduleDetail.changeScheduleStatus(ScheduleStatus.SKIPPED);
