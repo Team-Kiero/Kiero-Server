@@ -147,7 +147,15 @@ public class ScheduleService {
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
 
 		if (!childId.equals(scheduleDetail.getSchedule().getChild().getId())) {
-			throw new KieroException((ScheduleErrorCode.SCHEDULE_ACCESS_DENIED));
+			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
+		}
+
+		if (scheduleDetail.getScheduleStatus().equals(ScheduleStatus.VERIFIED)) {
+			throw new KieroException(ScheduleErrorCode.SCHEDULE_ALREADY_COMPLETED);
+		}
+
+		if (scheduleDetail.getStoneUsedAt() != null) {
+			throw new KieroException(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETE);
 		}
 
 		scheduleDetail.changeScheduleStatus(ScheduleStatus.VERIFIED);
