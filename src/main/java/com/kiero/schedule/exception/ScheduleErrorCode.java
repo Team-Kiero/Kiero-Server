@@ -15,6 +15,8 @@ public enum ScheduleErrorCode implements BaseCode {
 	 */
 	INVALID_DAY_OF_WEEK(HttpStatus.BAD_REQUEST, "형식에 맞지 않는 요일 입력입니다."),
 	FIRE_LIT_ALREADY_COMPLETE(HttpStatus.BAD_REQUEST, "오늘의 불 피우기가 이미 완료되었습니다."),
+	SCHEDULE_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "해당 일정은 이미 완료되었습니다."),
+	SCHEDULE_COULD_NOT_BE_SKIPPED(HttpStatus.BAD_REQUEST, "해당 일정은 다음으로 넘어갈 수 있는 상태가 아닙니다."),
 
 	/*
 	403 FORBIDDEN

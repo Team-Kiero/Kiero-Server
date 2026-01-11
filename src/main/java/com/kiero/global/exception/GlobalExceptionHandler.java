@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,6 +28,11 @@ public class GlobalExceptionHandler {
 		BaseCode errorCode = e.getBaseCode();
 		return ResponseEntity.status(errorCode.getHttpStatus())
 			.body(ErrorResponse.of(errorCode));
+	}
+
+	@ExceptionHandler(MissingRequestCookieException.class)
+	public ResponseEntity<ErrorResponse> handleMissingCookie(MissingRequestCookieException e) {
+		return buildErrorResponse(ErrorCode.MISSING_HEADER, e.getMessage());
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
