@@ -78,12 +78,13 @@ class S3ServiceTest {
         PresignedUrlRequest request = new PresignedUrlRequest(originalFileName, contentType);
 
         // When
-        PresignedUrlResponse response = s3Service.generatePresignedUploadUrl(request);
+        PresignedUrlResponse response = s3Service.generatePresignedUploadUrl(request, "schedule");
 
         // Then
         assertNotNull(response, "응답이 null이면 안됨");
         assertNotNull(response.presignedUrl(), "Presigned URL이 null이면 안됨");
         assertNotNull(response.fileName(), "파일명이 null이면 안됨");
+        assertTrue(response.fileName().startsWith("schedule/"),"S3 경로 포함");
         assertTrue(response.fileName().contains(originalFileName), "원본 파일명 포함");
 
         // S3Presigner.presignPutObject가 1번 호출되었는지 확인

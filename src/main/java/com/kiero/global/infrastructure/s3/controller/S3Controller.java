@@ -22,12 +22,12 @@ public class S3Controller {
 
     private final S3Service s3Service;
 
-    @PostMapping("/schedule")
+    @PostMapping("/schedules")
     public ResponseEntity<SuccessResponse<PresignedUrlResponse>> generateSchedulePresignedUrl(
             @CurrentMember CurrentAuth currentAuth,
             @Valid @RequestBody PresignedUrlRequest request
     ) {
-        PresignedUrlResponse response = s3Service.generatePresignedUploadUrl(request);
+        PresignedUrlResponse response = s3Service.generatePresignedUploadUrl(request, "schedule");
         return ResponseEntity.ok()
                 .body(SuccessResponse.of(S3SuccessCode.PRESIGNED_URL_CREATED, response));
     }

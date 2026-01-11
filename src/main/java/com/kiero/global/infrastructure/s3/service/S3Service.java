@@ -38,9 +38,9 @@ public class S3Service {
      * @param contentType 파일의 MIME 타입 (예: image/jpeg, video/mp4)
      * @return Presigned URL과 생성된 파일명을 담은 객체
      */
-    public PresignedUrlResponse generatePresignedUploadUrl(PresignedUrlRequest request) {
+    public PresignedUrlResponse generatePresignedUploadUrl(PresignedUrlRequest request, String prefix) {
         // 1. 고유한 파일명 생성 (중복 방지)
-        String fileName = generateFileName(request.fileName());
+        String fullPath = generatePath(prefix, request.fileName());
         String contentType = request.contentType();
 
         // 2. S3에 업로드할 객체의 정보를 설정
@@ -49,7 +49,7 @@ public class S3Service {
         //    - contentType: 파일 타입
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
-                .key(fileName)
+                .key(fullPath)
                 .contentType(contentType)
                 .build();
 
@@ -71,7 +71,7 @@ public class S3Service {
         String presignedUrl = presignedRequest.url().toString();
 
         // 6. 클라이언트에게 반환할 정보
-        return new PresignedUrlResponse(presignedUrl, fileName);
+        return new PresignedUrlResponse(presignedUrl, fullPath);
     }
 
     /**
@@ -110,7 +110,8 @@ public class S3Service {
     }
 
     // UUID를 사용해 고유한 파일명 생성
-    private String generateFileName(String originalFileName) {
-        return UUID.randomUUID() + "_" + originalFileName;
+    private String generatePath(String prefix, String originalFileName) {
+        String uuidFileName = UUID.randomUUID() + "_" + originalFileName;
+        return prefix + "/" + uuidFileName;
     }
 }

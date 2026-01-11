@@ -112,7 +112,7 @@ public class ParentController {
     public ResponseEntity<SuccessResponse<InviteStatusResponse>> checkInviteStatus(
             @CurrentMember CurrentAuth currentAuth,
             @RequestParam @NotBlank(message = "자녀의 성은 필수입니다.") String childLastName,
-            @RequestParam @NotBlank(message = "자녀의 성은 필수입니다.") String childFirstName
+            @RequestParam @NotBlank(message = "자녀의 이름은 필수입니다.") String childFirstName
     ) {
         InviteStatusResponse response = parentService.checkInviteStatus(
                 currentAuth.memberId(),
