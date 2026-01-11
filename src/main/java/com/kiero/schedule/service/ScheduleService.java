@@ -18,6 +18,7 @@ import com.kiero.child.domain.Child;
 import com.kiero.child.exception.ChildErrorCode;
 import com.kiero.child.repository.ChildRepository;
 import com.kiero.global.exception.KieroException;
+import com.kiero.global.infrastructure.s3.service.S3Service;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.exception.ParentErrorCode;
 import com.kiero.parent.repository.ParentChildRepository;

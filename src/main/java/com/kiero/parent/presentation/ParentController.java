@@ -5,10 +5,13 @@ import com.kiero.invitation.service.InviteCodeService;
 import com.kiero.parent.presentation.dto.ChildInfoResponse;
 import com.kiero.parent.presentation.dto.InviteCodeCreateRequest;
 import com.kiero.parent.presentation.dto.InviteCodeCreateResponse;
+import com.kiero.parent.presentation.dto.InviteStatusResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,8 +36,9 @@ import java.util.List;
 
 @Slf4j
 @RestController
+@Validated
 @RequiredArgsConstructor
-@RequestMapping("api/v1/parents")
+@RequestMapping("/api/v1/parents")
 public class ParentController {
 
 	private static final String REFRESH_TOKEN = "refreshToken";
@@ -107,6 +111,22 @@ public class ParentController {
                                 response
                         )
                 );
+    }
+
+    @GetMapping("/invite/status")
+    public ResponseEntity<SuccessResponse<InviteStatusResponse>> checkInviteStatus(
+            @CurrentMember CurrentAuth currentAuth,
+            @RequestParam("childLastName") @NotBlank(message = "자녀의 성은 필수입니다.") String childLastName,
+            @RequestParam("childFirstName") @NotBlank(message = "자녀의 이름은 필수입니다.") String childFirstName
+    ) {
+        InviteStatusResponse response = parentService.checkInviteStatus(
+                currentAuth.memberId(),
+                childLastName,
+                childFirstName
+        );
+
+        return ResponseEntity.ok()
+                .body(SuccessResponse.of(ParentSuccessCode.INVITE_STATUS_CHECKED, response));
     }
 
     @GetMapping("/children")

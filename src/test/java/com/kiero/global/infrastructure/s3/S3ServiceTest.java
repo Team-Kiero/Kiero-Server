@@ -1,5 +1,8 @@
 package com.kiero.global.infrastructure.s3;
 
+import com.kiero.global.infrastructure.s3.dto.PresignedUrlRequest;
+import com.kiero.global.infrastructure.s3.dto.PresignedUrlResponse;
+import com.kiero.global.infrastructure.s3.service.S3Service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,15 +75,16 @@ class S3ServiceTest {
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
                 .thenReturn(mockPresignedRequest);
 
+        PresignedUrlRequest request = new PresignedUrlRequest(originalFileName, contentType);
+
         // When
-        S3Service.PresignedUrlResponse response = s3Service.generatePresignedUploadUrl(
-                originalFileName, contentType
-        );
+        PresignedUrlResponse response = s3Service.generatePresignedUploadUrl(request, "schedule");
 
         // Then
         assertNotNull(response, "응답이 null이면 안됨");
         assertNotNull(response.presignedUrl(), "Presigned URL이 null이면 안됨");
         assertNotNull(response.fileName(), "파일명이 null이면 안됨");
+        assertTrue(response.fileName().startsWith("schedule/"),"S3 경로 포함");
         assertTrue(response.fileName().contains(originalFileName), "원본 파일명 포함");
 
         // S3Presigner.presignPutObject가 1번 호출되었는지 확인
