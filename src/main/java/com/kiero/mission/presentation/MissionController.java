@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +31,7 @@ public class MissionController {
     private final MissionService missionService;
     private final MissionSuggestionService missionSuggestionService;
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
     @PostMapping("/missions/{childId}")
     public ResponseEntity<SuccessResponse<MissionResponse>> createMission(
             @CurrentMember CurrentAuth currentAuth,
@@ -42,6 +44,7 @@ public class MissionController {
                 .body(SuccessResponse.of(MissionSuccessCode.MISSION_CREATED, response));
     }
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
     @PostMapping("/missions/{childId}/bulk")
     public ResponseEntity<SuccessResponse<List<MissionResponse>>> bulkCreateMissions(
             @CurrentMember CurrentAuth currentAuth,
@@ -54,6 +57,7 @@ public class MissionController {
                 .body(SuccessResponse.of(MissionSuccessCode.MISSIONS_BULK_CREATED, responses));
     }
 
+    @PreAuthorize("hasAnyRole('CHILD', 'PARENT', 'ADMIN')")
     @GetMapping("/missions")
     public ResponseEntity<SuccessResponse<List<MissionResponse>>> getMissions(
             @CurrentMember CurrentAuth currentAuth,
@@ -73,6 +77,7 @@ public class MissionController {
                 .body(SuccessResponse.of(MissionSuccessCode.MISSIONS_RETRIEVED, responses));
     }
 
+    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
     @PatchMapping("/missions/{missionId}/complete")
     public ResponseEntity<SuccessResponse<MissionResponse>> completeMission(
             @CurrentMember CurrentAuth currentAuth,
@@ -84,6 +89,7 @@ public class MissionController {
                 .body(SuccessResponse.of(MissionSuccessCode.MISSION_COMPLETED, response));
     }
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
     @PostMapping("/missions/suggestions")
     public ResponseEntity<SuccessResponse<MissionSuggestionResponse>> suggestMissions(
             @CurrentMember CurrentAuth currentAuth,
