@@ -18,8 +18,6 @@ import com.kiero.child.exception.ChildErrorCode;
 import com.kiero.child.repository.ChildRepository;
 import com.kiero.global.exception.KieroException;
 import com.kiero.global.infrastructure.s3.service.S3Service;
-import com.kiero.global.infrastructure.s3.dto.PresignedUrlRequest;
-import com.kiero.global.infrastructure.s3.dto.PresignedUrlResponse;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.exception.ParentErrorCode;
 import com.kiero.parent.repository.ParentChildRepository;
@@ -58,7 +56,6 @@ public class ScheduleService {
 	private final ScheduleRepository scheduleRepository;
 	private final ScheduleRepeatDaysRepository scheduleRepeatDaysRepository;
 	private final ScheduleDetailRepository scheduleDetailRepository;
-	private final S3Service s3Service;
 
 	private final static int ALL_SCHEDULE_SUCCESS_REWARD = 10;
 
@@ -331,10 +328,6 @@ public class ScheduleService {
 			.toList();
 
 		scheduleDetailRepository.saveAll(scheduleDetails);
-	}
-
-	public PresignedUrlResponse generatePresignedUrl(PresignedUrlRequest request) {
-		return s3Service.generatePresignedUploadUrl(request.fileName(), request.contentType());
 	}
 
 	private List<DayOfWeek> dayOfWeekParser(String dayOfWeek) {

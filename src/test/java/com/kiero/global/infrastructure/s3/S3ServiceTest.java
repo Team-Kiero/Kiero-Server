@@ -1,5 +1,6 @@
 package com.kiero.global.infrastructure.s3;
 
+import com.kiero.global.infrastructure.s3.dto.PresignedUrlRequest;
 import com.kiero.global.infrastructure.s3.dto.PresignedUrlResponse;
 import com.kiero.global.infrastructure.s3.service.S3Service;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,10 +75,10 @@ class S3ServiceTest {
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
                 .thenReturn(mockPresignedRequest);
 
+        PresignedUrlRequest request = new PresignedUrlRequest(originalFileName, contentType);
+
         // When
-        PresignedUrlResponse response = s3Service.generatePresignedUploadUrl(
-                originalFileName, contentType
-        );
+        PresignedUrlResponse response = s3Service.generatePresignedUploadUrl(request);
 
         // Then
         assertNotNull(response, "응답이 null이면 안됨");

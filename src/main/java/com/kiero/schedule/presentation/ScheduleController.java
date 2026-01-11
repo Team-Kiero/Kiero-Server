@@ -2,7 +2,6 @@ package com.kiero.schedule.presentation;
 
 import java.time.LocalDate;
 
-import com.kiero.global.infrastructure.s3.exception.S3SuccessCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -15,8 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
-import com.kiero.global.infrastructure.s3.dto.PresignedUrlRequest;
-import com.kiero.global.infrastructure.s3.dto.PresignedUrlResponse;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.schedule.exception.ScheduleSuccessCode;
 import com.kiero.schedule.presentation.dto.CompleteNowScheduleRequest;
@@ -97,15 +94,5 @@ public class ScheduleController {
 		FireLitResponse response = scheduleService.fireLit(currentAuth.memberId());
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.FIRE_LIT_SUCCESS, response));
-	}
-
-	@PostMapping("/images/presigned-url")
-	public ResponseEntity<SuccessResponse<PresignedUrlResponse>> generatePresignedUrl(
-		@CurrentMember CurrentAuth currentAuth,
-		@Valid @RequestBody PresignedUrlRequest request
-	) {
-		PresignedUrlResponse response = scheduleService.generatePresignedUrl(request);
-		return ResponseEntity.ok()
-			.body(SuccessResponse.of(S3SuccessCode.PRESIGNED_URL_CREATED, response));
 	}
 }

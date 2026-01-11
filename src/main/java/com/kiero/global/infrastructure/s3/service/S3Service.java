@@ -1,5 +1,6 @@
 package com.kiero.global.infrastructure.s3.service;
 
+import com.kiero.global.infrastructure.s3.dto.PresignedUrlRequest;
 import com.kiero.global.infrastructure.s3.dto.PresignedUrlResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,9 +38,10 @@ public class S3Service {
      * @param contentType 파일의 MIME 타입 (예: image/jpeg, video/mp4)
      * @return Presigned URL과 생성된 파일명을 담은 객체
      */
-    public PresignedUrlResponse generatePresignedUploadUrl(String originalFileName, String contentType) {
+    public PresignedUrlResponse generatePresignedUploadUrl(PresignedUrlRequest request) {
         // 1. 고유한 파일명 생성 (중복 방지)
-        String fileName = generateFileName(originalFileName);
+        String fileName = generateFileName(request.fileName());
+        String contentType = request.contentType();
 
         // 2. S3에 업로드할 객체의 정보를 설정
         //    - bucket: 어느 버킷에 업로드할지
