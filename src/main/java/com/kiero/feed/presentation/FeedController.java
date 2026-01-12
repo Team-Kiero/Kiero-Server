@@ -1,6 +1,7 @@
 package com.kiero.feed.presentation;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,6 +29,7 @@ public class FeedController {
 	private final FeedService feedService;
 	private final FeedSseService feedSseService;
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@GetMapping("/{childId}")
 	public ResponseEntity<SuccessResponse<FeedGetResponse>> getFeed(
 		@PathVariable("childId") Long childId,
@@ -40,6 +42,7 @@ public class FeedController {
 			.body(SuccessResponse.of(FeedSuccessCode.FEED_GET_SUCCESS, response));
 	}
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@GetMapping(value = "/{childId}/subscribe", produces = "text/event-stream")
 	public SseEmitter subscribe(
 		@PathVariable("childId") Long childId,

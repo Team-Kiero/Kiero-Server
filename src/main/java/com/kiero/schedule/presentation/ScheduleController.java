@@ -3,6 +3,7 @@ package com.kiero.schedule.presentation;
 import java.time.LocalDate;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,6 +34,7 @@ public class ScheduleController {
 
 	private final ScheduleService scheduleService;
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@PostMapping("/{childId}")
 	public ResponseEntity<SuccessResponse<Void>> addSchedule(
 		@Valid @RequestBody ScheduleAddRequest request,
@@ -44,6 +46,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_CREATED));
 	}
 
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@GetMapping("/{childId}")
 	public ResponseEntity<SuccessResponse<ScheduleTabResponse>> getSchedules(
 		@RequestParam LocalDate startDate,
@@ -57,6 +60,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_TAB_GET_SUCCESS, response));
 	}
 
+    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
 	@PatchMapping("/today")
 	public ResponseEntity<SuccessResponse<TodayScheduleResponse>> updateAndGetTodaySchedule(
 		@CurrentMember CurrentAuth currentAuth
@@ -66,6 +70,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.TODAY_SCHEDULE_GET_SUCCESS, response));
 	}
 
+    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
 	@PatchMapping("/skip/{scheduleDetailId}")
 	public ResponseEntity<SuccessResponse<Void>> skipNowSchedule(
 		@PathVariable("scheduleDetailId") Long scheduleDetailId,
@@ -76,6 +81,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_SKIP_SUCCESS));
 	}
 
+    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
 	@PatchMapping("/{scheduleDetailId}")
 	public ResponseEntity<SuccessResponse<Void>> completeNowSchedule(
 		@Valid @RequestBody NowScheduleCompleteRequest request,
@@ -87,6 +93,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_COMPLETE_SUCCESS));
 	}
 
+    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
 	@PatchMapping("/fire-lit")
 	public ResponseEntity<SuccessResponse<FireLitResponse>> fireLit(
 		@CurrentMember CurrentAuth currentAuth
