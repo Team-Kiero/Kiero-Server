@@ -39,9 +39,10 @@ public final class TodayScheduleStatusResolver {
 			LocalTime now = LocalTime.now();
 			LocalTime start = todoScheduleDetail.getSchedule().getStartTime();
 			LocalTime end = todoScheduleDetail.getSchedule().getEndTime();
+			ScheduleStatus status = todoScheduleDetail.getScheduleStatus();
 
 			// 현재 일정을 완료하고, 다음 일정이 존재할 때
-			if (now.isBefore(start)) {
+			if (now.isBefore(start) && status == ScheduleStatus.PENDING) {
 				return TodayScheduleStatus.NEXT_SCHEDULE_EXIST;
 			}
 
@@ -58,6 +59,7 @@ public final class TodayScheduleStatusResolver {
 
 			// 일정을 모두 완료하고, 불피우기는 진행하지 않았을 때
 			if (passedScheduleCount == totalSchedule && earliestStoneUsedAt == null) {
+				log.info("totalSchedule" + totalSchedule + "passedScheduleCount" + passedScheduleCount);
 				return TodayScheduleStatus.FIRE_NOT_LIT;
 			}
 

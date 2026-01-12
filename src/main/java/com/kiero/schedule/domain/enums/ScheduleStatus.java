@@ -4,5 +4,6 @@ public enum ScheduleStatus {
 	PENDING,
 	SKIPPED,
 	FAILED,
-	VERIFIED
+	VERIFIED,
+	COMPLETED
 }
