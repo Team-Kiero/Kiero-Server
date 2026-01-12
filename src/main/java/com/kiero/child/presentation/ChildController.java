@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +31,7 @@ public class ChildController {
     private static final int COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
     private final ChildService childService;
 
+    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
     @PostMapping("/signup")
     public ResponseEntity<SuccessResponse<ChildLoginResponse>> signup(
             @Valid @RequestBody ChildSignupRequest request
@@ -49,6 +51,7 @@ public class ChildController {
                 .body(SuccessResponse.of(ChildSuccessCode.SIGNUP_SUCCESS, response));
     }
 
+    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
     @GetMapping("/me")
     public ResponseEntity<SuccessResponse<ChildMeResponse>> getMyInfo(
             @CurrentMember CurrentAuth currentAuth
