@@ -235,7 +235,7 @@ public class ScheduleService {
 		int gotStonesCount = gotStones.size();
 		int earnedCoinAmount = 0;
 
-		if (totalSchedule == gotStonesCount) {
+		if (totalSchedule == gotStonesCount && totalSchedule != 0) {
 			child.addCoin(ALL_SCHEDULE_SUCCESS_REWARD);
 			earnedCoinAmount = ALL_SCHEDULE_SUCCESS_REWARD;
 		}
