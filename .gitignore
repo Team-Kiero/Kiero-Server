@@ -1,6 +1,6 @@
 # QueryDSL
-**/Q*.java
 /build/generated/
+/**/generated/**
 
 .gradle
 build/
