@@ -181,7 +181,7 @@ public class ScheduleService {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
-		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.VERIFIED) {
+		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.VERIFIED || scheduleDetail.getScheduleStatus() == ScheduleStatus.COMPLETED) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ALREADY_COMPLETED);
 		}
 
