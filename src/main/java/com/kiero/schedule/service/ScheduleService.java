@@ -18,7 +18,6 @@ import com.kiero.child.domain.Child;
 import com.kiero.child.exception.ChildErrorCode;
 import com.kiero.child.repository.ChildRepository;
 import com.kiero.global.exception.KieroException;
-import com.kiero.global.infrastructure.s3.service.S3Service;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.exception.ParentErrorCode;
 import com.kiero.parent.repository.ParentChildRepository;
@@ -31,11 +30,11 @@ import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
 import com.kiero.schedule.domain.enums.TodayScheduleStatus;
 import com.kiero.schedule.exception.ScheduleErrorCode;
-import com.kiero.schedule.presentation.dto.NowScheduleCompleteEvent;
-import com.kiero.schedule.presentation.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.presentation.dto.FireLitEvent;
 import com.kiero.schedule.presentation.dto.FireLitResponse;
 import com.kiero.schedule.presentation.dto.NormalScheduleDto;
+import com.kiero.schedule.presentation.dto.NowScheduleCompleteEvent;
+import com.kiero.schedule.presentation.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.presentation.dto.RecurringScheduleDto;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
 import com.kiero.schedule.presentation.dto.ScheduleTabResponse;
@@ -72,36 +71,51 @@ public class ScheduleService {
 		List<ScheduleDetail> allScheduleDetails =
 			scheduleDetailRepository.findByDateAndChildId(today, childId);
 
-		List<ScheduleDetail> pendingScheduleDetails = allScheduleDetails.stream()
-			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING)
+		// 일정 현황이 PENDING이거나 VERIFIED인 것을 가져옴
+		List<ScheduleDetail> pendingAndVerifiedScheduleDetails = allScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING
+				|| sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
 			.toList();
 
 		// 오늘 일정들의 stoneUsedAt을 통해 불피우기 시행 여부를 조사하고, 가장 빠른 불피우기 시행 시각을 추출함 (없으면 null)
 		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(allScheduleDetails);
 
 		// 당일 생성된 일정들에 한해 필터를 적용함
-		List<ScheduleDetail> filteredPendingScheduleDetails = filterTodayCreatedSchedules(today, pendingScheduleDetails,
+		List<ScheduleDetail> filteredPendingAndVerifiedScheduleDetails = filterTodayCreatedSchedules(today,
+			pendingAndVerifiedScheduleDetails,
 			earliestStoneUsedAt);
 		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails,
 			earliestStoneUsedAt);
 
 		// PENDING 일정 중 일정 종료 시간이 지난 일정은 일정 상태 FAILED로 변경
-		markPassedSchedulesAsFailed(filteredPendingScheduleDetails);
+		markPassedPendingSchedulesAsFailed(filteredPendingAndVerifiedScheduleDetails);
 
-		// 제일 먼저 진행되어야 하는 PENDING 스케쥴, 그 다음 PENDING 스케쥴
+		// VERIFIED 일정 중 일정 종료 시간이 지난 일정은 일정 상태 COMPLETE로 변경
+		markPassedVerifiedSchedulesAsCompleted(filteredPendingAndVerifiedScheduleDetails);
+
+		// 제일 먼저 진행되어야 하는 PENDING or VERIFIED 스케쥴과 그 다음 PENDING 스케쥴을 가져옴
 		List<ScheduleDetail> todoScheduleDetails = findTodoScheduleAndNextTodoSchedule(
-			(filteredPendingScheduleDetails));
+			(filteredPendingAndVerifiedScheduleDetails));
 		ScheduleDetail todoScheduleDetail = todoScheduleDetails.size() > 0 ? todoScheduleDetails.get(0) : null;
 		ScheduleDetail nextTodoScheduleDetail = todoScheduleDetails.size() > 1 ? todoScheduleDetails.get(1) : null;
 
 		// 얻을 불조각 종류를 호출될 때마다 동적으로 계산함
 		stoneTypeCalculateAndSetter(filteredAllScheduleDetails, todoScheduleDetail);
 
-		// 총 일정 수, 얻은 불조각 수(인증 완료한 일정 수), 현재 일정 순서를 계산함
-		int totalSchedule = filteredAllScheduleDetails.size();
-		int earnedStones = (int)filteredAllScheduleDetails.stream()
-			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
+		// 스킵된 일정을 제외한 총 일정 수, 얻은 불조각 수(인증 완료한 일정 수), 현재 일정 순서를 계산함
+		int totalSchedule = (int)filteredAllScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.SKIPPED)
 			.count();
+
+		int scheduleOrder = 0;
+
+		int earnedStones = (int)filteredAllScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.VERIFIED
+				|| sd.getScheduleStatus() == ScheduleStatus.COMPLETED)
+			.count();
+
+		boolean isNowScheduleVerified;
+
 		boolean isSkippable = nextTodoScheduleDetail != null;
 
 		TodayScheduleStatus todayScheduleStatus = TodayScheduleStatusResolver.resolve(
@@ -112,15 +126,19 @@ public class ScheduleService {
 
 		if (todoScheduleDetail == null) {
 			return TodayScheduleResponse.of(
-				null, null, null, null, null,
+				null, scheduleOrder, null, null, null, null,
 				totalSchedule,
 				earnedStones,
 				todayScheduleStatus,
-				isSkippable
+				isSkippable,
+				false
 			);
 		} else {
+			scheduleOrder = filteredAllScheduleDetails.indexOf(todoScheduleDetail) + 1;
+			isNowScheduleVerified = todoScheduleDetail.getScheduleStatus() == ScheduleStatus.VERIFIED;
 			return TodayScheduleResponse.of(
 				todoScheduleDetail.getId(),
+				scheduleOrder,
 				todoScheduleDetail.getSchedule().getStartTime(),
 				todoScheduleDetail.getSchedule().getEndTime(),
 				todoScheduleDetail.getSchedule().getName(),
@@ -128,7 +146,8 @@ public class ScheduleService {
 				totalSchedule,
 				earnedStones,
 				todayScheduleStatus,
-				isSkippable
+				isSkippable,
+				isNowScheduleVerified
 			);
 		}
 	}
@@ -143,11 +162,13 @@ public class ScheduleService {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
-		if (!scheduleDetail.getScheduleStatus().equals(ScheduleStatus.PENDING)) {
+		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.PENDING) {
+			scheduleDetail.changeScheduleStatus(ScheduleStatus.SKIPPED);
+		} else if (scheduleDetail.getScheduleStatus() == ScheduleStatus.VERIFIED) {
+			scheduleDetail.changeScheduleStatus(ScheduleStatus.COMPLETED);
+		} else {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_COULD_NOT_BE_SKIPPED);
 		}
-
-		scheduleDetail.changeScheduleStatus(ScheduleStatus.SKIPPED);
 	}
 
 	@Transactional
@@ -160,7 +181,7 @@ public class ScheduleService {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
-		if (scheduleDetail.getScheduleStatus().equals(ScheduleStatus.VERIFIED)) {
+		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.VERIFIED || scheduleDetail.getScheduleStatus() == ScheduleStatus.COMPLETED) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ALREADY_COMPLETED);
 		}
 
@@ -197,10 +218,14 @@ public class ScheduleService {
 		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails,
 			null);
 
-		int totalSchedule = filteredAllScheduleDetails.size();
+		// 스킵된 일정을 제외하고 총 일정 수 계산
+		int totalSchedule = (int)filteredAllScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.SKIPPED)
+			.count();
 
 		List<StoneType> gotStones = filteredAllScheduleDetails.stream()
-			.filter(sd -> sd.getScheduleStatus().equals(ScheduleStatus.VERIFIED))
+			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.VERIFIED
+				|| sd.getScheduleStatus() == ScheduleStatus.COMPLETED)
 			.map(ScheduleDetail::getStoneType)
 			.toList();
 
@@ -210,7 +235,7 @@ public class ScheduleService {
 		int gotStonesCount = gotStones.size();
 		int earnedCoinAmount = 0;
 
-		if (totalSchedule == gotStonesCount) {
+		if (totalSchedule == gotStonesCount && totalSchedule != 0) {
 			child.addCoin(ALL_SCHEDULE_SUCCESS_REWARD);
 			earnedCoinAmount = ALL_SCHEDULE_SUCCESS_REWARD;
 		}
@@ -351,7 +376,8 @@ public class ScheduleService {
 
 		log.info("customDayOfWeek: " + customDayOfWeek + "today: " + today);
 
-		List<Schedule> schedules = scheduleRepeatDaysRepository.findSchedulesToCreateTodayDetail(customDayOfWeek, today);
+		List<Schedule> schedules = scheduleRepeatDaysRepository.findSchedulesToCreateTodayDetail(customDayOfWeek,
+			today);
 		List<ScheduleDetail> scheduleDetails = schedules.stream()
 			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
 			.toList();
@@ -403,16 +429,26 @@ public class ScheduleService {
 			.toList();
 	}
 
-	private void markPassedSchedulesAsFailed(List<ScheduleDetail> scheduleDetails) {
+	private void markPassedPendingSchedulesAsFailed(List<ScheduleDetail> scheduleDetails) {
 		LocalTime now = LocalTime.now();
 		scheduleDetails.stream()
-			.filter(sd -> sd.getSchedule().getEndTime().isBefore(now))
+			.filter(
+				sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.PENDING)
 			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.FAILED));
+	}
+
+	private void markPassedVerifiedSchedulesAsCompleted(List<ScheduleDetail> scheduleDetails) {
+		LocalTime now = LocalTime.now();
+		scheduleDetails.stream()
+			.filter(
+				sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
+			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.COMPLETED));
 	}
 
 	private List<ScheduleDetail> findTodoScheduleAndNextTodoSchedule(List<ScheduleDetail> scheduleDetails) {
 		return scheduleDetails.stream()
-			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING)
+			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING
+				|| sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
 			.limit(2)
 			.toList();
 	}
