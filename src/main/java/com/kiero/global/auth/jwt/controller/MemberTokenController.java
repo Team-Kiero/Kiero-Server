@@ -3,6 +3,7 @@ package com.kiero.global.auth.jwt.controller;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +31,7 @@ public class MemberTokenController {
 	private final AuthService authService;
 	private final ParentService parentService;
 
+    @PreAuthorize("hasAnyRole('CHILD', 'PARENT','ADMIN')")
 	@PostMapping("/logout")
 	public ResponseEntity<SuccessResponse<Void>> logout(
 		@CurrentMember CurrentAuth currentMember
