@@ -22,15 +22,19 @@ public class QueryLoggingAspect {
 	public Object logQueries(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
 
 		long startTime = System.currentTimeMillis();
-		Object result = proceedingJoinPoint.proceed();
-		long endTime = System.currentTimeMillis();
-		long processingTime = endTime - startTime;
 
-		log.info("Occurred Method : {}, Query Count : {}, Processing Time: {}",
-			proceedingJoinPoint.getSignature().getDeclaringTypeName() + " - " + proceedingJoinPoint.getSignature().getName(),
-			apiQueryCounter.getCount(),
-			processingTime);
+		try {
+			return proceedingJoinPoint.proceed();
+		} finally {
+			long processingTime = System.currentTimeMillis() - startTime;
 
-		return result;
+			log.info(
+				"Occurred Method : {}, Query Count : {}, Processing Time : {}ms",
+				proceedingJoinPoint.getSignature().getDeclaringTypeName()
+					+ " - " + proceedingJoinPoint.getSignature().getName(),
+				apiQueryCounter.getCount(),
+				processingTime
+			);
+		}
 	}
 }
