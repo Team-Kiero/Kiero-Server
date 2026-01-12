@@ -7,11 +7,7 @@ import com.kiero.global.exception.KieroException;
 import com.kiero.global.response.code.ErrorCode;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.mission.exception.MissionSuccessCode;
-import com.kiero.mission.presentation.dto.MissionBulkCreateRequest;
-import com.kiero.mission.presentation.dto.MissionCreateRequest;
-import com.kiero.mission.presentation.dto.MissionResponse;
-import com.kiero.mission.presentation.dto.MissionSuggestionRequest;
-import com.kiero.mission.presentation.dto.MissionSuggestionResponse;
+import com.kiero.mission.presentation.dto.*;
 import com.kiero.mission.service.MissionService;
 import com.kiero.mission.service.MissionSuggestionService;
 import jakarta.validation.Valid;
@@ -59,22 +55,24 @@ public class MissionController {
 
     @PreAuthorize("hasAnyRole('CHILD', 'PARENT', 'ADMIN')")
     @GetMapping("/missions")
-    public ResponseEntity<SuccessResponse<List<MissionResponse>>> getMissions(
+    public ResponseEntity<SuccessResponse<MissionsByDateResponse>> getMissions(
             @CurrentMember CurrentAuth currentAuth,
             @RequestParam(required = false) Long childId
     ) {
-        List<MissionResponse> responses;
+        List<MissionResponse> missions;
 
         if (currentAuth.role() == Role.PARENT) {
-            responses = missionService.getMissionsByParent(currentAuth.memberId(), childId);
+            missions = missionService.getMissionsByParent(currentAuth.memberId(), childId);
         } else if (currentAuth.role() == Role.CHILD) {
-            responses = missionService.getMissionsByChild(currentAuth.memberId());
+            missions = missionService.getMissionsByChild(currentAuth.memberId());
         } else {
             throw new KieroException(ErrorCode.ACCESS_DENIED);
         }
 
+        MissionsByDateResponse response = MissionsByDateResponse.from(missions);
+
         return ResponseEntity.ok()
-                .body(SuccessResponse.of(MissionSuccessCode.MISSIONS_RETRIEVED, responses));
+                .body(SuccessResponse.of(MissionSuccessCode.MISSIONS_RETRIEVED, response));
     }
 
     @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
