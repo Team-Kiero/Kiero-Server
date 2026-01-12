@@ -1,6 +1,7 @@
 package com.kiero.mission.presentation.dto;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,11 +27,17 @@ public record MissionsByDateResponse(
             ));
 
         List<DateGroupedMissions> result = grouped.entrySet().stream()
-            .sorted(Map.Entry.comparingByKey())  // 날짜 오름차순 (가장 빠른 마감일이 먼저)
-            .map(entry -> new DateGroupedMissions(
-                entry.getKey().toString(),
-                entry.getValue()
-            ))
+            .sorted(Map.Entry.comparingByKey()) // 날짜순
+            .map(entry -> {
+                List<MissionItemResponse> sortedMissions = entry.getValue().stream()
+                    .sorted(Comparator.comparing(MissionItemResponse::isCompleted)) // 미완료순
+                    .toList();
+
+                return new DateGroupedMissions(
+                    entry.getKey().toString(),
+                    sortedMissions
+                );
+            })
             .toList();
 
         return new MissionsByDateResponse(result);
