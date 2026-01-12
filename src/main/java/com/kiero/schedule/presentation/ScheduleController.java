@@ -46,7 +46,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_CREATED));
 	}
 
-    @PreAuthorize("hasAnyRole('CHILD', 'PARENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@GetMapping("/{childId}")
 	public ResponseEntity<SuccessResponse<ScheduleTabResponse>> getSchedules(
 		@RequestParam LocalDate startDate,
@@ -60,7 +60,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_TAB_GET_SUCCESS, response));
 	}
 
-    @PreAuthorize("hasAnyRole('CHILD', 'PARENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
 	@PatchMapping("/today")
 	public ResponseEntity<SuccessResponse<TodayScheduleResponse>> updateAndGetTodaySchedule(
 		@CurrentMember CurrentAuth currentAuth

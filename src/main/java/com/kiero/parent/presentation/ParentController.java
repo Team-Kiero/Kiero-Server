@@ -49,7 +49,6 @@ public class ParentController {
 	private final SseService sseService;
 	private final ParentSseService parentSseService;
 
-    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@PostMapping("/login")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> login(
 		@RequestParam("authorizationCode") String authorizationCode,
@@ -69,7 +68,6 @@ public class ParentController {
 			.body(SuccessResponse.of(ParentSuccessCode.LOGIN_SUCCESS, response));
 	}
 
-    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@PostMapping("/login/access-token")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> loginWithAccessToken(
 		@RequestParam("accessToken") String accessToken

@@ -31,7 +31,6 @@ public class ChildController {
     private static final int COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
     private final ChildService childService;
 
-    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
     @PostMapping("/signup")
     public ResponseEntity<SuccessResponse<ChildLoginResponse>> signup(
             @Valid @RequestBody ChildSignupRequest request

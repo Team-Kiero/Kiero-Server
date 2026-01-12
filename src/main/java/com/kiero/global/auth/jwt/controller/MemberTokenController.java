@@ -31,7 +31,7 @@ public class MemberTokenController {
 	private final AuthService authService;
 	private final ParentService parentService;
 
-    @PreAuthorize("hasAnyRole('CHILD', 'PARENT','ADMIN')")
+    @PreAuthorize("hasAnyRole('CHILD', 'PARENT', 'ADMIN')")
 	@PostMapping("/logout")
 	public ResponseEntity<SuccessResponse<Void>> logout(
 		@CurrentMember CurrentAuth currentMember
