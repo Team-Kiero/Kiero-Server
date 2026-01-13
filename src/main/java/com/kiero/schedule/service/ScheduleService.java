@@ -65,7 +65,7 @@ public class ScheduleService {
 
 	@Transactional
 	public TodayScheduleResponse getTodaySchedule(Long childId) {
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
 		// 당일 생성된 반복 일정 중 반복 요일이 오늘일 경우, 수동으로 scheduleDetail 생성
 		createScheduleDetailOfTodayRecurringSchedules(today);
@@ -206,7 +206,7 @@ public class ScheduleService {
 
 	@Transactional
 	public FireLitResponse fireLit(Long childId) {
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
 		Child child = childRepository.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
@@ -308,7 +308,7 @@ public class ScheduleService {
 			.map(Schedule::getId)
 			.toList();
 
-		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds, LocalDate.now());
+		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds, LocalDate.now(ZoneId.of("Asia/Seoul")));
 
 		List<Long> recurringIds = schedules.stream()
 			.filter(Schedule::isRecurring)
