@@ -406,8 +406,8 @@ public class ScheduleService {
 		if (todoSchedule != null) {
 			switch (scheduleDetails.indexOf(todoSchedule) % 3) {
 				case 0 -> todoSchedule.changeStoneType(StoneType.COURAGE);
-				case 1 -> todoSchedule.changeStoneType(StoneType.WISDOM);
-				case 2 -> todoSchedule.changeStoneType(StoneType.GRIT);
+				case 1 -> todoSchedule.changeStoneType(StoneType.GRIT);
+				case 2 -> todoSchedule.changeStoneType(StoneType.WISDOM);
 			}
 		}
 	}
