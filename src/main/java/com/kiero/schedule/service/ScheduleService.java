@@ -67,6 +67,9 @@ public class ScheduleService {
 	public TodayScheduleResponse getTodaySchedule(Long childId) {
 		LocalDate today = LocalDate.now();
 
+		// 당일 생성된 반복 일정 중 반복 요일이 오늘일 경우, 수동으로 scheduleDetail 생성
+		createScheduleDetailOfTodayRecurringSchedules(today);
+
 		// 오늘 일정들을 startTime이 이른 것부터 정렬하여 모두 가져옴
 		List<ScheduleDetail> allScheduleDetails =
 			scheduleDetailRepository.findByDateAndChildId(today, childId);
@@ -181,7 +184,8 @@ public class ScheduleService {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
-		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.VERIFIED || scheduleDetail.getScheduleStatus() == ScheduleStatus.COMPLETED) {
+		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.VERIFIED
+			|| scheduleDetail.getScheduleStatus() == ScheduleStatus.COMPLETED) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ALREADY_COMPLETED);
 		}
 
@@ -459,5 +463,34 @@ public class ScheduleService {
 			.filter(Objects::nonNull)
 			.min(LocalDateTime::compareTo)
 			.orElse(null);
+	}
+
+	private void createScheduleDetailOfTodayRecurringSchedules(LocalDate today) {
+		LocalDateTime startOfToday = today.atStartOfDay();
+		DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
+
+		List<Schedule> schedules =
+			scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(
+				startOfToday,
+				todayDayOfWeek,
+				today
+			);
+
+		if (schedules.isEmpty()) {
+			return;
+		}
+
+		List<ScheduleDetail> details = schedules.stream()
+			.map(schedule -> ScheduleDetail.create(
+				today,
+				null,
+				null,
+				ScheduleStatus.PENDING,
+				null,
+				schedule
+			))
+			.toList();
+
+		scheduleDetailRepository.saveAll(details);
 	}
 }
