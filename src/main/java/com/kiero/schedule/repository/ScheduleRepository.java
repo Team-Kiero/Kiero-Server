@@ -3,6 +3,7 @@ package com.kiero.schedule.repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -35,4 +36,6 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 		@Param("todayDayOfWeek") DayOfWeek todayDayOfWeek,
 		@Param("today") LocalDate today
 	);
+
+	Optional<Schedule> findFirstByChildIdOrderByCreatedAtDesc(Long childId);
 }

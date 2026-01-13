@@ -18,6 +18,7 @@ public enum ScheduleSuccessCode implements BaseCode {
 	NOW_SCHEDULE_SKIP_SUCCESS(HttpStatus.OK, "현재 일정 넘어가기 처리가 완료되었습니다."),
 	NOW_SCHEDULE_COMPLETE_SUCCESS(HttpStatus.OK, "현재 일정 완료 처리가 성공하였습니다."),
 	FIRE_LIT_SUCCESS(HttpStatus.OK, "마음의 불 피우기 요청이 성공하였습니다."),
+	DEFAULT_CONTENT_GET_SUCCESS(HttpStatus.OK, "일정 추가를 위한 기본 정보 조회가 성공하였습니다."),
 
 	/*
 	201 CREATED
