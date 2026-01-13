@@ -23,9 +23,6 @@ jobs:
 
       - name: Run tests
         run: ./gradlew test -Dspring.profiles.active=test
-        env:
-          OPEN_API_SERVICE_KEY: ${{ secrets.OPEN_API_SERVICE_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
   build-jar:
     name: Build JAR

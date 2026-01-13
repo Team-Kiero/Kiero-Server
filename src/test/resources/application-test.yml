@@ -14,15 +14,6 @@ spring:
         show_sql: true
     open-in-view: false
 
-  # Spring AI OpenAI 설정
-  ai:
-    openai:
-      api-key: ${OPENAI_API_KEY:sk-dummy-key-for-test-prevention}
-      chat:
-        options:
-          model: gpt-4o-mini
-          temperature: 0.1
-
 # AWS 설정 (테스트용 더미 값)
 aws:
   s3:
@@ -31,27 +22,6 @@ aws:
   credentials:
     access-key: test-access-key
     secret-key: test-secret-key
-
-# JWT 설정 (테스트용 더미 값)
-jwt:
-  secret: test-jwt-secret-key-for-testing-purposes-minimum-256-bits-required
-  access-token-expire-time: 3600000
-  refresh-token-expire-time: 86400000
-
-# 공공데이터 API 설정
-open-api:
-  service-key: ${OPEN_API_SERVICE_KEY:dummy-service-key-for-test}
-
-# CORS 설정
-cors:
-  allowed-origins: http://localhost:3000,http://localhost:5173
-
-# Swagger 설정
-springdoc:
-  swagger-ui:
-    enabled: false  # 테스트에서는 비활성화
-  api-docs:
-    enabled: false  # 테스트에서는 비활성화
 
 # 로깅 레벨
 logging:
