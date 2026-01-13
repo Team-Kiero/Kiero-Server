@@ -17,7 +17,7 @@ spring:
   # Spring AI OpenAI 설정
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY}
+      api-key: ${OPENAI_API_KEY:sk-dummy-key-for-test-prevention}
       chat:
         options:
           model: gpt-4o-mini
@@ -40,7 +40,7 @@ jwt:
 
 # 공공데이터 API 설정
 open-api:
-  service-key: ${OPEN_API_SERVICE_KEY}
+  service-key: ${OPEN_API_SERVICE_KEY:dummy-service-key-for-test}
 
 # CORS 설정
 cors:
