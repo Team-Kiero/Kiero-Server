@@ -26,10 +26,12 @@ import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;
 import com.kiero.schedule.domain.enums.DayOfWeek;
+import com.kiero.schedule.domain.enums.ScheduleColor;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
 import com.kiero.schedule.domain.enums.TodayScheduleStatus;
 import com.kiero.schedule.exception.ScheduleErrorCode;
+import com.kiero.schedule.presentation.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.presentation.dto.FireLitEvent;
 import com.kiero.schedule.presentation.dto.FireLitResponse;
 import com.kiero.schedule.presentation.dto.NormalScheduleDto;
@@ -254,6 +256,19 @@ public class ScheduleService {
 	}
 
 	@Transactional
+	public DefaultScheduleContentResponse getDefaultSchedule(Long parentId, Long childId) {
+
+		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
+
+		ScheduleColor nextColor = scheduleRepository.findFirstByChildIdOrderByCreatedAtDesc(childId)
+			.map(Schedule::getScheduleColor)
+			.map(ScheduleColor::next)
+			.orElse(ScheduleColor.SCHEDULE1);
+
+		return new DefaultScheduleContentResponse(nextColor, nextColor.getColorCode());
+	}
+
+	@Transactional
 	public void addSchedule(ScheduleAddRequest request, Long parentId, Long childId) {
 
 		Parent parent = parentRepository.findById(parentId)
@@ -291,14 +306,7 @@ public class ScheduleService {
 	@Transactional
 	public ScheduleTabResponse getSchedules(LocalDate startDate, LocalDate endDate, Long parentId, Long childId) {
 
-		Parent parent = parentRepository.findById(parentId)
-			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
-		Child child = childRepository.findById(childId)
-			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
-
-		if (!parentChildRepository.existsByParentAndChild(parent, child)) {
-			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
-		}
+		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
 
 		List<Schedule> schedules = scheduleRepository.findAllByChildId(childId);
 		if (schedules.isEmpty())
@@ -308,7 +316,8 @@ public class ScheduleService {
 			.map(Schedule::getId)
 			.toList();
 
-		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds, LocalDate.now(ZoneId.of("Asia/Seoul")));
+		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds,
+			LocalDate.now(ZoneId.of("Asia/Seoul")));
 
 		List<Long> recurringIds = schedules.stream()
 			.filter(Schedule::isRecurring)
@@ -431,6 +440,17 @@ public class ScheduleService {
 				return earliestStoneUsedAt == null || !createdAt.isAfter(earliestStoneUsedAt);
 			})
 			.toList();
+	}
+
+	private void checkIsExistsAndAccessibleByParentIdAndChildId(Long parentId, Long childId) {
+		Parent parent = parentRepository.findById(parentId)
+			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
+		Child child = childRepository.findById(childId)
+			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+
+		if (!parentChildRepository.existsByParentAndChild(parent, child)) {
+			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+		}
 	}
 
 	private void markPassedPendingSchedulesAsFailed(List<ScheduleDetail> scheduleDetails) {
