@@ -65,7 +65,10 @@ public class ScheduleService {
 
 	@Transactional
 	public TodayScheduleResponse getTodaySchedule(Long childId) {
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+
+		// 당일 생성된 반복 일정 중 반복 요일이 오늘일 경우, 수동으로 scheduleDetail 생성
+		createScheduleDetailOfTodayRecurringSchedules(today);
 
 		// 오늘 일정들을 startTime이 이른 것부터 정렬하여 모두 가져옴
 		List<ScheduleDetail> allScheduleDetails =
@@ -181,7 +184,8 @@ public class ScheduleService {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
-		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.VERIFIED || scheduleDetail.getScheduleStatus() == ScheduleStatus.COMPLETED) {
+		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.VERIFIED
+			|| scheduleDetail.getScheduleStatus() == ScheduleStatus.COMPLETED) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ALREADY_COMPLETED);
 		}
 
@@ -202,7 +206,7 @@ public class ScheduleService {
 
 	@Transactional
 	public FireLitResponse fireLit(Long childId) {
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
 		Child child = childRepository.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
@@ -304,7 +308,7 @@ public class ScheduleService {
 			.map(Schedule::getId)
 			.toList();
 
-		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds, LocalDate.now());
+		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds, LocalDate.now(ZoneId.of("Asia/Seoul")));
 
 		List<Long> recurringIds = schedules.stream()
 			.filter(Schedule::isRecurring)
@@ -459,5 +463,34 @@ public class ScheduleService {
 			.filter(Objects::nonNull)
 			.min(LocalDateTime::compareTo)
 			.orElse(null);
+	}
+
+	private void createScheduleDetailOfTodayRecurringSchedules(LocalDate today) {
+		LocalDateTime startOfToday = today.atStartOfDay();
+		DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
+
+		List<Schedule> schedules =
+			scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(
+				startOfToday,
+				todayDayOfWeek,
+				today
+			);
+
+		if (schedules.isEmpty()) {
+			return;
+		}
+
+		List<ScheduleDetail> details = schedules.stream()
+			.map(schedule -> ScheduleDetail.create(
+				today,
+				null,
+				null,
+				ScheduleStatus.PENDING,
+				null,
+				schedule
+			))
+			.toList();
+
+		scheduleDetailRepository.saveAll(details);
 	}
 }
