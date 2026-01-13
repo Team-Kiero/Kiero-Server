@@ -1,10 +1,8 @@
 package com.kiero.mission.presentation.dto;
 
 import java.time.LocalDate;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.format.TextStyle;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public record MissionsByDateResponse(
@@ -12,6 +10,7 @@ public record MissionsByDateResponse(
 ) {
     public record DateGroupedMissions(
         String dueAt,
+        String dayOfWeek,
         List<MissionItemResponse> missions
     ) {
     }
@@ -29,12 +28,18 @@ public record MissionsByDateResponse(
         List<DateGroupedMissions> result = grouped.entrySet().stream()
             .sorted(Map.Entry.comparingByKey()) // 날짜순
             .map(entry -> {
+                LocalDate date = entry.getKey();
+
                 List<MissionItemResponse> sortedMissions = entry.getValue().stream()
                     .sorted(Comparator.comparing(MissionItemResponse::isCompleted)) // 미완료순
                     .toList();
 
+                String dayOfWeek = date.getDayOfWeek()
+                        .getDisplayName(TextStyle.FULL, Locale.KOREAN);
+
                 return new DateGroupedMissions(
-                    entry.getKey().toString(),
+                    date.toString(),
+                    dayOfWeek,
                     sortedMissions
                 );
             })
