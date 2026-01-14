@@ -26,10 +26,12 @@ import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;
 import com.kiero.schedule.domain.enums.DayOfWeek;
+import com.kiero.schedule.domain.enums.ScheduleColor;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
 import com.kiero.schedule.domain.enums.TodayScheduleStatus;
 import com.kiero.schedule.exception.ScheduleErrorCode;
+import com.kiero.schedule.presentation.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.presentation.dto.FireLitEvent;
 import com.kiero.schedule.presentation.dto.FireLitResponse;
 import com.kiero.schedule.presentation.dto.NormalScheduleDto;
@@ -65,7 +67,10 @@ public class ScheduleService {
 
 	@Transactional
 	public TodayScheduleResponse getTodaySchedule(Long childId) {
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+
+		// 당일 생성된 반복 일정 중 반복 요일이 오늘일 경우, 수동으로 scheduleDetail 생성
+		createScheduleDetailOfTodayRecurringSchedules(today);
 
 		// 오늘 일정들을 startTime이 이른 것부터 정렬하여 모두 가져옴
 		List<ScheduleDetail> allScheduleDetails =
@@ -181,7 +186,8 @@ public class ScheduleService {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
-		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.VERIFIED || scheduleDetail.getScheduleStatus() == ScheduleStatus.COMPLETED) {
+		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.VERIFIED
+			|| scheduleDetail.getScheduleStatus() == ScheduleStatus.COMPLETED) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ALREADY_COMPLETED);
 		}
 
@@ -202,7 +208,7 @@ public class ScheduleService {
 
 	@Transactional
 	public FireLitResponse fireLit(Long childId) {
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
 		Child child = childRepository.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
@@ -250,6 +256,19 @@ public class ScheduleService {
 	}
 
 	@Transactional
+	public DefaultScheduleContentResponse getDefaultSchedule(Long parentId, Long childId) {
+
+		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
+
+		ScheduleColor nextColor = scheduleRepository.findFirstByChildIdOrderByCreatedAtDesc(childId)
+			.map(Schedule::getScheduleColor)
+			.map(ScheduleColor::next)
+			.orElse(ScheduleColor.SCHEDULE1);
+
+		return new DefaultScheduleContentResponse(nextColor, nextColor.getColorCode());
+	}
+
+	@Transactional
 	public void addSchedule(ScheduleAddRequest request, Long parentId, Long childId) {
 
 		Parent parent = parentRepository.findById(parentId)
@@ -287,14 +306,7 @@ public class ScheduleService {
 	@Transactional
 	public ScheduleTabResponse getSchedules(LocalDate startDate, LocalDate endDate, Long parentId, Long childId) {
 
-		Parent parent = parentRepository.findById(parentId)
-			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
-		Child child = childRepository.findById(childId)
-			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
-
-		if (!parentChildRepository.existsByParentAndChild(parent, child)) {
-			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
-		}
+		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
 
 		List<Schedule> schedules = scheduleRepository.findAllByChildId(childId);
 		if (schedules.isEmpty())
@@ -304,7 +316,8 @@ public class ScheduleService {
 			.map(Schedule::getId)
 			.toList();
 
-		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds, LocalDate.now());
+		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds,
+			LocalDate.now(ZoneId.of("Asia/Seoul")));
 
 		List<Long> recurringIds = schedules.stream()
 			.filter(Schedule::isRecurring)
@@ -402,8 +415,8 @@ public class ScheduleService {
 		if (todoSchedule != null) {
 			switch (scheduleDetails.indexOf(todoSchedule) % 3) {
 				case 0 -> todoSchedule.changeStoneType(StoneType.COURAGE);
-				case 1 -> todoSchedule.changeStoneType(StoneType.WISDOM);
-				case 2 -> todoSchedule.changeStoneType(StoneType.GRIT);
+				case 1 -> todoSchedule.changeStoneType(StoneType.GRIT);
+				case 2 -> todoSchedule.changeStoneType(StoneType.WISDOM);
 			}
 		}
 	}
@@ -427,6 +440,17 @@ public class ScheduleService {
 				return earliestStoneUsedAt == null || !createdAt.isAfter(earliestStoneUsedAt);
 			})
 			.toList();
+	}
+
+	private void checkIsExistsAndAccessibleByParentIdAndChildId(Long parentId, Long childId) {
+		Parent parent = parentRepository.findById(parentId)
+			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
+		Child child = childRepository.findById(childId)
+			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+
+		if (!parentChildRepository.existsByParentAndChild(parent, child)) {
+			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+		}
 	}
 
 	private void markPassedPendingSchedulesAsFailed(List<ScheduleDetail> scheduleDetails) {
@@ -459,5 +483,34 @@ public class ScheduleService {
 			.filter(Objects::nonNull)
 			.min(LocalDateTime::compareTo)
 			.orElse(null);
+	}
+
+	private void createScheduleDetailOfTodayRecurringSchedules(LocalDate today) {
+		LocalDateTime startOfToday = today.atStartOfDay();
+		DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
+
+		List<Schedule> schedules =
+			scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(
+				startOfToday,
+				todayDayOfWeek,
+				today
+			);
+
+		if (schedules.isEmpty()) {
+			return;
+		}
+
+		List<ScheduleDetail> details = schedules.stream()
+			.map(schedule -> ScheduleDetail.create(
+				today,
+				null,
+				null,
+				ScheduleStatus.PENDING,
+				null,
+				schedule
+			))
+			.toList();
+
+		scheduleDetailRepository.saveAll(details);
 	}
 }

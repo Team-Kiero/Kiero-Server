@@ -80,6 +80,9 @@ dependencies {
 
     // Spring AI - OpenAI
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+
+    // XML
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 }
 
 dependencyManagement {

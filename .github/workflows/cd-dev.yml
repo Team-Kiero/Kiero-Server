@@ -32,8 +32,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_REPO }}:dev
-            ${{ env.IMAGE_REPO }}:dev-${{ github.sha }}
+            ${{ env.IMAGE_REPO }}:dev                                                                                                                                             
+            ${{ env.IMAGE_REPO }}:dev-${{ github.sha }}                                                                                                                           
 
   deploy-dev:
     name: Deploy to Dev Server (Blue-Green)

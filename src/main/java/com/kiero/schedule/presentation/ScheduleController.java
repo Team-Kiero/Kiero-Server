@@ -17,6 +17,7 @@ import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.schedule.exception.ScheduleSuccessCode;
+import com.kiero.schedule.presentation.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.presentation.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.presentation.dto.FireLitResponse;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
@@ -34,7 +35,7 @@ public class ScheduleController {
 
 	private final ScheduleService scheduleService;
 
-    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@PostMapping("/{childId}")
 	public ResponseEntity<SuccessResponse<Void>> addSchedule(
 		@Valid @RequestBody ScheduleAddRequest request,
@@ -46,7 +47,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_CREATED));
 	}
 
-    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@GetMapping("/{childId}")
 	public ResponseEntity<SuccessResponse<ScheduleTabResponse>> getSchedules(
 		@RequestParam LocalDate startDate,
@@ -60,7 +61,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_TAB_GET_SUCCESS, response));
 	}
 
-    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
 	@PatchMapping("/today")
 	public ResponseEntity<SuccessResponse<TodayScheduleResponse>> updateAndGetTodaySchedule(
 		@CurrentMember CurrentAuth currentAuth
@@ -70,7 +71,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.TODAY_SCHEDULE_GET_SUCCESS, response));
 	}
 
-    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
 	@PatchMapping("/skip/{scheduleDetailId}")
 	public ResponseEntity<SuccessResponse<Void>> skipNowSchedule(
 		@PathVariable("scheduleDetailId") Long scheduleDetailId,
@@ -81,7 +82,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_SKIP_SUCCESS));
 	}
 
-    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
 	@PatchMapping("/{scheduleDetailId}")
 	public ResponseEntity<SuccessResponse<Void>> completeNowSchedule(
 		@Valid @RequestBody NowScheduleCompleteRequest request,
@@ -93,7 +94,7 @@ public class ScheduleController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_COMPLETE_SUCCESS));
 	}
 
-    @PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
 	@PatchMapping("/fire-lit")
 	public ResponseEntity<SuccessResponse<FireLitResponse>> fireLit(
 		@CurrentMember CurrentAuth currentAuth
@@ -101,5 +102,16 @@ public class ScheduleController {
 		FireLitResponse response = scheduleService.fireLit(currentAuth.memberId());
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.FIRE_LIT_SUCCESS, response));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@GetMapping("/{childId}/default")
+	public ResponseEntity<SuccessResponse<DefaultScheduleContentResponse>> getDefaultScheduleContent(
+		@PathVariable("childId") Long childId,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		DefaultScheduleContentResponse response = scheduleService.getDefaultSchedule(currentAuth.memberId(), childId);
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.DEFAULT_CONTENT_GET_SUCCESS, response));
 	}
 }

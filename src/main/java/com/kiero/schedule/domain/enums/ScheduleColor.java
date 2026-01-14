@@ -14,4 +14,10 @@ public enum ScheduleColor {
 	;
 
 	private final String colorCode;
+
+	public ScheduleColor next() {
+		ScheduleColor[] values = ScheduleColor.values();
+		int nextIndex = (this.ordinal() + 1) % values.length;
+		return values[nextIndex];
+	}
 }
