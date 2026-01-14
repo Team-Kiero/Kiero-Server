@@ -28,14 +28,12 @@ public class HolidayService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Transactional
     public void fetchAndSaveHolidays() {
         int currentYear = LocalDate.now().getYear();
         fetchAndSaveHolidaysByYear(currentYear);
         fetchAndSaveHolidaysByYear(currentYear + 1);
     }
 
-    @Transactional
     public void fetchAndSaveHolidaysByYear(int year) {
         for (int month = 1; month <= 12; month++) {
             fetchAndSaveHolidaysByMonth(year, month);

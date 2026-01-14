@@ -13,7 +13,6 @@ public class DailyHolidayJob {
 
     private final HolidayService holidayService;
 
-    @Transactional
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void runDailyJob() {
             holidayService.fetchAndSaveHolidays();
