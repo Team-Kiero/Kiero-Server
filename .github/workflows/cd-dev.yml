@@ -12,7 +12,7 @@ jobs:
   build-and-push:
     name: Build & Push
     runs-on: ubuntu-latest
-    environment: dev  # GitHub Environment 사용
+    environment: dev
     steps:
       - uses: actions/checkout@v4
 
@@ -32,16 +32,16 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_REPO }}:dev
-            ${{ env.IMAGE_REPO }}:dev-${{ github.sha }}
+            ${{ env.IMAGE_REPO }}:dev                                                                                                                                             
+            ${{ env.IMAGE_REPO }}:dev-${{ github.sha }}                                                                                                                           
 
   deploy-dev:
-    name: Deploy to Dev Server
+    name: Deploy to Dev Server (Blue-Green)
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment: dev  # GitHub Environment 사용
+    environment: dev
     steps:
-      - name: SSH deploy (dev)
+      - name: SSH deploy (dev - Blue-Green)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -53,22 +53,21 @@ jobs:
             set -e
             docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"
             cd /opt/kiero
-
-            # Git 최신 변경사항 가져오기 (docker-compose.yml 업데이트)
+            
+            # Git 최신 변경사항 가져오기
             git pull origin develop
-
-            # .env.dev 파일 생성 (컨테이너 환경변수용)
+            
+            # .env.dev 파일 생성
             echo "$DEV_ENV_FILE" > .env.dev
-
-            # DOCKERHUB_USERNAME을 환경변수로 설정 (docker-compose 변수 치환용)
+            
+            # DOCKERHUB_USERNAME을 환경변수로 설정
             export DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
-
-            # 기존 컨테이너 완전히 제거 (메타데이터 충돌 방지)
-            docker-compose down || true
-
-            # Docker 이미지 pull 및 재시작
-            docker-compose pull
-            docker-compose up -d
+            
+            # Blue-Green 배포 스크립트 실행 (Dev 환경은 이전 버전 바로 정리)
+            chmod +x scripts/deploy-blue-green.sh
+            ./scripts/deploy-blue-green.sh
+            
+            # 성공 시 정리
             docker image prune -f
         env:
           DEV_ENV_FILE: ${{ secrets.DEV_ENV_FILE }}
