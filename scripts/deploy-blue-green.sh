@@ -136,6 +136,11 @@ ELAPSED=0
 while [ $ELAPSED -lt $HEALTH_CHECK_TIMEOUT ]; do
     HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' "${CONTAINER_PREFIX}-${INACTIVE}" 2>/dev/null || echo "unknown")
 
+    if [ "$HEALTH_STATUS" == "healthy" ]; then
+        log_success "Health check 성공! (${ELAPSED}s)"
+        break
+    fi
+
     if [ "$HEALTH_STATUS" == "starting" ]; then
         log_info "애플리케이션 부팅 중... ($HEALTH_STATUS) (${ELAPSED}s / ${HEALTH_CHECK_TIMEOUT}s)"
     else
