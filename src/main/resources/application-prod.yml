@@ -52,6 +52,10 @@ spring:
           model: gpt-4o-mini
           temperature: 0.1
 
+# 공공데이터 Open API
+open-api:
+  service-key: ${OPEN_API_SERVICE_KEY}
+
 server:
   port: 8080
 
