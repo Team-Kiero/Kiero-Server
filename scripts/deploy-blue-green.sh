@@ -2,10 +2,6 @@
 
 ###############################################################################
 # Blue-Green 무중단 배포 스크립트
-#
-# 사용법: ./deploy-blue-green.sh [--keep-old]
-# 옵션:
-#   --keep-old  이전 버전 컨테이너를 정지하지 않고 유지 (롤백 대비)
 ###############################################################################
 
 set -e  # 에러 발생 시 스크립트 중단
@@ -15,7 +11,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # 로그 함수
 log_info() {
@@ -33,6 +29,18 @@ log_warning() {
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
+
+# 사용할 Docker Compose 파일 결정
+COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.dev.yml}
+log_info "사용할 Compose 파일: $COMPOSE_FILE"
+
+# 환경에 따른 컨테이너 이름 접두사 결정
+if [[ "$COMPOSE_FILE" == *"dev"* ]]; then
+    CONTAINER_PREFIX="kiero-dev-app"
+else
+    CONTAINER_PREFIX="kiero-prod-app"
+fi
+log_info "컨테이너 이름 접두사: $CONTAINER_PREFIX"
 
 # 옵션 파싱
 KEEP_OLD=false
@@ -92,7 +100,6 @@ log_info "새 버전 배포 대상: ${YELLOW}$INACTIVE${NC} (포트: $INACTIVE_P
 
 log_info "새 Docker 이미지 pulling..."
 
-# GREEN_TAG 또는 BLUE_TAG 환경변수로 특정 태그 지정 가능
 if [ "$INACTIVE" == "green" ]; then
     export GREEN_TAG="${GREEN_TAG:-latest}"
     log_info "Green 이미지 태그: $GREEN_TAG"
@@ -101,7 +108,7 @@ else
     log_info "Blue 이미지 태그: $BLUE_TAG"
 fi
 
-docker-compose -f docker-compose.blue-green.yml pull app-$INACTIVE
+docker-compose -f "$COMPOSE_FILE" pull app-$INACTIVE
 
 ###############################################################################
 # 3. 비활성 환경에 새 버전 배포
@@ -110,16 +117,16 @@ docker-compose -f docker-compose.blue-green.yml pull app-$INACTIVE
 log_info "$INACTIVE 환경에 새 버전 배포 중..."
 
 # 기존 비활성 컨테이너 정지 및 제거
-docker-compose -f docker-compose.blue-green.yml stop app-$INACTIVE || true
-docker-compose -f docker-compose.blue-green.yml rm -f app-$INACTIVE || true
+docker-compose -f "$COMPOSE_FILE" stop app-$INACTIVE || true
+docker-compose -f "$COMPOSE_FILE" rm -f app-$INACTIVE || true
 
 # 새 컨테이너 시작
-docker-compose -f docker-compose.blue-green.yml up -d app-$INACTIVE
+docker-compose -f "$COMPOSE_FILE" up -d app-$INACTIVE
 
 log_info "$INACTIVE 컨테이너 시작 완료. Health check 대기 중..."
 
 ###############################################################################
-# 4. Health Check (최대 60초 대기)
+# 4. Health Check
 ###############################################################################
 
 HEALTH_CHECK_TIMEOUT=60
@@ -127,22 +134,21 @@ HEALTH_CHECK_INTERVAL=5
 ELAPSED=0
 
 while [ $ELAPSED -lt $HEALTH_CHECK_TIMEOUT ]; do
-    # Docker health check 상태 확인
-    HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' kiero-prod-app-$INACTIVE 2>/dev/null || echo "unknown")
+    HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' "${CONTAINER_PREFIX}-${INACTIVE}" 2>/dev/null || echo "unknown")
 
     if [ "$HEALTH_STATUS" == "healthy" ]; then
         log_success "$INACTIVE 환경이 정상적으로 시작되었습니다!"
         break
     fi
 
-    log_info "Health check 상태: $HEALTH_STATUS (${ELAPSED}s / ${HEALTH_CHECK_TIMEOUT}s)"
+    log_info "Health check 상태: $HEALTH_STATUS (${ELAPSED}s / ${HEALTH_CHECK_TIMEOUT}s) - Target: ${CONTAINER_PREFIX}-${INACTIVE}"
     sleep $HEALTH_CHECK_INTERVAL
     ELAPSED=$((ELAPSED + HEALTH_CHECK_INTERVAL))
 done
 
 if [ "$HEALTH_STATUS" != "healthy" ]; then
     log_error "$INACTIVE 환경이 정상적으로 시작되지 않았습니다. 배포를 중단합니다."
-    log_error "로그 확인: docker logs kiero-prod-app-$INACTIVE"
+    log_error "로그 확인: docker logs ${CONTAINER_PREFIX}-${INACTIVE}"
     exit 1
 fi
 
@@ -176,7 +182,7 @@ sudo systemctl reload nginx
 log_success "트래픽 전환 완료! 모든 요청이 이제 $INACTIVE 환경으로 전달됩니다."
 
 ###############################################################################
-# 6. 이전 환경 정리 (dev 환경)
+# 6. 이전 환경 정리
 ###############################################################################
 
 if [ "$KEEP_OLD" == true ]; then
@@ -185,7 +191,7 @@ else
     log_info "10초 후 이전 버전($ACTIVE)을 정지합니다. (Ctrl+C로 취소 가능)"
     sleep 10
 
-    docker-compose -f docker-compose.blue-green.yml stop app-$ACTIVE
+    docker-compose -f "$COMPOSE_FILE" stop app-$ACTIVE
     log_success "이전 버전($ACTIVE) 정지 완료"
 fi
 
@@ -201,7 +207,7 @@ log_info "비활성 환경: $ACTIVE"
 log_info ""
 log_info "확인 명령어:"
 log_info "  - 현재 상태: docker ps"
-log_info "  - 로그 확인: docker logs kiero-prod-app-$INACTIVE"
+log_info "  - 로그 확인: docker logs ${CONTAINER_PREFIX}-${INACTIVE}"
 log_info "  - Health check: curl http://localhost/health/$INACTIVE"
 log_info "  - Nginx 설정: cat $NGINX_CONF | grep ACTIVE_CONTAINER"
 log_info ""

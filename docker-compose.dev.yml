@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  # Blue 환경 (현재 운영 중인 버전)
+  # Blue 환경 (Dev)
   app-blue:
     image: ${DOCKERHUB_USERNAME}/kiero:${BLUE_TAG:-latest}
     container_name: kiero-dev-app-blue
     ports:
-      - "8080:8080"  # EC2 Nginx가 localhost:8080으로 접근
+      - "8080:8080"
     env_file:
       - .env.dev
     environment:
@@ -36,12 +36,12 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  # Green 환경 (새 버전 배포 대상)
+  # Green 환경 (Dev)
   app-green:
     image: ${DOCKERHUB_USERNAME}/kiero:${GREEN_TAG:-latest}
     container_name: kiero-dev-app-green
     ports:
-      - "8081:8080"  # EC2 Nginx가 localhost:8081로 접근
+      - "8081:8080"
     env_file:
       - .env.dev
     environment:
@@ -71,7 +71,7 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  # Redis (Blue/Green 모두 공유)
+  # Redis
   redis:
     image: redis:7-alpine
     container_name: kiero-redis
