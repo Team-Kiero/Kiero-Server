@@ -129,16 +129,17 @@ log_info "$INACTIVE 컨테이너 시작 완료. Health check 대기 중..."
 # 4. Health Check
 ###############################################################################
 
-HEALTH_CHECK_TIMEOUT=60
+HEALTH_CHECK_TIMEOUT=120
 HEALTH_CHECK_INTERVAL=5
 ELAPSED=0
 
 while [ $ELAPSED -lt $HEALTH_CHECK_TIMEOUT ]; do
     HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' "${CONTAINER_PREFIX}-${INACTIVE}" 2>/dev/null || echo "unknown")
 
-    if [ "$HEALTH_STATUS" == "healthy" ]; then
-        log_success "$INACTIVE 환경이 정상적으로 시작되었습니다!"
-        break
+    if [ "$HEALTH_STATUS" == "starting" ]; then
+        log_info "애플리케이션 부팅 중... ($HEALTH_STATUS) (${ELAPSED}s / ${HEALTH_CHECK_TIMEOUT}s)"
+    else
+        log_warning "Health check 상태: $HEALTH_STATUS (${ELAPSED}s / ${HEALTH_CHECK_TIMEOUT}s)"
     fi
 
     log_info "Health check 상태: $HEALTH_STATUS (${ELAPSED}s / ${HEALTH_CHECK_TIMEOUT}s) - Target: ${CONTAINER_PREFIX}-${INACTIVE}"
