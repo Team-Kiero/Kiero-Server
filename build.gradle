@@ -68,6 +68,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "org.mockito:mockito-inline:5.2.0"
+    testImplementation "org.mockito:mockito-junit-jupiter:5.2.0"
 
     // TestContainers for integration tests
     testImplementation 'org.testcontainers:testcontainers:1.19.3'
