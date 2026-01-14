@@ -65,8 +65,8 @@ public class HolidayService {
             }
 
             List<Holiday> holidays = response.body().items().itemList().stream()
+                    .filter(i -> "Y".equals(i.isHoliday()))
                     .map(this::toEntity)
-                    .filter(h -> !holidayRepository.existsById(h.getDate()))
                     .toList();
 
             if (!holidays.isEmpty()) {
@@ -99,7 +99,6 @@ public class HolidayService {
         return Holiday.builder()
                 .date(parseDate(item.locdate()))
                 .name(item.dateName())
-                .isHoliday("Y".equals(item.isHoliday()))
                 .build();
     }
 

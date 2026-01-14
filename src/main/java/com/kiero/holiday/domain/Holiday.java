@@ -22,14 +22,11 @@ import java.time.LocalDateTime;
 @Table(name = HolidayTableConstants.TABLE_HOLIDAY)
 public class Holiday extends BaseTimeEntity {
     @Id
-    @Column(name = HolidayTableConstants.COLUMN_ID)
+    @Column(name = HolidayTableConstants.COLUMN_DATE)
     private LocalDate date;
 
     @Column(name = HolidayTableConstants.COLUMN_NAME)
     private String name;
-
-    @Column(name = HolidayTableConstants.COLUMN_IS_HOLIDAY)
-    private boolean isHoliday;
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
