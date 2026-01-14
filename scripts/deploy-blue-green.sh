@@ -149,7 +149,8 @@ done
 
 if [ "$HEALTH_STATUS" != "healthy" ]; then
     log_error "$INACTIVE 환경이 정상적으로 시작되지 않았습니다. 배포를 중단합니다."
-    log_error "로그 확인: docker logs ${CONTAINER_PREFIX}-${INACTIVE}"
+    log_error "로그 확인: docker logs ${CONTAINER_PREFIX}-${INACTIVE}"| tail -n 100
+    docker-compose -f "$COMPOSE_FILE" stop app-$INACTIVE
     exit 1
 fi
 
