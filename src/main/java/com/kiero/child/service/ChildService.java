@@ -23,6 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -81,9 +84,11 @@ public class ChildService {
         Child child = childRepository.findById(childId)
                 .orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+
         log.info("Retrieved child info: childId={}, name={}, coinAmount={}",
                 child.getId(), child.getFullName(), child.getCoinAmount());
 
-        return ChildMeResponse.from(child);
+        return ChildMeResponse.from(child, today);
     }
 }
