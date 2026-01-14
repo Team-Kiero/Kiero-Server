@@ -3,7 +3,7 @@ name: CD-Production
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*.*.*'  # 예: v1.0.0 태그가 푸시되면 동작
 
 env:
   IMAGE_NAME: kiero
@@ -14,11 +14,13 @@ jobs:
     name: Build & Push Production Image
     runs-on: ubuntu-latest
     environment: prod
+    outputs:
+      version: ${{ steps.extract_version.outputs.VERSION }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Extract version from tag
-        id: version
+        id: extract_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Login to Docker Hub
@@ -37,9 +39,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_REPO }}:latest                                                                                                                                          
-            ${{ env.IMAGE_REPO }}:${{ steps.version.outputs.VERSION }}                                                                                                            
-            ${{ env.IMAGE_REPO }}:prod-${{ github.sha }}                                                                                                                          
+            ${{ env.IMAGE_REPO }}:latest
+            ${{ env.IMAGE_REPO }}:${{ steps.extract_version.outputs.VERSION }}
 
   deploy-production:
     name: Deploy to Production Server (Blue-Green)
@@ -47,11 +48,8 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: prod
-      url: https://your-production-domain.com
+      url: https://production-domain.com
     steps:
-      - name: Wait for manual approval
-        run: echo "Deployment approved by ${{ github.actor }}"
-
       - name: SSH deploy (production - Blue-Green)
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -59,35 +57,41 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          envs: PROD_ENV_FILE,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,IMAGE_REPO
+          envs: PROD_ENV_FILE,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN
           script: |
-            set -e                                                                                                                                                                
-            docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"                                                                                                           
-            cd /opt/kiero-prod                                                                                                                                                    
+            set -e
+            docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"
+            cd /opt/kiero
             
-            # Git 최신 변경사항 가져오기                                                                                                             
-            git pull origin main                                                                                                                                                  
+            # Git 최신 변경사항 가져오기
+            git pull origin main
             
             # .env.prod 파일 생성
             echo "$PROD_ENV_FILE" > .env.prod
             
+            # 사용할 Docker Compose 파일 지정
+            export COMPOSE_FILE=docker-compose.prod.yml
+            
+            # 배포할 이미지 태그 지정
+            export BLUE_TAG=${{ needs.build-and-push.outputs.version }}
+            export GREEN_TAG=${{ needs.build-and-push.outputs.version }}
+            
             # DOCKERHUB_USERNAME을 환경변수로 설정
             export DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
             
-            # Blue-Green 배포 스크립트 실행 (이전 버전 유지하여 롤백 가능하도록)
-            chmod +x scripts/deploy-blue-green.sh                                                                                                                                 
-            ./scripts/deploy-blue-green.sh --keep-old                                                                                                                             
+            # Blue-Green 배포 스크립트 실행 (배포 성공 후에도 롤백에 대비하여 이전 컨테이너를 끄지 않고 남겨둠)
+            chmod +x scripts/deploy-blue-green.sh
+            ./scripts/deploy-blue-green.sh --keep-old
             
-            # 성공 시 정리                                                                                                                                                        
+            # 성공 시 정리
             docker image prune -f
         env:
           PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          IMAGE_REPO: ${{ env.IMAGE_REPO }}
 
       - name: Notify deployment success
         if: success()
         run: |
-          echo "Production deployment successful!"                                                                                                                                
-          echo "Version: ${{ needs.build-and-push.outputs.version }}"
+          echo "Production deployment successful!"
+          echo "Deployed Version: ${{ needs.build-and-push.outputs.version }}"

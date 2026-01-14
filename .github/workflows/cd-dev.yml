@@ -60,10 +60,17 @@ jobs:
             # .env.dev 파일 생성
             echo "$DEV_ENV_FILE" > .env.dev
             
+            # 사용할 Docker Compose 파일 지정
+            export COMPOSE_FILE=docker-compose.dev.yml
+            
+            # 배포할 이미지 태그 지정
+            export BLUE_TAG=dev
+            export GREEN_TAG=dev
+            
             # DOCKERHUB_USERNAME을 환경변수로 설정
             export DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
             
-            # Blue-Green 배포 스크립트 실행 (Dev 환경은 이전 버전 바로 정리)
+            # Blue-Green 배포 스크립트 실행
             chmod +x scripts/deploy-blue-green.sh
             ./scripts/deploy-blue-green.sh
             

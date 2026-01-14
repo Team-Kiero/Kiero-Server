@@ -1,18 +1,18 @@
 version: '3.8'
 
 services:
-  # Blue 환경 (Prod)
+  # Blue 환경 (Dev)
   app-blue:
     image: ${DOCKERHUB_USERNAME}/kiero:${BLUE_TAG:-latest}
-    container_name: kiero-prod-app-blue
+    container_name: kiero-dev-app-blue
     ports:
       - "8080:8080"
     env_file:
-      - .env.prod
+      - .env.dev
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=dev
       - TZ=Asia/Seoul
-      - JAVA_OPTS=-Xms1024m -Xmx2048m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+      - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
     networks:
       - app-network
     restart: always
@@ -25,29 +25,29 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "100m"  # Prod는 로그 보관 용량 증설
-        max-file: "10"
+        max-size: "50m"
+        max-file: "5"
     deploy:
       resources:
         limits:
           cpus: '2.0'
           memory: 2G
         reservations:
-          cpus: '1.0'     # 안정성을 위해 최소 보장 CPU 할당
-          memory: 1G
+          cpus: '0.5'
+          memory: 512M
 
-  # Green 환경 (Prod)
+  # Green 환경 (Dev)
   app-green:
     image: ${DOCKERHUB_USERNAME}/kiero:${GREEN_TAG:-latest}
-    container_name: kiero-prod-app-green
+    container_name: kiero-dev-app-green
     ports:
       - "8081:8080"
     env_file:
-      - .env.prod
+      - .env.dev
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=dev
       - TZ=Asia/Seoul
-      - JAVA_OPTS=-Xms1024m -Xmx2048m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+      - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
     networks:
       - app-network
     restart: always
@@ -60,16 +60,16 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "100m"
-        max-file: "10"
+        max-size: "50m"
+        max-file: "5"
     deploy:
       resources:
         limits:
           cpus: '2.0'
           memory: 2G
         reservations:
-          cpus: '1.0'
-          memory: 1G
+          cpus: '0.5'
+          memory: 512M
 
   # Redis
   redis:
