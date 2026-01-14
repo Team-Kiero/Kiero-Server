@@ -4,13 +4,13 @@ services:
   # Blue 환경 (현재 운영 중인 버전)
   app-blue:
     image: ${DOCKERHUB_USERNAME}/kiero:${BLUE_TAG:-latest}
-    container_name: kiero-prod-app-blue
+    container_name: kiero-dev-app-blue
     ports:
       - "8080:8080"  # EC2 Nginx가 localhost:8080으로 접근
     env_file:
-      - .env.prod
+      - .env.dev
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=dev
       - TZ=Asia/Seoul
       - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
     networks:
@@ -39,13 +39,13 @@ services:
   # Green 환경 (새 버전 배포 대상)
   app-green:
     image: ${DOCKERHUB_USERNAME}/kiero:${GREEN_TAG:-latest}
-    container_name: kiero-prod-app-green
+    container_name: kiero-dev-app-green
     ports:
       - "8081:8080"  # EC2 Nginx가 localhost:8081로 접근
     env_file:
-      - .env.prod
+      - .env.dev
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=dev
       - TZ=Asia/Seoul
       - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
     networks:
