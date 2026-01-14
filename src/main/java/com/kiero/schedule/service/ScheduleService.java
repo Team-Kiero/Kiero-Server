@@ -1,9 +1,9 @@
 package com.kiero.schedule.service;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -63,11 +63,12 @@ public class ScheduleService {
 
 	private final ApplicationEventPublisher eventPublisher;
 
+	private final Clock clock;
 	private final static int ALL_SCHEDULE_SUCCESS_REWARD = 10;
 
 	@Transactional
 	public TodayScheduleResponse getTodaySchedule(Long childId) {
-		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+		LocalDate today = LocalDate.now(clock);
 
 		// 당일 생성된 반복 일정 중 반복 요일이 오늘일 경우, 수동으로 scheduleDetail 생성
 		createScheduleDetailOfTodayRecurringSchedules(today);
@@ -160,6 +161,9 @@ public class ScheduleService {
 	@Transactional
 	public void skipNowSchedule(Long childId, Long scheduleDetailId) {
 
+		childRepository.findById(childId)
+			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+
 		ScheduleDetail scheduleDetail = scheduleDetailRepository.findById(scheduleDetailId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
 
@@ -202,13 +206,13 @@ public class ScheduleService {
 			scheduleDetail.getSchedule().getChild().getId(),
 			scheduleDetail.getSchedule().getName(),
 			scheduleDetail.getImageUrl(),
-			LocalDateTime.now()
+			LocalDateTime.now(clock)
 		));
 	}
 
 	@Transactional
 	public FireLitResponse fireLit(Long childId) {
-		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+		LocalDate today = LocalDate.now(clock);
 
 		Child child = childRepository.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
@@ -235,7 +239,7 @@ public class ScheduleService {
 			.map(ScheduleDetail::getStoneType)
 			.toList();
 
-		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime now = LocalDateTime.now(clock);
 		filteredAllScheduleDetails.forEach(sd -> sd.changeStoneUsedAt(now));
 
 		int gotStonesCount = gotStones.size();
@@ -249,7 +253,7 @@ public class ScheduleService {
 		eventPublisher.publishEvent(new FireLitEvent(
 			child.getId(),
 			earnedCoinAmount,
-			LocalDateTime.now()
+			LocalDateTime.now(clock)
 		));
 
 		return FireLitResponse.of(gotStones, earnedCoinAmount);
@@ -285,9 +289,21 @@ public class ScheduleService {
 		Schedule savedSchedule = scheduleRepository.save(schedule);
 
 		if (request.isRecurring()
-			&& request.dayOfWeek() != null
-			&& !request.dayOfWeek().isBlank()) {
+			&& (request.dayOfWeek() == null || request.dayOfWeek().isEmpty())) {
+			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE);
+		}
 
+		if (!request.isRecurring()
+			&& request.date() == null) {
+			throw new KieroException(ScheduleErrorCode.DATE_NOT_NULLABLE_WHEN_IS_RECURRING_IS_FALSE);
+		}
+
+		if (request.dayOfWeek() != null
+			&& request.date() != null) {
+			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_XOR_DATE_REQUIRED);
+		}
+
+		if (request.isRecurring()) {
 			List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
 			List<ScheduleRepeatDays> repeatDays = dayOfWeeks.stream()
 				.map(day -> ScheduleRepeatDays.create(day, savedSchedule))
@@ -296,7 +312,7 @@ public class ScheduleService {
 			scheduleRepeatDaysRepository.saveAll(repeatDays);
 		}
 
-		if (request.date() != null) {
+		if (!request.isRecurring()) {
 			ScheduleDetail scheduleDetail = ScheduleDetail.create(request.date(), null, null, ScheduleStatus.PENDING,
 				null, savedSchedule);
 			scheduleDetailRepository.save(scheduleDetail);
@@ -308,6 +324,10 @@ public class ScheduleService {
 
 		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
 
+		if (startDate.isAfter(endDate) || endDate.isBefore(startDate)) {
+			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
+		}
+
 		List<Schedule> schedules = scheduleRepository.findAllByChildId(childId);
 		if (schedules.isEmpty())
 			return ScheduleTabResponse.of(false, List.of(), List.of());
@@ -317,7 +337,7 @@ public class ScheduleService {
 			.toList();
 
 		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds,
-			LocalDate.now(ZoneId.of("Asia/Seoul")));
+			LocalDate.now(clock));
 
 		List<Long> recurringIds = schedules.stream()
 			.filter(Schedule::isRecurring)
@@ -384,10 +404,8 @@ public class ScheduleService {
 
 	@Transactional
 	public void createTodayScheduleDetail() {
-		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+		LocalDate today = LocalDate.now(clock);
 		DayOfWeek customDayOfWeek = DayOfWeek.valueOf(today.getDayOfWeek().name().substring(0, 3));
-
-		log.info("customDayOfWeek: " + customDayOfWeek + "today: " + today);
 
 		List<Schedule> schedules = scheduleRepeatDaysRepository.findSchedulesToCreateTodayDetail(customDayOfWeek,
 			today);
@@ -454,7 +472,7 @@ public class ScheduleService {
 	}
 
 	private void markPassedPendingSchedulesAsFailed(List<ScheduleDetail> scheduleDetails) {
-		LocalTime now = LocalTime.now();
+		LocalTime now = LocalTime.now(clock);
 		scheduleDetails.stream()
 			.filter(
 				sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.PENDING)
@@ -462,7 +480,7 @@ public class ScheduleService {
 	}
 
 	private void markPassedVerifiedSchedulesAsCompleted(List<ScheduleDetail> scheduleDetails) {
-		LocalTime now = LocalTime.now();
+		LocalTime now = LocalTime.now(clock);
 		scheduleDetails.stream()
 			.filter(
 				sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
