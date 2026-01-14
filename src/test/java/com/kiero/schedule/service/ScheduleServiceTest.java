@@ -1635,22 +1635,22 @@ public class ScheduleServiceTest {
 
 			given(s3.getCreatedAt()).willReturn(createdAt);
 			given(s3.getStartTime()).willReturn(startTime);
-			given(s2.getEndTime()).willReturn(endTime);
+			given(s3.getEndTime()).willReturn(endTime);
 
 			final StoneType[] holder = new StoneType[1];
 			doAnswer(inv -> {
 				holder[0] = inv.getArgument(0);
 				return null;
 			})
-				.when(sd2).changeStoneType(any(StoneType.class));
-			given(sd2.getStoneType()).willAnswer(inv -> holder[0]);
+				.when(sd3).changeStoneType(any(StoneType.class));
+			given(sd3.getStoneType()).willAnswer(inv -> holder[0]);
 
 			// when
 			TodayScheduleResponse response = scheduleService.getTodaySchedule(childId);
 
 			// then
-			assertThat(response.stoneType()).isEqualTo(StoneType.GRIT);
-			verify(sd2).changeStoneType(StoneType.GRIT);
+			assertThat(response.stoneType()).isEqualTo(StoneType.WISDOM);
+			verify(sd3).changeStoneType(StoneType.WISDOM);
 		}
 
 		@Test
