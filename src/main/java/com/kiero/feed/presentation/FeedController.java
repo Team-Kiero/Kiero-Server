@@ -48,7 +48,7 @@ public class FeedController {
 	public SseEmitter subscribe(
 		@PathVariable("childId") Long childId,
 		@CurrentMember CurrentAuth currentAuth,
-		@RequestHeader String authorization
+		@RequestHeader("Authorization") String authorization
 	) {
 		Long parentId = currentAuth.memberId();
 		String token = authorization.substring("Bearer ".length());
