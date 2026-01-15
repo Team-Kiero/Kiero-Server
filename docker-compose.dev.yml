@@ -98,6 +98,7 @@ services:
       - grafana-data:/var/lib/grafana
     environment:
       - TZ=Asia/Seoul
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     depends_on:
       - prometheus
     networks:
