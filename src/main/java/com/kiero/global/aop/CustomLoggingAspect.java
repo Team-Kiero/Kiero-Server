@@ -2,6 +2,7 @@ package com.kiero.global.aop;
 
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.util.ApiQueryCounter;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -10,6 +11,8 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.Method;
 
@@ -34,11 +37,13 @@ public class CustomLoggingAspect {
 
             String userInfo = extractUserInfo(proceedingJoinPoint);
             String requiredRole = extractRequiredRole(proceedingJoinPoint);
+            String clientIp = extractClientIp();
 
 			log.info(
-				"[API] Occurred Method : {} | User: {} | Required: {} | Queries : {} | Time : {}ms",
+				"[API] Occurred Method : {} | IP: {} | User: {} | Required: {} | Queries : {} | Time : {}ms",
                 proceedingJoinPoint.getSignature().getDeclaringTypeName()
                 + " - " + proceedingJoinPoint.getSignature().getName(),
+                clientIp,
                 userInfo,
                 requiredRole,
                 queryCount,
@@ -46,6 +51,42 @@ public class CustomLoggingAspect {
 			);
 		}
 	}
+
+    private String extractClientIp() {
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes == null) return "Unknown";
+
+            HttpServletRequest request = attributes.getRequest();
+
+            String ip = request.getHeader("X-Forwarded-For");
+
+            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                ip = request.getHeader("Proxy-Client-IP");
+            }
+            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                ip = request.getHeader("WL-Proxy-Client-IP");
+            }
+            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                ip = request.getHeader("HTTP_CLIENT_IP");
+            }
+            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+            }
+            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                ip = request.getRemoteAddr();
+            }
+
+            // X-Forwarded-For에 여러 IP가 찍히는 경우(예: client, proxy1, proxy2) 첫 번째 IP가 실제 클라이언트
+            if (ip != null && ip.contains(",")) {
+                return ip.split(",")[0].trim();
+            }
+
+            return ip;
+        } catch (Exception e) {
+            return "Unknown";
+        }
+    }
 
     private String extractUserInfo(ProceedingJoinPoint joinPoint) {
         String id = "Anonymous";
