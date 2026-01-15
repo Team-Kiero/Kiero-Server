@@ -62,7 +62,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info, beans, httptrace, metrics, prometheus
+        include: health, info, prometheus
   endpoint:
     health:
       show-details: always
