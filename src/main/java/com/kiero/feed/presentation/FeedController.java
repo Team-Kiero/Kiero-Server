@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,10 +47,12 @@ public class FeedController {
 	@GetMapping(value = "/{childId}/subscribe", produces = "text/event-stream")
 	public SseEmitter subscribe(
 		@PathVariable("childId") Long childId,
-		@CurrentMember CurrentAuth currentAuth
+		@CurrentMember CurrentAuth currentAuth,
+		@RequestHeader("Authorization") String authorization
 	) {
 		Long parentId = currentAuth.memberId();
+		String token = authorization.substring("Bearer ".length());
 		feedService.isParentChildValid(parentId, childId);
-		return sseService.subscribe(feedSseService.key(parentId, childId));
+		return sseService.subscribe(feedSseService.key(parentId, childId), token);
 	}
 }

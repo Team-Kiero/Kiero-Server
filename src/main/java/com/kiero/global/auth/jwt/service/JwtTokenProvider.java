@@ -1,6 +1,8 @@
 package com.kiero.global.auth.jwt.service;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
@@ -40,7 +42,7 @@ public class JwtTokenProvider {
 	@Value("${jwt.refresh-token-expire-time}")
 	private long refreshTokenExpireTime;
 
-	private static final long temporaryAccessTokenExpireTime = 60 * 5 * 1000L;
+	public static final long TEMPORARY_ACCESS_TOKEN_EXPIRE_TIME = 60 * 5 * 1000L;
 
 	private static final String MEMBER_ID = "member_Id";
 	private static final String ROLE_KEY = "role";
@@ -120,6 +122,15 @@ public class JwtTokenProvider {
 		return raw == null ? null : String.valueOf(raw);
 	}
 
+	public LocalDateTime getExpirationDateTime(String token) {
+		Claims claims = getBody(token);
+		Date expiration = claims.getExpiration();
+
+		return expiration.toInstant()
+			.atZone(ZoneId.systemDefault())
+			.toLocalDateTime();
+	}
+
 	private String issueToken(final Authentication authentication, final long expiredTime) {
 		final Date now = new Date();
 
@@ -149,7 +160,7 @@ public class JwtTokenProvider {
 
 		final Claims claims = Jwts.claims()
 			.setIssuedAt(now)
-			.setExpiration(new Date(now.getTime() + temporaryAccessTokenExpireTime));
+			.setExpiration(new Date(now.getTime() + TEMPORARY_ACCESS_TOKEN_EXPIRE_TIME));
 
 		claims.put(MEMBER_ID, authentication.getPrincipal());
 
