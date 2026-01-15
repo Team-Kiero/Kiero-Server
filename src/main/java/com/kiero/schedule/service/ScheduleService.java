@@ -1,5 +1,7 @@
 package com.kiero.schedule.service;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,6 +13,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +50,8 @@ import com.kiero.schedule.repository.ScheduleRepeatDaysRepository;
 import com.kiero.schedule.repository.ScheduleRepository;
 import com.kiero.schedule.service.resolver.TodayScheduleStatusResolver;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -62,6 +68,9 @@ public class ScheduleService {
 	private final ScheduleDetailRepository scheduleDetailRepository;
 
 	private final ApplicationEventPublisher eventPublisher;
+
+	private final ResourceLoader resourceLoader;
+	private final EntityManager em;
 
 	private final Clock clock;
 	private final static int ALL_SCHEDULE_SUCCESS_REWARD = 10;
@@ -415,6 +424,48 @@ public class ScheduleService {
 
 		scheduleDetailRepository.saveAll(scheduleDetails);
 	}
+
+	/*
+	솝트 데모데이 때 더미데이터를 넣기 위한 메서드
+	 */
+	@Transactional
+	public void insertDummy(Long parentId, Long childId) {
+		String deleteScheduleRepeatDaysSql = loadSql("sql/schedule_repeat_days_delete_dummy.sql");
+		String deleteScheduleDetailSql = loadSql("sql/schedule_detail_delete_dummy.sql");
+		String deleteScheduleSql = loadSql("sql/schedule_delete_dummy.sql");
+
+		String scheduleSql = loadSql("sql/schedule_insert_dummy.sql");
+		String scheduleRepeatDaysSql = loadSql("sql/schedule_repeat_days_insert_dummy.sql");
+		String scheduleDetailSql = loadSql("sql/schedule_detail_insert_dummy.sql");
+
+		List<String> deleteSqls = List.of(deleteScheduleRepeatDaysSql, deleteScheduleDetailSql, deleteScheduleSql);
+		for (String sql : deleteSqls) {
+			Query deleteQuery = em.createNativeQuery(sql);
+			deleteQuery.executeUpdate();
+		}
+
+		Query scheduleQuery = em.createNativeQuery(scheduleSql);
+		scheduleQuery.setParameter("parentId", parentId);
+		scheduleQuery.setParameter("childId", childId);
+		scheduleQuery.executeUpdate();
+
+		Query repeatDaysQuery = em.createNativeQuery(scheduleRepeatDaysSql);
+		repeatDaysQuery.executeUpdate();
+
+		Query detailQuery = em.createNativeQuery(scheduleDetailSql);
+		detailQuery.executeUpdate();
+	}
+
+	private String loadSql(String path) {
+		try {
+			Resource resource = resourceLoader.getResource("classpath:" + path);
+			return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			throw new IllegalStateException("더미 SQL 로딩 실패", e);
+		}
+	}
+	/*
+	 */
 
 	private List<DayOfWeek> dayOfWeekParser(String dayOfWeek) {
 		try {
