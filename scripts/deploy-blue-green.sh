@@ -59,6 +59,8 @@ cd "$PROJECT_ROOT"
 
 log_info "프로젝트 디렉토리: $PROJECT_ROOT"
 
+docker-compose -f "$COMPOSE_FILE" up -d redis prometheus grafana
+
 # EC2 Nginx 설정 파일 경로
 NGINX_CONF="/etc/nginx/sites-available/kiero"
 
