@@ -59,7 +59,8 @@ cd "$PROJECT_ROOT"
 
 log_info "프로젝트 디렉토리: $PROJECT_ROOT"
 
-docker-compose -f "$COMPOSE_FILE" up -d redis prometheus grafana
+log_info "redis, prometheus, grafa 컨테이너를 띄웁니다."
+docker compose -f "$COMPOSE_FILE" up -d redis prometheus grafana
 
 # EC2 Nginx 설정 파일 경로
 NGINX_CONF="/etc/nginx/sites-available/kiero"
@@ -110,7 +111,7 @@ else
     log_info "Blue 이미지 태그: $BLUE_TAG"
 fi
 
-docker-compose -f "$COMPOSE_FILE" pull app-$INACTIVE
+docker compose -f "$COMPOSE_FILE" pull app-$INACTIVE
 
 ###############################################################################
 # 3. 비활성 환경에 새 버전 배포
@@ -119,11 +120,11 @@ docker-compose -f "$COMPOSE_FILE" pull app-$INACTIVE
 log_info "$INACTIVE 환경에 새 버전 배포 중..."
 
 # 기존 비활성 컨테이너 정지 및 제거
-docker-compose -f "$COMPOSE_FILE" stop app-$INACTIVE || true
-docker-compose -f "$COMPOSE_FILE" rm -f app-$INACTIVE || true
+docker compose -f "$COMPOSE_FILE" stop app-$INACTIVE || true
+docker compose -f "$COMPOSE_FILE" rm -f app-$INACTIVE || true
 
 # 새 컨테이너 시작
-docker-compose -f "$COMPOSE_FILE" up -d app-$INACTIVE
+docker compose -f "$COMPOSE_FILE" up -d app-$INACTIVE
 
 log_info "$INACTIVE 컨테이너 시작 완료. Health check 대기 중..."
 
@@ -157,7 +158,7 @@ done
 if [ "$HEALTH_STATUS" != "healthy" ]; then
     log_error "$INACTIVE 환경이 정상적으로 시작되지 않았습니다. 배포를 중단합니다."
     log_error "로그 확인: docker logs ${CONTAINER_PREFIX}-${INACTIVE}"| tail -n 100
-    docker-compose -f "$COMPOSE_FILE" stop app-$INACTIVE
+    docker compose -f "$COMPOSE_FILE" stop app-$INACTIVE
     exit 1
 fi
 
@@ -200,7 +201,7 @@ else
     log_info "10초 후 이전 버전($ACTIVE)을 정지합니다. (Ctrl+C로 취소 가능)"
     sleep 10
 
-    docker-compose -f "$COMPOSE_FILE" stop app-$ACTIVE
+    docker compose -f "$COMPOSE_FILE" stop app-$ACTIVE
     log_success "이전 버전($ACTIVE) 정지 완료"
 fi
 
