@@ -43,6 +43,8 @@ public class SecurityConfig {
 					"/api/v1/tokens/subscribe-token"
 				).permitAll()
 
+				.requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
+
 				.requestMatchers(HttpMethod.GET, "/api/v1/feeds/*/subscribe")
 				.hasAuthority("SCOPE_FEED_SUBSCRIBE")
 
