@@ -194,17 +194,14 @@ public class ScheduleServiceTest {
 		void 자신의_아이가_아니면_접근제한() {
 			// given
 			Long parentId = 1L;
-			Long myChildId = 1L;
-			Long otherChildId = 1L;
+			Long otherChildId = 100L;
 
 			Parent parent = mock(Parent.class);
-			Child myChild = mock(Child.class);
 			Child otherChild = mock(Child.class);
 
 			ScheduleAddRequest req = new ScheduleAddRequest(null, null, null, null, null, null, null);
 
 			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(myChildId)).willReturn(Optional.of(myChild));
 			given(childRepository.findById(otherChildId)).willReturn(Optional.of(otherChild));
 			given(parentChildRepository.existsByParentAndChild(parent, otherChild)).willReturn(false);
 
