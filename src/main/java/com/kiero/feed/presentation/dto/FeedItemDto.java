@@ -9,7 +9,7 @@ import com.kiero.feed.domain.enums.EventType;
 public record FeedItemDto(
 	EventType eventType,
 
-	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm")
 	LocalDateTime occurredAt,
 	JsonNode metadata
 ) {}
