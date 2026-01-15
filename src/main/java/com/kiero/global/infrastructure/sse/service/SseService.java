@@ -1,21 +1,32 @@
 package com.kiero.global.infrastructure.sse.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.kiero.global.auth.jwt.service.JwtTokenProvider;
 import com.kiero.global.infrastructure.sse.repository.SseEmitterRepository;
+import com.kiero.global.infrastructure.sse.repository.SseEmitterWrapper;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SseService {
-	private static final long TIMEOUT = 60L * 60 * 1000;
 	private final SseEmitterRepository<String> emitterRepository;
+	private final JwtTokenProvider jwtTokenProvider;
 
-	public SseEmitter subscribe(String key) {
-		SseEmitter emitter = new SseEmitter(TIMEOUT);
-		emitterRepository.save(key, emitter);
+	public SseEmitter subscribe(String key, String token) {
+		LocalDateTime tokenExpiresAt = jwtTokenProvider.getExpirationDateTime(token);
+
+		SseEmitter emitter = new SseEmitter();
+
+		emitterRepository.save(key, emitter, tokenExpiresAt);
+
+		log.info("wrapped emitter expires at : {}", tokenExpiresAt);
 
 		emitter.onCompletion(() -> emitterRepository.remove(key));
 		emitter.onTimeout(() -> emitterRepository.remove(key));
@@ -30,11 +41,11 @@ public class SseService {
 	}
 
 	private void safeSend(String key, String eventName, Object data) {
-		SseEmitter emitter = emitterRepository.get(key);
+		SseEmitterWrapper emitter = emitterRepository.get(key);
 		if (emitter == null) return;
 
 		try {
-			emitter.send(SseEmitter.event().name(eventName).data(data));
+			emitter.getEmitter().send(SseEmitter.event().name(eventName).data(data));
 		} catch (Exception e) {
 			emitterRepository.remove(key);
 		}
