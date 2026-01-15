@@ -76,7 +76,7 @@ dependencies {
     testImplementation 'org.testcontainers:mysql:1.19.3'
     testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
 
-    //openFeign and OAuth2
+    // openFeign and OAuth2
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
@@ -85,6 +85,10 @@ dependencies {
 
     // XML
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+
+    // monitoring
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 dependencyManagement {
