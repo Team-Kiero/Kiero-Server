@@ -1,11 +1,7 @@
 package com.kiero.global.aop;
 
-import com.kiero.child.repository.ChildRepository;
 import com.kiero.global.auth.dto.CurrentAuth;
-import com.kiero.global.auth.enums.Role;
 import com.kiero.global.util.ApiQueryCounter;
-import com.kiero.parent.domain.Parent;
-import com.kiero.parent.repository.ParentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -21,11 +17,9 @@ import java.lang.reflect.Method;
 @Aspect
 @Component
 @RequiredArgsConstructor
-public class QueryLoggingAspect {
+public class CustomLoggingAspect {
 
 	private final ApiQueryCounter apiQueryCounter;
-    private final ParentRepository parentRepository;
-    private final ChildRepository childRepository;
 
 	@Around("within(@org.springframework.web.bind.annotation.RestController *)")
 	public Object logQueries(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
@@ -56,39 +50,16 @@ public class QueryLoggingAspect {
     private String extractUserInfo(ProceedingJoinPoint joinPoint) {
         String id = "Anonymous";
         String role = "None";
-        String name = "Unknown";
 
         for (Object arg : joinPoint.getArgs()) {
             if (arg instanceof CurrentAuth currentAuth) {
                 id = String.valueOf(currentAuth.memberId());
                 role = String.valueOf(currentAuth.role());
-                name = findNameByRole(currentAuth.memberId(), currentAuth.role());
                 break;
             }
         }
 
-        return String.format("ID:%s, Name:%s, Role:%s", id, name, role);
-    }
-
-    private String findNameByRole(long id, Role role) {
-        try {
-            if (Role.PARENT.equals(role)) {
-                return parentRepository.findById(id)
-                        .map(Parent::getName)
-                        .orElse("Unknown Parent");
-            } else if (Role.CHILD.equals(role)) {
-                return childRepository.findById(id)
-                        .map(child -> child.getLastName()+child.getFirstName())
-                        .orElse("Unknown Child");
-            } else if (Role.ADMIN.equals(role)) {
-                return "Admin";
-            }
-        } catch (Exception e) {
-            log.warn("Failed to fetch user name in AOP: {}", e.getMessage());
-            return "Unknown";
-        }
-
-        return "Unknown";
+        return String.format("ID:%s, Role:%s", id, role);
     }
 
     private String extractRequiredRole(ProceedingJoinPoint joinPoint) {
