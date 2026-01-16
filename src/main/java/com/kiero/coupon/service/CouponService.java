@@ -9,13 +9,20 @@ import com.kiero.coupon.presentation.dto.CouponPurchaseEvent;
 import com.kiero.coupon.presentation.dto.CouponResponse;
 import com.kiero.coupon.repository.CouponRepository;
 import com.kiero.global.exception.KieroException;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -28,6 +35,9 @@ public class CouponService {
 
     private final CouponRepository couponRepository;
     private final ChildRepository childRepository;
+
+    private final EntityManager em;
+    private final ResourceLoader resourceLoader;
 
     @Transactional(readOnly = true)
     public List<CouponResponse> getAllCoupons() {

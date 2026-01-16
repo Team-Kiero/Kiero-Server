@@ -1,14 +1,15 @@
 package com.kiero.parent.repository;
 
-import com.kiero.child.domain.Child;
-import com.kiero.parent.domain.Parent;
-import com.kiero.parent.domain.ParentChild;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+import com.kiero.child.domain.Child;
+import com.kiero.parent.domain.Parent;
+import com.kiero.parent.domain.ParentChild;
 
 public interface ParentChildRepository extends JpaRepository<ParentChild, Long> {
 
@@ -28,4 +29,11 @@ public interface ParentChildRepository extends JpaRepository<ParentChild, Long> 
 		where pc.child.id = :childId
 		""")
 	List<Parent> findParentsByChildId(@Param("childId") Long childId);
+
+	/*
+	데모데이용 임시 메서드
+	 */
+	void deleteByChildIdIn(List<Long> childIds);
+	/*
+	 */
 }

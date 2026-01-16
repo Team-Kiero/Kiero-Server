@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.kiero.child.domain.Child;
 import com.kiero.feed.domain.FeedItem;
 
 @Repository
@@ -34,4 +33,11 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		@Param("cursorId") Long cursorId,
 		Pageable pageable
 	);
+
+	/*
+	데모데이용 임시 메서드
+	 */
+	void deleteByChildIdIn(List<Long> childIds);
+	/*
+	 */
 }
