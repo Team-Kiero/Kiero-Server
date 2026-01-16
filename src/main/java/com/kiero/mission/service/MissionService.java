@@ -188,17 +188,24 @@ public class MissionService {
     }
 
     /*
+    데모데이용 임시 메서드
+    */
+    @Transactional
+    public void deleteMissionsByChildIds(List<Long> childIds) {
+        missionRepository.deleteByChildIdIn(childIds);
+    }
+    /*
+     */
+
+    /*
     솝트 데모데이 때 더미데이터를 넣기 위한 메서드
     */
     @Transactional
-    public void insertDummy(Long parentId, Long childId) {
-        String deleteSql = loadSql("sql/mission_delete_dummy.sql");
-        String missionSql = loadSql("sql/mission_insert_dummy.sql");
+    public void insertDummy(Long parentId, Long childId, String env) {
+        String sqlPath = "sql/" + env + "_mission_insert_dummy.sql";
+        String sql = loadSql(sqlPath);
 
-        Query deleteQuery = em.createNativeQuery(deleteSql);
-        deleteQuery.executeUpdate();
-
-        Query missionQuery = em.createNativeQuery(missionSql);
+        Query missionQuery = em.createNativeQuery(sql);
 
         missionQuery.setParameter("parentId", parentId);
         missionQuery.setParameter("childId", childId);

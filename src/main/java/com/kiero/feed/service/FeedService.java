@@ -85,15 +85,22 @@ public class FeedService {
 	}
 
 	/*
+	데모데이용 임시 메서드
+	 */
+	@Transactional
+	public void deleteFeedsByChildIds(List<Long> childIds) {
+		feedItemRepository.deleteByChildIdIn(childIds);
+	}
+	/*
+	 */
+
+	/*
 	솝트 데모데이 때 더미데이터를 넣기 위한 메서드
 	 */
 	@Transactional
-	public void insertDummy(Long parentId, Long childId) {
-		String deleteSql = loadSql("sql/feed_item_delete_dummy.sql");
-		String sql = loadSql("sql/feed_item_insert_dummy.sql");
-
-		Query deleteQuery = em.createNativeQuery(deleteSql);
-		deleteQuery.executeUpdate();
+	public void insertDummy(Long parentId, Long childId, String env) {
+		String sqlPath = "sql/" + env + "_feed_item_insert_dummy.sql";
+		String sql = loadSql(sqlPath);
 
 		Query q = em.createNativeQuery(sql);
 		q.setParameter("parentId", parentId);
