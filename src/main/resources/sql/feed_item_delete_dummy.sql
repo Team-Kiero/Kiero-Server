@@ -1,1 +1,0 @@
-DELETE FROM feed_item;

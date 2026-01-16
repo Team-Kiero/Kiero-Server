@@ -1,1 +1,0 @@
-DELETE FROM schedule_detail;
