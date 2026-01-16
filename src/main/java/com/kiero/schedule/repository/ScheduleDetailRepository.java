@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 
 @Repository
@@ -50,4 +51,11 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 		@Param("date") LocalDate date,
 		@Param("childId") Long childId
 	);
+
+	/*
+	데모데이용 임시 메서드
+	 */
+	void deleteByScheduleIn(List<Schedule> schedules);
+	/*
+	 */
 }

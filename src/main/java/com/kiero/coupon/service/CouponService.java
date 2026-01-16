@@ -82,30 +82,4 @@ public class CouponService {
 
         return CouponResponse.from(coupon);
     }
-
-    /*
-    솝트 데모데이 때 더미데이터를 넣기 위한 메서드
-    */
-    @Transactional
-    public void insertDummy() {
-        String deleteSql = loadSql("sql/coupon_delete_dummy.sql");
-        String missionSql = loadSql("sql/coupon_insert_dummy.sql");
-
-        Query deleteQuery = em.createNativeQuery(deleteSql);
-        deleteQuery.executeUpdate();
-
-        Query missionQuery = em.createNativeQuery(missionSql);
-        missionQuery.executeUpdate();
-    }
-
-    private String loadSql(String path) {
-        try {
-            Resource resource = resourceLoader.getResource("classpath:" + path);
-            return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalStateException("더미 SQL 로딩 실패", e);
-        }
-    }
-    /*
-     */
 }

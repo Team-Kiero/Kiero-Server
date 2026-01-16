@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -91,4 +92,14 @@ public class ChildService {
 
         return ChildMeResponse.from(child, today);
     }
+
+    /*
+    데모데이용 임시 메서드
+     */
+    @Transactional
+    public void deleteChildByIds(List<Long> childIds) {
+        childRepository.deleteByIdIn(childIds);
+    }
+    /*
+     */
 }
