@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,7 +46,6 @@ import com.kiero.schedule.repository.ScheduleRepeatDaysRepository;
 import com.kiero.schedule.repository.ScheduleRepository;
 import com.kiero.schedule.service.resolver.TodayScheduleStatusResolver;
 
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -496,9 +494,9 @@ public class ScheduleService {
 
 		// schedule_detail 생성
 		List<ScheduleDetail> details = List.of(
-			ScheduleDetail.create(LocalDate.parse("2026-01-25"), null, null, ScheduleStatus.PENDING, null, s6),
-			ScheduleDetail.create(LocalDate.parse("2026-01-20"), null, null, ScheduleStatus.PENDING, null, s9),
-			ScheduleDetail.create(LocalDate.parse("2026-01-22"), null, null, ScheduleStatus.PENDING, null, s9)
+			ScheduleDetail.create(LocalDate.parse("2026-01-18"), null, null, ScheduleStatus.PENDING, null, s6),
+			ScheduleDetail.create(LocalDate.parse("2026-01-13"), null, null, ScheduleStatus.PENDING, null, s9),
+			ScheduleDetail.create(LocalDate.parse("2026-01-15"), null, null, ScheduleStatus.PENDING, null, s9)
 		);
 		scheduleDetailRepository.saveAll(details);
 
