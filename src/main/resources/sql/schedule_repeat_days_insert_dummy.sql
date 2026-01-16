@@ -1,9 +1,19 @@
 INSERT INTO schedule_repeat_days (
-    id,
     day_of_week,
     schedule_id
 )
 VALUES
-    (1,'MON',1),
-    (2,'WED',1);
-
+('MON',1),
+('TUE',1),
+('WED',1),
+('MON',2),
+('WED',2),
+('SAT',2),
+('TUE',3),
+('SAT',4),
+('THU',5),
+('WED',7),
+('FRI',7),
+('SAT',7),
+('WED',8),
+('SAT',8);

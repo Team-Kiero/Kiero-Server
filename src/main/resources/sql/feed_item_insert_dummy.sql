@@ -1,5 +1,4 @@
 INSERT INTO feed_item (
-    id,
     event_type,
     metadata,
     occurred_at,
@@ -8,9 +7,43 @@ INSERT INTO feed_item (
     parent_id
 )
 VALUES
-    (1,'MISSION','{"amount": 100, "content": "미션 1"}','2026-01-10 04:09:10.308177','2026-01-10 04:09:10.330633',:childId,:parentId),
-    (2,'SCHEDULE','{"content": "과자먹기", "imageUrl": "aaa.com"}','2026-01-10 04:12:33.377100','2026-01-10 04:12:33.381056',:childId,:parentId);
-
-
-
-
+    (
+        'SCHEDULE',
+        '{"content": "피아노 학원", "imageUrl": "https://kiero-bucket.s3.ap-northeast-2.amazonaws.com/schedule/piano.JPG"}',
+        '2026-01-17 11:00:00.000000',
+        '2026-01-16 09:03:46.000000',
+        :childId,
+        :parentId
+    ),
+    (
+        'COUPON',
+        '{"amount": 80, "content": "놀이동산 가기"}',
+        '2026-01-17 10:00:00.000000',
+        '2026-01-16 09:03:46.000000',
+        :childId,
+        :parentId
+    ),
+    (
+        'COMPLETE',
+        '{"amount": 10}',
+        '2026-01-16 17:15:22.000000',
+        '2026-01-16 09:03:46.000000',
+        :childId,
+        :parentId
+    ),
+    (
+        'MISSION',
+        '{"amount": 35, "content": "받아쓰기 만점"}',
+        '2026-01-16 19:46:00.000000',
+        '2026-01-16 09:03:46.000000',
+        :childId,
+        :parentId
+    ),
+    (
+        'SCHEDULE',
+        '{"amount": 10}',
+        '2026-01-15 20:37:00.000000',
+        '2026-01-16 09:03:46.000000',
+        :childId,
+        :parentId
+    );
