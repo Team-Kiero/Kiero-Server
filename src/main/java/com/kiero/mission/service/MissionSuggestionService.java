@@ -17,6 +17,7 @@ import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -146,6 +147,8 @@ public class MissionSuggestionService {
         LocalDate today = LocalDate.now();
         LocalDate oneYearLater = today.plusYears(1);
 
+        LocalDate nextSchoolDay = getNextSchoolDay(today);
+
         return missions.stream()
                 .filter(m -> m.name() != null && !m.name().isBlank())
                 .map(m -> {
@@ -156,13 +159,13 @@ public class MissionSuggestionService {
 
                     LocalDate dueAt = m.dueAt();
 
-                    // 1. 날짜 미지정 -> 다음 등교일 계산
+                    // 1. 날짜 미지정 -> 다음 등교일 사용
                     if (UNSPECIFIED_DATE.equals(dueAt)) {
-                        dueAt = getNextSchoolDay(today);
+                        dueAt = nextSchoolDay;
                     }
-                    // 2. 유효하지 않은 날짜 -> 다음 등교일 계산
+                    // 2. 유효하지 않은 날짜 -> 다음 등교일 사용
                     else if (dueAt == null || dueAt.isBefore(today) || dueAt.isAfter(oneYearLater)) {
-                        dueAt = getNextSchoolDay(today);
+                        dueAt = nextSchoolDay;
                     }
                     // 3. 명시적 날짜 -> 그대로 사용
 
@@ -173,12 +176,19 @@ public class MissionSuggestionService {
     }
 
     private LocalDate getNextSchoolDay(LocalDate startDate) {
+        LocalDate endDate = startDate.plusDays(30);
+
+        // 30일간의 공휴일을 한 번에 조회
+        Set<LocalDate> holidays = holidayService.getHolidayDatesBetween(startDate, endDate);
+
         LocalDate candidate = startDate.plusDays(1);
         for (int i = 0; i < 30; i++) {
             DayOfWeek dayOfWeek = candidate.getDayOfWeek();
+
+            // 주말이 아니고 공휴일도 아니면 등교일
             if (dayOfWeek != DayOfWeek.SATURDAY
                     && dayOfWeek != DayOfWeek.SUNDAY
-                    && !holidayService.isHoliday(candidate)) {
+                    && !holidays.contains(candidate)) {
                 return candidate;
             }
             candidate = candidate.plusDays(1);
