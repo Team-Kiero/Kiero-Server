@@ -15,6 +15,8 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -81,8 +83,10 @@ public class HolidayService {
     }
 
     @Transactional(readOnly = true)
-    public boolean isHoliday(LocalDate date) {
-        return holidayRepository.existsById(date);
+    public Set<LocalDate> getHolidayDatesBetween(LocalDate startDate, LocalDate endDate) {
+        return holidayRepository.findByDateBetween(startDate, endDate).stream()
+                .map(Holiday::getDate)
+                .collect(Collectors.toSet());
     }
 
     private boolean isValidResponse(HolidayApiResponse res) {
