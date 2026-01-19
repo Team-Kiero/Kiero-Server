@@ -35,7 +35,7 @@ public class SecurityConfig {
 					"/swagger-ui/**",
 					"/v3/api-docs/**",
 					"/health-check",
-                    "/actuator/health",
+          "/actuator/health",
 					"/api/v1/parents/login",
 					"/api/v1/parents/login/access-token",
 					"/api/v1/children/signup",
@@ -50,6 +50,9 @@ public class SecurityConfig {
 
 				.requestMatchers(HttpMethod.GET, "/api/v1/parents/invite/subscribe")
 				.hasAuthority("SCOPE_INVITE_SUBSCRIBE")
+
+				.requestMatchers(HttpMethod.GET, "/api/v1/events/subscribe")
+				.hasAuthority("SCOPE_EVENT_SUBSCRIBE")
 
 				.anyRequest().authenticated()
 			)
