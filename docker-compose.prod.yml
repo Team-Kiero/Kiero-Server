@@ -120,7 +120,7 @@ services:
 
   # NocoDB
   nocodb:
-    image: nocodb/nocodb:latest
+    image: nocodb/nocodb:0.265.1
     container_name: kiero-nocodb
     ports:
       - "9001:8080"
