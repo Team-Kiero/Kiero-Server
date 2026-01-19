@@ -20,8 +20,8 @@ public enum InvitationErrorCode implements BaseCode {
     INVITE_CODE_PROCESSING(HttpStatus.CONFLICT, "초대 코드가 현재 처리 중입니다. 잠시 후 다시 시도해주세요."),
 
     /*
-	500 Internal Server Error
- 	*/
+    500 Internal Server Error
+    */
     INVITE_CODE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "초대코드 생성에 실패했습니다."),
     PARENT_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "초대 코드와 연결된 부모를 찾을 수 없습니다."),
     ;
