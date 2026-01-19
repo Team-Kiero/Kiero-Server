@@ -98,14 +98,17 @@ public class FeedService {
 	솝트 데모데이 때 더미데이터를 넣기 위한 메서드
 	 */
 	@Transactional
-	public void insertDummy(Long parentId, Long childId, String env) {
+	public void insertDummy(List<Long> parentIds, Long childId, String env) {
 		String sqlPath = "sql/" + env + "_feed_item_insert_dummy.sql";
 		String sql = loadSql(sqlPath);
 
 		Query q = em.createNativeQuery(sql);
-		q.setParameter("parentId", parentId);
-		q.setParameter("childId", childId);
-		q.executeUpdate();
+
+		for (Long parentId : parentIds) {
+			q.setParameter("parentId", parentId);
+			q.setParameter("childId", childId);
+			q.executeUpdate();
+		}
 	}
 
 	private String loadSql(String path) {

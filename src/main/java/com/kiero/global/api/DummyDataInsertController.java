@@ -4,15 +4,12 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kiero.child.domain.Child;
 import com.kiero.child.service.ChildService;
-import com.kiero.coupon.service.CouponService;
 import com.kiero.feed.service.FeedService;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
@@ -35,29 +32,31 @@ public class DummyDataInsertController {
 	private final FeedService feedService;
 	private final ChildService childService;
 
-	@PostMapping("/{childId}")
+	// 아이의 '여정 시작하기'버튼 클릭 시 추가로 호출되는 api
+	@PostMapping()
 	ResponseEntity<Void> insertDummyData(
 		@CurrentMember CurrentAuth currentAuth,
-		@RequestParam String env,
-		@PathVariable Long childId
+		@RequestParam String env
 	) {
-		Long parentId = currentAuth.memberId();
-		log.info("해피해피!! parentId = {}의 더미데이터 처리를 시작합니다. (ง •̀ω•́)ง✧", parentId);
+		Long childId = currentAuth.memberId();
+		List<Long> parentIds = parentService.findParentIdByChildId(childId);
+		log.info("parentId = {}의 더미데이터 처리를 시작합니다. (ง •̀ω•́)ง✧", childId);
 
-		missionService.insertDummy(parentId, childId, env);
-		feedService.insertDummy(parentId, childId, env);
-		scheduleService.insertDummy(parentId, childId);
+		missionService.insertDummy(parentIds, childId, env);
+		feedService.insertDummy(parentIds, childId, env);
+		scheduleService.insertDummy(parentIds, childId);
 
 		return ResponseEntity.ok()
 			.body(null);
 	}
 
+	// 부모의 '로그아웃'버튼 클릭 시 추가로 호출되는 api
 	@DeleteMapping
 	ResponseEntity<Void> deleteChildDataByParent(
 		@CurrentMember CurrentAuth currentAuth
 	) {
 		Long parentId = currentAuth.memberId();
-		log.info("룰루랄라~ parentId = {}에 연결된 child 정보, 관련 데이터를 삭제합니다. (ง •̀ω•́)ง✧", parentId);
+		log.info("parentId = {}에 연결된 child 정보, 관련 데이터를 삭제합니다. (ง •̀ω•́)ง✧", parentId);
 
 		List<Long> childIds = parentService.getMyChildIds(parentId);
 		scheduleService.deleteSchedulesDataByParentAndChild(childIds);

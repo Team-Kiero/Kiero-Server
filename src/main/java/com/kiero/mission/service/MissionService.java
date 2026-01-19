@@ -201,16 +201,18 @@ public class MissionService {
     솝트 데모데이 때 더미데이터를 넣기 위한 메서드
     */
     @Transactional
-    public void insertDummy(Long parentId, Long childId, String env) {
+    public void insertDummy(List<Long> parentIds, Long childId, String env) {
         String sqlPath = "sql/" + env + "_mission_insert_dummy.sql";
         String sql = loadSql(sqlPath);
 
         Query missionQuery = em.createNativeQuery(sql);
 
-        missionQuery.setParameter("parentId", parentId);
-        missionQuery.setParameter("childId", childId);
-        log.info("mission query: " + missionQuery);
-        missionQuery.executeUpdate();
+        for (Long parentId : parentIds) {
+            missionQuery.setParameter("parentId", parentId);
+            missionQuery.setParameter("childId", childId);
+            log.info("mission query: " + missionQuery);
+            missionQuery.executeUpdate();
+        }
     }
 
     private String loadSql(String path) {

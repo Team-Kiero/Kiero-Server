@@ -430,109 +430,112 @@ public class ScheduleService {
 	 */
 
 	@Transactional
-	public void insertDummy(Long parentId, Long childId) {
-		Parent parent = parentRepository.findById(parentId)
-			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
+	public void insertDummy(List<Long> parentIds, Long childId) {
 
-		Child child = childRepository.findById(childId)
-			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+		for (Long parentId : parentIds) {
+			Parent parent = parentRepository.findById(parentId)
+				.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
 
-		if (!parentChildRepository.existsByParentAndChild(parent, child)) {
-			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+			Child child = childRepository.findById(childId)
+				.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+
+			if (!parentChildRepository.existsByParentAndChild(parent, child)) {
+				throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+			}
+
+			List<Schedule> schedulesToSave = List.of(
+				Schedule.create(parent, child, "학교",
+					LocalTime.parse("09:00:00"), LocalTime.parse("13:00:00"),
+					ScheduleColor.SCHEDULE1, true),
+
+				Schedule.create(parent, child, "돌봄 교실",
+					LocalTime.parse("13:00:00"), LocalTime.parse("15:00:00"),
+					ScheduleColor.SCHEDULE2, true),
+
+				Schedule.create(parent, child, "태권도",
+					LocalTime.parse("14:00:00"), LocalTime.parse("16:00:00"),
+					ScheduleColor.SCHEDULE3, true),
+
+				Schedule.create(parent, child, "태권도",
+					LocalTime.parse("09:00:00"), LocalTime.parse("12:00:00"),
+					ScheduleColor.SCHEDULE3, true),
+
+				Schedule.create(parent, child, "피아노",
+					LocalTime.parse("14:00:00"), LocalTime.parse("16:00:00"),
+					ScheduleColor.SCHEDULE4, true),
+
+				Schedule.create(parent, child, "피아노",
+					LocalTime.parse("12:00:00"), LocalTime.parse("14:00:00"),
+					ScheduleColor.SCHEDULE4, false),
+
+				Schedule.create(parent, child, "수영 교실",
+					LocalTime.parse("16:00:00"), LocalTime.parse("17:00:00"),
+					ScheduleColor.SCHEDULE5, true),
+
+				Schedule.create(parent, child, "수학",
+					LocalTime.parse("18:00:00"), LocalTime.parse("19:00:00"),
+					ScheduleColor.SCHEDULE2, true),
+
+				Schedule.create(parent, child, "영어",
+					LocalTime.parse("19:00:00"), LocalTime.parse("20:00:00"),
+					ScheduleColor.SCHEDULE3, false)
+			);
+
+			// schedule 생성
+			List<Schedule> savedSchedules = scheduleRepository.saveAll(schedulesToSave);
+
+			Schedule s1 = savedSchedules.get(0);
+			Schedule s2 = savedSchedules.get(1);
+			Schedule s3 = savedSchedules.get(2);
+			Schedule s4 = savedSchedules.get(3);
+			Schedule s5 = savedSchedules.get(4);
+			Schedule s6 = savedSchedules.get(5);
+			Schedule s7 = savedSchedules.get(6);
+			Schedule s8 = savedSchedules.get(7);
+			Schedule s9 = savedSchedules.get(8);
+
+			// schedule_detail 생성
+			List<ScheduleDetail> details = List.of(
+				ScheduleDetail.create(LocalDate.parse("2026-01-18"), null, null, ScheduleStatus.PENDING, null, s6),
+				ScheduleDetail.create(LocalDate.parse("2026-01-13"), null, null, ScheduleStatus.PENDING, null, s9),
+				ScheduleDetail.create(LocalDate.parse("2026-01-15"), null, null, ScheduleStatus.PENDING, null, s9)
+			);
+			scheduleDetailRepository.saveAll(details);
+
+			// schedule_repeat_days 생성
+			List<ScheduleRepeatDays> repeatDays = List.of(
+				// (MON,TUE,WED,THU,FRI) -> 1
+				ScheduleRepeatDays.create(DayOfWeek.MON, s1),
+				ScheduleRepeatDays.create(DayOfWeek.TUE, s1),
+				ScheduleRepeatDays.create(DayOfWeek.WED, s1),
+				ScheduleRepeatDays.create(DayOfWeek.THU, s1),
+				ScheduleRepeatDays.create(DayOfWeek.FRI, s1),
+
+				// (MON,WED,SAT) -> 2
+				ScheduleRepeatDays.create(DayOfWeek.MON, s2),
+				ScheduleRepeatDays.create(DayOfWeek.WED, s2),
+				ScheduleRepeatDays.create(DayOfWeek.SAT, s2),
+
+				// (TUE) -> 3
+				ScheduleRepeatDays.create(DayOfWeek.TUE, s3),
+
+				// (SAT) -> 4
+				ScheduleRepeatDays.create(DayOfWeek.SAT, s4),
+
+				// (THU) -> 5
+				ScheduleRepeatDays.create(DayOfWeek.THU, s5),
+
+				// (WED,FRI,SAT) -> 7
+				ScheduleRepeatDays.create(DayOfWeek.WED, s7),
+				ScheduleRepeatDays.create(DayOfWeek.FRI, s7),
+				ScheduleRepeatDays.create(DayOfWeek.SAT, s7),
+
+				// (MON, WED) -> 8
+				ScheduleRepeatDays.create(DayOfWeek.MON, s8),
+				ScheduleRepeatDays.create(DayOfWeek.WED, s8)
+			);
+			scheduleRepeatDaysRepository.saveAll(repeatDays);
 		}
-
-		List<Schedule> schedulesToSave = List.of(
-			Schedule.create(parent, child, "학교",
-				LocalTime.parse("09:00:00"), LocalTime.parse("13:00:00"),
-				ScheduleColor.SCHEDULE1, true),
-
-			Schedule.create(parent, child, "돌봄 교실",
-				LocalTime.parse("13:00:00"), LocalTime.parse("15:00:00"),
-				ScheduleColor.SCHEDULE2, true),
-
-			Schedule.create(parent, child, "태권도",
-				LocalTime.parse("14:00:00"), LocalTime.parse("16:00:00"),
-				ScheduleColor.SCHEDULE3, true),
-
-			Schedule.create(parent, child, "태권도",
-				LocalTime.parse("09:00:00"), LocalTime.parse("12:00:00"),
-				ScheduleColor.SCHEDULE3, true),
-
-			Schedule.create(parent, child, "피아노",
-				LocalTime.parse("14:00:00"), LocalTime.parse("16:00:00"),
-				ScheduleColor.SCHEDULE4, true),
-
-			Schedule.create(parent, child, "피아노",
-				LocalTime.parse("12:00:00"), LocalTime.parse("14:00:00"),
-				ScheduleColor.SCHEDULE4, false),
-
-			Schedule.create(parent, child, "수영 교실",
-				LocalTime.parse("16:00:00"), LocalTime.parse("17:00:00"),
-				ScheduleColor.SCHEDULE5, true),
-
-			Schedule.create(parent, child, "수학",
-				LocalTime.parse("18:00:00"), LocalTime.parse("19:00:00"),
-				ScheduleColor.SCHEDULE2, true),
-
-			Schedule.create(parent, child, "영어",
-				LocalTime.parse("19:00:00"), LocalTime.parse("20:00:00"),
-				ScheduleColor.SCHEDULE3, false)
-		);
-
-		// schedule 생성
-		List<Schedule> savedSchedules = scheduleRepository.saveAll(schedulesToSave);
-
-		Schedule s1 = savedSchedules.get(0);
-		Schedule s2 = savedSchedules.get(1);
-		Schedule s3 = savedSchedules.get(2);
-		Schedule s4 = savedSchedules.get(3);
-		Schedule s5 = savedSchedules.get(4);
-		Schedule s6 = savedSchedules.get(5);
-		Schedule s7 = savedSchedules.get(6);
-		Schedule s8 = savedSchedules.get(7);
-		Schedule s9 = savedSchedules.get(8);
-
-		// schedule_detail 생성
-		List<ScheduleDetail> details = List.of(
-			ScheduleDetail.create(LocalDate.parse("2026-01-18"), null, null, ScheduleStatus.PENDING, null, s6),
-			ScheduleDetail.create(LocalDate.parse("2026-01-13"), null, null, ScheduleStatus.PENDING, null, s9),
-			ScheduleDetail.create(LocalDate.parse("2026-01-15"), null, null, ScheduleStatus.PENDING, null, s9)
-		);
-		scheduleDetailRepository.saveAll(details);
-
-		// schedule_repeat_days 생성
-		List<ScheduleRepeatDays> repeatDays = List.of(
-			// (MON,TUE,WED,THU,FRI) -> 1
-			ScheduleRepeatDays.create(DayOfWeek.MON, s1),
-			ScheduleRepeatDays.create(DayOfWeek.TUE, s1),
-			ScheduleRepeatDays.create(DayOfWeek.WED, s1),
-			ScheduleRepeatDays.create(DayOfWeek.THU, s1),
-			ScheduleRepeatDays.create(DayOfWeek.FRI, s1),
-
-			// (MON,WED,SAT) -> 2
-			ScheduleRepeatDays.create(DayOfWeek.MON, s2),
-			ScheduleRepeatDays.create(DayOfWeek.WED, s2),
-			ScheduleRepeatDays.create(DayOfWeek.SAT, s2),
-
-			// (TUE) -> 3
-			ScheduleRepeatDays.create(DayOfWeek.TUE, s3),
-
-			// (SAT) -> 4
-			ScheduleRepeatDays.create(DayOfWeek.SAT, s4),
-
-			// (THU) -> 5
-			ScheduleRepeatDays.create(DayOfWeek.THU, s5),
-
-			// (WED,FRI,SAT) -> 7
-			ScheduleRepeatDays.create(DayOfWeek.WED, s7),
-			ScheduleRepeatDays.create(DayOfWeek.FRI, s7),
-			ScheduleRepeatDays.create(DayOfWeek.SAT, s7),
-
-			// (MON, WED) -> 8
-			ScheduleRepeatDays.create(DayOfWeek.MON, s8),
-			ScheduleRepeatDays.create(DayOfWeek.WED, s8)
-		);
-		scheduleRepeatDaysRepository.saveAll(repeatDays);
 	}
 
 	private List<DayOfWeek> dayOfWeekParser(String dayOfWeek) {

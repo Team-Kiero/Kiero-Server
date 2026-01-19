@@ -46,6 +46,12 @@ public class ParentService {
 	public List<Long> getMyChildIds(Long parentId) {
 		return parentChildRepository.findChildIdsByParentId(parentId);
 	}
+
+	public List<Long> findParentIdByChildId(Long childId) {
+		return parentChildRepository.findParentsByChildId(childId).stream()
+			.map(Parent::getId)
+			.toList();
+	}
 	/*
 	 */
 
