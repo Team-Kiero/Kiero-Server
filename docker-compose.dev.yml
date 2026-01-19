@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Blue 환경 (Dev)
   app-blue:
@@ -94,6 +92,8 @@ services:
     container_name: kiero-grafana
     ports:
       - "3000:3000"
+    env_file:
+      - .env.dev
     volumes:
       - grafana-data:/var/lib/grafana
     environment:
@@ -111,6 +111,8 @@ services:
     container_name: kiero-nocodb
     ports:
       - "9001:8080"
+    env_file:
+      - .env.dev
     environment:
       - NC_DB=mysql2://${NOCODB_DB_HOST}:3306?u=${DB_USERNAME}&p=${DB_PASSWORD}&d=${NOCODB_DB_NAME}
       - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}
