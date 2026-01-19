@@ -1001,6 +1001,8 @@ public class ScheduleServiceTest {
 			ScheduleRepeatDays rdMon = mock(ScheduleRepeatDays.class);
 			ScheduleRepeatDays rdWed = mock(ScheduleRepeatDays.class);
 
+			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(2025, 12, 29, 10, 0));
+
 			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
 			given(childRepository.findById(childId)).willReturn(Optional.of(child));
 			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
