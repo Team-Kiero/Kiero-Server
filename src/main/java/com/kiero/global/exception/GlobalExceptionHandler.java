@@ -71,10 +71,10 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleException(Exception e) {
-		log.error("❌예기치 않은 예외 발생 : ", e);
+		log.error("❌예기치 않은 서버 에러 발생: ", e);
 		ErrorResponse response = ErrorResponse.of(
 			HttpStatus.INTERNAL_SERVER_ERROR,
-			"서버 내부에서 문제가 발생하였습니다. exception: " + e.getMessage()
+			"서버 내부에서 문제가 발생하였습니다."
 		);
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 			.body(response);
