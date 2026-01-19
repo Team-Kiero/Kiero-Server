@@ -59,8 +59,8 @@ cd "$PROJECT_ROOT"
 
 log_info "프로젝트 디렉토리: $PROJECT_ROOT"
 
-log_info "redis, prometheus, grafa 컨테이너를 띄웁니다."
-docker compose -f "$COMPOSE_FILE" up -d redis prometheus grafana
+log_info "redis, prometheus, grafana, nocodb 컨테이너를 띄웁니다."
+docker compose -f "$COMPOSE_FILE" up -d redis prometheus grafana nocodb
 
 # EC2 Nginx 설정 파일 경로
 NGINX_CONF="/etc/nginx/sites-available/kiero"
