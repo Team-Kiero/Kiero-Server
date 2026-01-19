@@ -34,13 +34,19 @@ log_error() {
 COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.dev.yml}
 log_info "사용할 Compose 파일: $COMPOSE_FILE"
 
-# 환경에 따른 컨테이너 이름 접두사 결정
+# 환경에 따른 컨테이너 이름 접두사 및 env 파일 결정
 if [[ "$COMPOSE_FILE" == *"dev"* ]]; then
     CONTAINER_PREFIX="kiero-dev-app"
+    ENV_FILE=".env.dev"
 else
     CONTAINER_PREFIX="kiero-prod-app"
+    ENV_FILE=".env.prod"
 fi
 log_info "컨테이너 이름 접두사: $CONTAINER_PREFIX"
+log_info "환경변수 파일: $ENV_FILE"
+
+# Docker Compose 명령어 (env-file 포함)
+DOCKER_COMPOSE="docker compose -f $COMPOSE_FILE --env-file $ENV_FILE"
 
 # 옵션 파싱
 KEEP_OLD=false
@@ -60,7 +66,7 @@ cd "$PROJECT_ROOT"
 log_info "프로젝트 디렉토리: $PROJECT_ROOT"
 
 log_info "redis, prometheus, grafana, nocodb 컨테이너를 띄웁니다."
-docker compose -f "$COMPOSE_FILE" up -d redis prometheus grafana nocodb
+$DOCKER_COMPOSE up -d redis prometheus grafana nocodb
 
 # EC2 Nginx 설정 파일 경로
 NGINX_CONF="/etc/nginx/sites-available/kiero"
@@ -111,7 +117,7 @@ else
     log_info "Blue 이미지 태그: $BLUE_TAG"
 fi
 
-docker compose -f "$COMPOSE_FILE" pull app-$INACTIVE
+$DOCKER_COMPOSE pull app-$INACTIVE
 
 ###############################################################################
 # 3. 비활성 환경에 새 버전 배포
@@ -120,11 +126,11 @@ docker compose -f "$COMPOSE_FILE" pull app-$INACTIVE
 log_info "$INACTIVE 환경에 새 버전 배포 중..."
 
 # 기존 비활성 컨테이너 정지 및 제거
-docker compose -f "$COMPOSE_FILE" stop app-$INACTIVE || true
-docker compose -f "$COMPOSE_FILE" rm -f app-$INACTIVE || true
+$DOCKER_COMPOSE stop app-$INACTIVE || true
+$DOCKER_COMPOSE rm -f app-$INACTIVE || true
 
 # 새 컨테이너 시작
-docker compose -f "$COMPOSE_FILE" up -d app-$INACTIVE
+$DOCKER_COMPOSE up -d app-$INACTIVE
 
 log_info "$INACTIVE 컨테이너 시작 완료. Health check 대기 중..."
 
@@ -158,7 +164,7 @@ done
 if [ "$HEALTH_STATUS" != "healthy" ]; then
     log_error "$INACTIVE 환경이 정상적으로 시작되지 않았습니다. 배포를 중단합니다."
     log_error "로그 확인: docker logs ${CONTAINER_PREFIX}-${INACTIVE}"| tail -n 100
-    docker compose -f "$COMPOSE_FILE" stop app-$INACTIVE
+    $DOCKER_COMPOSE stop app-$INACTIVE
     exit 1
 fi
 
@@ -201,7 +207,7 @@ else
     log_info "10초 후 이전 버전($ACTIVE)을 정지합니다. (Ctrl+C로 취소 가능)"
     sleep 10
 
-    docker compose -f "$COMPOSE_FILE" stop app-$ACTIVE
+    $DOCKER_COMPOSE stop app-$ACTIVE
     log_success "이전 버전($ACTIVE) 정지 완료"
 fi
 
