@@ -118,6 +118,24 @@ services:
       - app-network
     restart: always
 
+  # NocoDB
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: kiero-nocodb
+    ports:
+      - "9001:8080"
+    environment:
+      - NC_DB=mysql2://${NOCODB_DB_HOST}:3306?u=${DB_USERNAME}&p=${DB_PASSWORD}&d=${NOCODB_DB_NAME}
+      - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET:-nocodb-jwt-secret-change-me}
+      - NC_ADMIN_EMAIL=${NOCODB_ADMIN_EMAIL}
+      - NC_ADMIN_PASSWORD=${NOCODB_ADMIN_PASSWORD}
+      - TZ=Asia/Seoul
+    volumes:
+      - nocodb-data:/usr/app/data
+    networks:
+      - app-network
+    restart: always
+
 networks:
   app-network:
     driver: bridge
@@ -126,3 +144,4 @@ volumes:
   redis-data:
   prometheus-data:
   grafana-data:
+  nocodb-data:
