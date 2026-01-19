@@ -1,19 +1,5 @@
 package com.kiero.schedule.service;
 
-import java.time.Clock;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.kiero.child.domain.Child;
 import com.kiero.child.exception.ChildErrorCode;
 import com.kiero.child.repository.ChildRepository;
@@ -39,15 +25,27 @@ import com.kiero.schedule.presentation.dto.NowScheduleCompleteEvent;
 import com.kiero.schedule.presentation.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.presentation.dto.RecurringScheduleDto;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
+import com.kiero.schedule.presentation.dto.ScheduleCreatedEvent;
 import com.kiero.schedule.presentation.dto.ScheduleTabResponse;
 import com.kiero.schedule.presentation.dto.TodayScheduleResponse;
 import com.kiero.schedule.repository.ScheduleDetailRepository;
 import com.kiero.schedule.repository.ScheduleRepeatDaysRepository;
 import com.kiero.schedule.repository.ScheduleRepository;
 import com.kiero.schedule.service.resolver.TodayScheduleStatusResolver;
-
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -317,6 +315,13 @@ public class ScheduleService {
 				null, savedSchedule);
 			scheduleDetailRepository.save(scheduleDetail);
 		}
+
+		eventPublisher.publishEvent(new ScheduleCreatedEvent(
+			parentId,
+			childId,
+			savedSchedule.getName(),
+			LocalDateTime.now(clock)
+		));
 	}
 
 	@Transactional
