@@ -1,5 +1,6 @@
 package com.kiero.global.infrastructure.sse.service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
@@ -22,7 +23,9 @@ public class SseService {
 	public SseEmitter subscribe(String key, String token) {
 		LocalDateTime tokenExpiresAt = jwtTokenProvider.getExpirationDateTime(token);
 
-		SseEmitter emitter = new SseEmitter();
+		// 토큰 만료 시간까지 SSE 연결 유지
+		long timeoutMillis = Duration.between(LocalDateTime.now(), tokenExpiresAt).toMillis();
+		SseEmitter emitter = new SseEmitter(timeoutMillis);
 
 		emitterRepository.save(key, emitter, tokenExpiresAt);
 
