@@ -50,4 +50,6 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 		@Param("date") LocalDate date,
 		@Param("childId") Long childId
 	);
+
+	List<ScheduleDetail> findAllByScheduleChildIdAndDateGreaterThanEqual(Long childId, LocalDate date);
 }

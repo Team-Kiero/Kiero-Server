@@ -284,10 +284,6 @@ public class ScheduleService {
 			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
 
-		Schedule schedule = Schedule.create(parent, child, request.name(), request.startTime(), request.endTime(),
-			request.scheduleColor(), request.isRecurring());
-		Schedule savedSchedule = scheduleRepository.save(schedule);
-
 		if (request.isRecurring()
 			&& (request.dayOfWeek() == null || request.dayOfWeek().isEmpty())) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE);
@@ -302,6 +298,12 @@ public class ScheduleService {
 			&& request.date() != null) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_XOR_DATE_REQUIRED);
 		}
+
+		throwExceptionWhenScheduleDuplicated(request, child.getId());
+
+		Schedule schedule = Schedule.create(parent, child, request.name(), request.startTime(), request.endTime(),
+			request.scheduleColor(), request.isRecurring());
+		Schedule savedSchedule = scheduleRepository.save(schedule);
 
 		if (request.isRecurring()) {
 			List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
@@ -414,6 +416,75 @@ public class ScheduleService {
 			.toList();
 
 		scheduleDetailRepository.saveAll(scheduleDetails);
+	}
+
+	private void throwExceptionWhenScheduleDuplicated(ScheduleAddRequest request, Long childId) {
+
+		// 반복일정일 경우
+		if (request.isRecurring()) {
+			// request의 요일에 해당하는 요일의 일정 조회 & 조회된 일정과 request 일정의 시간이 겹치면 exception
+			List<DayOfWeek> targetDays = dayOfWeekParser(request.dayOfWeek());
+			List<Schedule> existingRecurring = scheduleRepeatDaysRepository.findSchedulesByChildIdAndDayOfWeeks(childId,
+				targetDays);
+			boolean conflictWithRecurring = existingRecurring.stream()
+				.anyMatch(
+					s -> isTimeOverlapped(request.startTime(), request.endTime(), s.getStartTime(), s.getEndTime()));
+
+			if (conflictWithRecurring) {
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
+			}
+
+			// 오늘 이후의 일정 중에 request의 요일에 해당하는 단일 일정을 조회하고, 조회된 일정과 request 일정의 시간이 겹치면 exception
+			LocalDate today = LocalDate.now(clock);
+			List<ScheduleDetail> normalsFromToday = scheduleDetailRepository.findAllByScheduleChildIdAndDateGreaterThanEqual(
+				childId, today);
+
+			boolean conflictWithNormal = normalsFromToday.stream()
+				.filter(sd -> {
+					java.time.DayOfWeek dow = sd.getDate().getDayOfWeek();
+					DayOfWeek custom = DayOfWeek.from(dow);
+					return targetDays.contains(custom);
+				})
+				.anyMatch(sd -> isTimeOverlapped(
+					request.startTime(), request.endTime(),
+					sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
+				));
+
+			if (conflictWithNormal) {
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
+			}
+
+			return;
+		}
+
+		LocalDate date = request.date();
+
+		List<ScheduleDetail> thatDayDetails = scheduleDetailRepository.findByDateAndChildId(date, childId);
+
+		boolean conflictWithNormal = thatDayDetails.stream()
+			.anyMatch(sd -> isTimeOverlapped(
+				request.startTime(), request.endTime(), sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
+			));
+
+		if (conflictWithNormal) {
+			throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
+		}
+
+		DayOfWeek targetDay = DayOfWeek.from(date.getDayOfWeek());
+
+		List<Schedule> existingRecurringOnThatDay = scheduleRepeatDaysRepository.findSchedulesByChildIdAndDayOfWeek(
+			childId, targetDay);
+
+		boolean conflictWithRecurring = existingRecurringOnThatDay.stream()
+			.anyMatch(s -> isTimeOverlapped(request.startTime(), request.endTime(), s.getStartTime(), s.getEndTime()));
+
+		if (conflictWithRecurring) {
+			throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
+		}
+	}
+
+	private boolean isTimeOverlapped(LocalTime newStart, LocalTime newEnd, LocalTime oldStart, LocalTime oldEnd) {
+		return newStart.isBefore(oldEnd) && newEnd.isAfter(oldStart);
 	}
 
 	private List<DayOfWeek> dayOfWeekParser(String dayOfWeek) {

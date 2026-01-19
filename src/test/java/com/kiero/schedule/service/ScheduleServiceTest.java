@@ -102,6 +102,7 @@ public class ScheduleServiceTest {
 			// given
 			Long parentId = 1L;
 			Long childId = 1L;
+			ReflectionTestUtils.setField(scheduleService, "clock", fixedClock);
 
 			Parent parent = mock(Parent.class);
 			Child child = mock(Child.class);
@@ -114,6 +115,15 @@ public class ScheduleServiceTest {
 			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
 			given(childRepository.findById(childId)).willReturn(Optional.of(child));
 			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+
+			given(child.getId()).willReturn(childId);
+			given(scheduleRepeatDaysRepository
+				.findSchedulesByChildIdAndDayOfWeeks(anyLong(), anyList()))
+				.willReturn(List.of());
+
+			given(scheduleDetailRepository
+				.findAllByScheduleChildIdAndDateGreaterThanEqual(anyLong(), any(LocalDate.class)))
+				.willReturn(List.of());
 
 			given(scheduleRepository.save(any(Schedule.class))).willReturn(savedSchedule);
 
@@ -135,6 +145,7 @@ public class ScheduleServiceTest {
 			// given
 			Long parentId = 1L;
 			Long childId = 1L;
+			ReflectionTestUtils.setField(scheduleService, "clock", fixedClock);
 
 			Parent parent = mock(Parent.class);
 			Child child = mock(Child.class);
@@ -150,8 +161,22 @@ public class ScheduleServiceTest {
 
 			given(scheduleRepository.save(any(Schedule.class))).willReturn(savedSchedule);
 
+			given(child.getId()).willReturn(childId);
+			given(scheduleDetailRepository
+				.findByDateAndChildId(any(LocalDate.class), eq(childId)))
+				.willReturn(List.of());
+
+			given(scheduleRepeatDaysRepository
+				.findSchedulesByChildIdAndDayOfWeek(anyLong(), any(DayOfWeek.class)))
+				.willReturn(List.of());
+
 			// when
 			scheduleService.addSchedule(req, parentId, childId);
+
+			// then
+			verify(scheduleRepository).save(any(Schedule.class));
+			verify(scheduleDetailRepository).save(any(ScheduleDetail.class));
+			verify(scheduleRepeatDaysRepository, never()).saveAll(any());
 		}
 
 		@Test
@@ -1516,7 +1541,10 @@ public class ScheduleServiceTest {
 			given(s1.getEndTime()).willReturn(LocalTime.of(11, 59));
 
 			final StoneType[] holder = new StoneType[1];
-			doAnswer(inv -> { holder[0] = inv.getArgument(0); return null; })
+			doAnswer(inv -> {
+				holder[0] = inv.getArgument(0);
+				return null;
+			})
 				.when(sd1).changeStoneType(any(StoneType.class));
 			given(sd1.getStoneType()).willAnswer(inv -> holder[0]);
 
