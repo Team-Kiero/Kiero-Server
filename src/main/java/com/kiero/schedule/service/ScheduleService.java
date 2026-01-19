@@ -324,12 +324,14 @@ public class ScheduleService {
 	@Transactional
 	public ScheduleTabResponse getSchedules(LocalDate startDate, LocalDate endDate, Long parentId, Long childId) {
 
+		// 요청 유효 검사
 		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
 
 		if (startDate.isAfter(endDate) || endDate.isBefore(startDate)) {
 			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
 		}
 
+		// 모든 일정 조회
 		List<Schedule> schedules = scheduleRepository.findAllByChildId(childId);
 		if (schedules.isEmpty())
 			return ScheduleTabResponse.of(false, List.of(), List.of());
@@ -338,6 +340,7 @@ public class ScheduleService {
 			.map(Schedule::getId)
 			.toList();
 
+		// 오늘 아이의 불피우기 여부
 		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds,
 			LocalDate.now(clock));
 
@@ -351,10 +354,25 @@ public class ScheduleService {
 			.map(Schedule::getId)
 			.toList();
 
+		// 반복일정 처리
 		List<RecurringScheduleDto> recurringScheduleDtos = List.of();
 		if (!recurringIds.isEmpty()) {
+			// 모든 반복일정 조회
 			List<ScheduleRepeatDays> repeatDays = scheduleRepeatDaysRepository.findAllByScheduleIdsIn(recurringIds);
 			Map<Long, List<ScheduleRepeatDays>> repeatDaysByScheduleId = repeatDays.stream()
+				.filter(rd -> {
+					Schedule schedule = rd.getSchedule();
+
+					// 반복일정의 createdAt을 기준으로 그 주의 월요일을 구함
+					LocalDate createdWeekStart = schedule.getCreatedAt().toLocalDate().with(java.time.DayOfWeek.MONDAY);
+
+					// 조회하려는 기간의 시작 주 월요일을 구함
+					LocalDate queryWeekStart = startDate.with(java.time.DayOfWeek.MONDAY);
+
+					// ( 등록된 주 <= 조회하는 주 )이면 노출
+					// => 반복일정이 추가되면, 추가된 그 주 월요일부터 반복일정이 노출되고 그 이전 주에는 노출되지 않음
+					return !createdWeekStart.isAfter(queryWeekStart);
+				})
 				.collect(Collectors.groupingBy(rd -> rd.getSchedule().getId()));
 
 			recurringScheduleDtos = schedules.stream()
@@ -362,10 +380,15 @@ public class ScheduleService {
 				.map(schedule -> {
 					List<ScheduleRepeatDays> days = repeatDaysByScheduleId.getOrDefault(schedule.getId(), List.of());
 
+					if (days.isEmpty()) {
+						return null;
+					}
+
 					String dayOfWeek = days.stream()
 						.map(d -> d.getDayOfWeek().name())
 						.sorted()
 						.collect(Collectors.joining(", "));
+
 
 					return new RecurringScheduleDto(
 						schedule.getStartTime(),
@@ -375,6 +398,7 @@ public class ScheduleService {
 						dayOfWeek
 					);
 				})
+				.filter(Objects::nonNull)
 				.toList();
 		}
 
@@ -416,6 +440,10 @@ public class ScheduleService {
 			.toList();
 
 		scheduleDetailRepository.saveAll(scheduleDetails);
+	}
+
+	private LocalDate getStartOfWeek(LocalDate date) {
+		return date.with(java.time.DayOfWeek.MONDAY);
 	}
 
 	private void throwExceptionWhenScheduleDuplicated(ScheduleAddRequest request, Long childId) {
