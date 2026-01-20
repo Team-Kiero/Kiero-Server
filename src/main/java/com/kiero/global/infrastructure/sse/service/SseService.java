@@ -16,17 +16,20 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class SseService {
+
+	private static final long DEFAULT_TIMEOUT_MILLIS = 30 * 60 * 1000L;
+
 	private final SseEmitterRepository<String> emitterRepository;
 	private final JwtTokenProvider jwtTokenProvider;
 
 	public SseEmitter subscribe(String key, String token) {
 		LocalDateTime tokenExpiresAt = jwtTokenProvider.getExpirationDateTime(token);
 
-		SseEmitter emitter = new SseEmitter();
+		SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT_MILLIS);
 
 		emitterRepository.save(key, emitter, tokenExpiresAt);
 
-		log.info("wrapped emitter expires at : {}", tokenExpiresAt);
+		log.info("SSE 구독 생성: key={}, tokenExpiresAt={}", key, tokenExpiresAt);
 
 		emitter.onCompletion(() -> emitterRepository.remove(key));
 		emitter.onTimeout(() -> emitterRepository.remove(key));

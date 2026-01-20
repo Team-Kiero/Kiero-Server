@@ -79,10 +79,9 @@ public class MemberTokenController {
 
 	@PostMapping("/subscribe-token")
 	public ResponseEntity<SuccessResponse<AccessTokenGenerateResponse>> issueSubscribeToken(
-		@CookieValue("refreshToken") String refreshToken,
-		@RequestParam("scope") String scope
+		@CookieValue("refreshToken") String refreshToken
 	) {
-		AccessTokenGenerateResponse response = authService.generateTemporaryAccessTokenFromRefreshToken(refreshToken, scope);
+		AccessTokenGenerateResponse response = authService.generateSubscribeToken(refreshToken);
 
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(TokenSuccessCode.SUBSCRIBE_TOKEN_ISSUE_SUCCESS, response));

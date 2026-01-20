@@ -40,6 +40,7 @@ import com.kiero.schedule.presentation.dto.NowScheduleCompleteEvent;
 import com.kiero.schedule.presentation.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.presentation.dto.RecurringScheduleDto;
 import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
+import com.kiero.schedule.presentation.dto.ScheduleCreatedEvent;
 import com.kiero.schedule.presentation.dto.ScheduleTabResponse;
 import com.kiero.schedule.presentation.dto.TodayScheduleResponse;
 import com.kiero.schedule.repository.ScheduleDetailRepository;
@@ -325,6 +326,11 @@ public class ScheduleService {
 
 			scheduleDetailRepository.saveAll(details);
 		}
+
+		eventPublisher.publishEvent(new ScheduleCreatedEvent(
+			childId,
+			savedSchedule.getName()
+		));
 	}
 
 	@Transactional
