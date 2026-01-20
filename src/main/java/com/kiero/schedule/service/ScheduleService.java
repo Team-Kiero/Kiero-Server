@@ -317,10 +317,8 @@ public class ScheduleService {
 		}
 
 		eventPublisher.publishEvent(new ScheduleCreatedEvent(
-			parentId,
 			childId,
-			savedSchedule.getName(),
-			LocalDateTime.now(clock)
+			savedSchedule.getName()
 		));
 	}
 

@@ -1,5 +1,6 @@
 package com.kiero.global.infrastructure.sse.handler;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,13 +36,12 @@ public class EventSsePushHandler {
 		for (FeedItem fi : items) {
 			SseEventType sseEventType = mapToSseEventType(fi.getEventType());
 
-			Map<String, Object> data = Map.of(
-				"eventType", sseEventType.name(),
-				"feedItemId", fi.getId(),
-				"childId", fi.getChild().getId(),
-				"occurredAt", fi.getOccurredAt().toString(),
-				"metadata", fi.getMetadata()
-			);
+			Map<String, Object> data = new LinkedHashMap<>();
+			data.put("eventType", sseEventType.name());
+			data.put("feedItemId", fi.getId());
+			data.put("childId", fi.getChild().getId());
+			data.put("occurredAt", fi.getOccurredAt().toString());
+			data.put("metadata", fi.getMetadata());
 
 			Long parentId = fi.getParent().getId();
 			log.debug("부모 SSE 푸시 (피드): parentId={}, childId={}, feedItemId={}, eventType={}",
@@ -53,28 +53,22 @@ public class EventSsePushHandler {
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ChildJoinedEvent event) {
-		Map<String, Object> data = Map.of(
-			"eventType", SseEventType.CHILD_JOINED.name(),
-			"childId", event.childId(),
-			"occurredAt", event.occurredAt().toString(),
-			"childName", event.childName()
-		);
+		Map<String, Object> data = new LinkedHashMap<>();
+		data.put("eventType", SseEventType.CHILD_JOINED.name());
+		data.put("childId", event.childId());
 
-		log.debug("부모 SSE 푸시 (자녀 가입): parentId={}, childId={}, childName={}",
-			event.parentId(), event.childId(), event.childName());
+		log.debug("부모 SSE 푸시 (자녀 가입): parentId={}, childId={}",
+			event.parentId(), event.childId());
 
 		eventSseService.pushToParent(event.parentId(), SseEventType.CHILD_JOINED, data);
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(MissionCreatedEvent event) {
-		Map<String, Object> data = Map.of(
-			"eventType", SseEventType.MISSION_CREATED.name(),
-			"childId", event.childId(),
-			"occurredAt", event.occurredAt().toString(),
-			"missionName", event.missionName(),
-			"reward", event.reward()
-		);
+		Map<String, Object> data = new LinkedHashMap<>();
+		data.put("eventType", SseEventType.MISSION_CREATED.name());
+		data.put("missionName", event.missionName());
+		data.put("reward", event.reward());
 
 		log.debug("자녀 SSE 푸시 (미션 생성): childId={}, missionName={}",
 			event.childId(), event.missionName());
@@ -84,12 +78,9 @@ public class EventSsePushHandler {
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleCreatedEvent event) {
-		Map<String, Object> data = Map.of(
-			"eventType", SseEventType.SCHEDULE_CREATED.name(),
-			"childId", event.childId(),
-			"occurredAt", event.occurredAt().toString(),
-			"scheduleName", event.scheduleName()
-		);
+		Map<String, Object> data = new LinkedHashMap<>();
+		data.put("eventType", SseEventType.SCHEDULE_CREATED.name());
+		data.put("scheduleName", event.scheduleName());
 
 		log.debug("자녀 SSE 푸시 (스케줄 생성): childId={}, scheduleName={}",
 			event.childId(), event.scheduleName());

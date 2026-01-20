@@ -76,9 +76,7 @@ public class ChildService {
 
         eventPublisher.publishEvent(new ChildJoinedEvent(
             parent.getId(),
-            savedChild.getId(),
-            savedChild.getFullName(),
-            java.time.LocalDateTime.now()
+            savedChild.getId()
         ));
 
         // 5. 토큰 발급 및 로그인 응답 반환

@@ -65,11 +65,9 @@ public class MissionService {
     Mission savedMission = missionRepository.save(mission);
 
     eventPublisher.publishEvent(new MissionCreatedEvent(
-        parentId,
         child.getId(),
         mission.getName(),
-        mission.getReward(),
-        LocalDateTime.now()
+        mission.getReward()
     ));
 
     log.info("Mission created: missionId={}, parentId={}, childId={}, name={}",
@@ -182,11 +180,9 @@ public class MissionService {
     // 6. 통합 SSE 이벤트 발행 (각 미션에 대해)
     for (Mission savedMission : savedMissions) {
       eventPublisher.publishEvent(new MissionCreatedEvent(
-          parentId,
           childId,
           savedMission.getName(),
-          savedMission.getReward(),
-          LocalDateTime.now()
+          savedMission.getReward()
       ));
     }
 
