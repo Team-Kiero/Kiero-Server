@@ -153,7 +153,7 @@ public class ScheduleServiceTest {
 
 			ScheduleAddRequest req = new ScheduleAddRequest("첫번째 일정", false, LocalTime.of(11, 0), LocalTime.of(11, 30),
 				ScheduleColor.SCHEDULE1,
-				null, LocalDate.of(2026, 1, 16));
+				null, "2026-01-16");
 
 			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
 			given(childRepository.findById(childId)).willReturn(Optional.of(child));
@@ -163,11 +163,11 @@ public class ScheduleServiceTest {
 
 			given(child.getId()).willReturn(childId);
 			given(scheduleDetailRepository
-				.findByDateAndChildId(any(LocalDate.class), eq(childId)))
+				.findByDateInAndChildId(anyList(), eq(childId)))
 				.willReturn(List.of());
 
 			given(scheduleRepeatDaysRepository
-				.findSchedulesByChildIdAndDayOfWeek(anyLong(), any(DayOfWeek.class)))
+				.findSchedulesByChildIdAndDayOfWeekIn(anyLong(), anyList()))
 				.willReturn(List.of());
 
 			// when
@@ -175,7 +175,7 @@ public class ScheduleServiceTest {
 
 			// then
 			verify(scheduleRepository).save(any(Schedule.class));
-			verify(scheduleDetailRepository).save(any(ScheduleDetail.class));
+			verify(scheduleDetailRepository).saveAll(anyList());
 			verify(scheduleRepeatDaysRepository, never()).saveAll(any());
 		}
 
@@ -247,7 +247,7 @@ public class ScheduleServiceTest {
 			Child child = mock(Child.class);
 
 			ScheduleAddRequest req = new ScheduleAddRequest(null, true, null, null, null,
-				"MON, TUE", LocalDate.of(2026, 1, 16));
+				"MON, TUE", "2026-01-01, 2026-01-02");
 
 			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
 			given(childRepository.findById(childId)).willReturn(Optional.of(child));

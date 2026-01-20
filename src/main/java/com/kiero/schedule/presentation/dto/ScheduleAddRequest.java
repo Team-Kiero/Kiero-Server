@@ -1,6 +1,5 @@
 package com.kiero.schedule.presentation.dto;
 
-import java.time.LocalDate;
 import java.time.LocalTime;
 
 import com.kiero.schedule.domain.enums.ScheduleColor;
@@ -15,6 +14,6 @@ public record ScheduleAddRequest(
 	@NotNull LocalTime endTime,
 	@NotNull ScheduleColor scheduleColor,
 	String dayOfWeek,
-	LocalDate date
+	String dates
 ) {
 }
