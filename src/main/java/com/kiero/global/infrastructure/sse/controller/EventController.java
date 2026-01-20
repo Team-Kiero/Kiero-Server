@@ -16,13 +16,13 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/events")
+@RequestMapping("/api/v1/subscribe")
 public class EventController {
 
 	private final EventSseService eventSseService;
 
 	@PreAuthorize("hasAnyRole('PARENT', 'CHILD', 'ADMIN')")
-	@GetMapping(value = "/subscribe", produces = "text/event-stream")
+	@GetMapping(produces = "text/event-stream")
 	public SseEmitter subscribe(
 		@CurrentMember CurrentAuth currentAuth,
 		@RequestHeader("Authorization") String authorization
