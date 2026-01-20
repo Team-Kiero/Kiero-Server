@@ -37,16 +37,18 @@ public class EventSsePushHandler {
 
 		for (FeedItem fi : items) {
 			SseEventType sseEventType = mapToSseEventType(fi.getEventType());
-			SsePayload payload = SsePayload.of(
+
+			SsePayload payload = SsePayload.ofFeed(
 				sseEventType,
+				fi.getId(),
 				fi.getChild().getId(),
 				fi.getOccurredAt(),
 				fi.getMetadata()
 			);
 
 			Long parentId = fi.getParent().getId();
-			log.debug("부모 SSE 푸시 (피드): parentId={}, childId={}, eventType={}",
-				parentId, fi.getChild().getId(), sseEventType);
+			log.debug("부모 SSE 푸시 (피드): parentId={}, childId={}, feedItemId={}, eventType={}",
+				parentId, fi.getChild().getId(), fi.getId(), sseEventType);
 
 			eventSseService.pushToParent(parentId, payload);
 		}
@@ -55,8 +57,7 @@ public class EventSsePushHandler {
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ChildJoinedEvent event) {
 		ObjectNode data = objectMapper.createObjectNode();
-		data.put("childId", event.childId());
-		data.put("childName", event.childName());
+		data.put("content", event.childName());
 
 		SsePayload payload = SsePayload.of(
 			SseEventType.CHILD_JOINED,
@@ -74,8 +75,8 @@ public class EventSsePushHandler {
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(MissionCreatedEvent event) {
 		ObjectNode data = objectMapper.createObjectNode();
-		data.put("missionName", event.missionName());
-		data.put("reward", event.reward());
+		data.put("content", event.missionName());
+		data.put("amount", event.reward());
 
 		SsePayload payload = SsePayload.of(
 			SseEventType.MISSION_CREATED,
@@ -93,7 +94,7 @@ public class EventSsePushHandler {
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleCreatedEvent event) {
 		ObjectNode data = objectMapper.createObjectNode();
-		data.put("scheduleName", event.scheduleName());
+		data.put("content", event.scheduleName());
 
 		SsePayload payload = SsePayload.of(
 			SseEventType.SCHEDULE_CREATED,
