@@ -11,6 +11,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.kiero.global.auth.jwt.service.JwtAuthenticationFilter;
 
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -30,12 +31,13 @@ public class SecurityConfig {
 				sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 			)
 			.authorizeHttpRequests(auth -> auth
+				.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
 				.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 				.requestMatchers(
 					"/swagger-ui/**",
 					"/v3/api-docs/**",
 					"/health-check",
-          "/actuator/health",
+					"/actuator/health",
 					"/api/v1/parents/login",
 					"/api/v1/parents/login/access-token",
 					"/api/v1/children/signup",
