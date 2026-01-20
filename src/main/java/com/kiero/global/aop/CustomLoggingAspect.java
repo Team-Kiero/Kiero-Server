@@ -127,10 +127,10 @@ public class CustomLoggingAspect {
 		try {
 			ServletRequestAttributes attributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
 			if (attributes == null)
-				return "UNKNOWN";
+				return "Unknown";
 			return attributes.getRequest().getMethod();
 		} catch (Exception e) {
-			return "UNKNOWN";
+			return "Unknown";
 		}
 	}
 
