@@ -1,7 +1,6 @@
 package com.kiero.global.auth.jwt.service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -9,7 +8,6 @@ import com.kiero.global.exception.KieroException;
 import com.kiero.global.response.code.ErrorCode;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -65,13 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		Long memberId = jwtTokenProvider.getMemberIdFromJwt(token);
 		Role role = jwtTokenProvider.getRoleFromJwt(token);
 
-		Collection<GrantedAuthority> authorities = new ArrayList<>();
-		authorities.add(role.toGrantedAuthority());
-
-		List<String> scopes = jwtTokenProvider.getScopesFromJwt(token);
-		for (String scope : scopes) {
-			authorities.add(new SimpleGrantedAuthority("SCOPE_" + scope));
-		}
+		Collection<GrantedAuthority> authorities = List.of(role.toGrantedAuthority());
 
 		UsernamePasswordAuthenticationToken authentication;
 		if (role == Role.ADMIN) {

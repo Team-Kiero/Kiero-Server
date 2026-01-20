@@ -45,15 +45,6 @@ public class SecurityConfig {
 
 				.requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
 
-				.requestMatchers(HttpMethod.GET, "/api/v1/feeds/*/subscribe")
-				.hasAuthority("SCOPE_FEED_SUBSCRIBE")
-
-				.requestMatchers(HttpMethod.GET, "/api/v1/parents/invite/subscribe")
-				.hasAuthority("SCOPE_INVITE_SUBSCRIBE")
-
-				.requestMatchers(HttpMethod.GET, "/api/v1/events/subscribe")
-				.hasAuthority("SCOPE_EVENT_SUBSCRIBE")
-
 				.anyRequest().authenticated()
 			)
 			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

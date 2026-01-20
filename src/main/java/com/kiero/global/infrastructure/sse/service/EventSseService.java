@@ -3,7 +3,7 @@ package com.kiero.global.infrastructure.sse.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.kiero.global.infrastructure.sse.dto.SsePayload;
+import com.kiero.global.infrastructure.sse.domain.SseEventType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class EventSseService {
 
-	private static final String EVENT_NAME = "event";
 	private static final String PARENT_KEY_PREFIX = "events:parent:";
 	private static final String CHILD_KEY_PREFIX = "events:child:";
 
@@ -34,17 +33,17 @@ public class EventSseService {
 	}
 
 	// 부모에게 이벤트 푸시
-	public void pushToParent(Long parentId, SsePayload payload) {
+	public void pushToParent(Long parentId, SseEventType eventType, Object data) {
 		String key = createParentKey(parentId);
-		log.debug("부모 SSE 푸시: parentId={}, eventType={}", parentId, payload.eventType());
-		sseService.push(key, EVENT_NAME, payload);
+		log.debug("부모 SSE 푸시: parentId={}, eventType={}", parentId, eventType);
+		sseService.push(key, eventType.getEventName(), data);
 	}
 
 	// 자녀에게 이벤트 푸시
-	public void pushToChild(Long childId, SsePayload payload) {
+	public void pushToChild(Long childId, SseEventType eventType, Object data) {
 		String key = createChildKey(childId);
-		log.debug("자녀 SSE 푸시: childId={}, eventType={}", childId, payload.eventType());
-		sseService.push(key, EVENT_NAME, payload);
+		log.debug("자녀 SSE 푸시: childId={}, eventType={}", childId, eventType);
+		sseService.push(key, eventType.getEventName(), data);
 	}
 
 	private String createParentKey(Long parentId) {

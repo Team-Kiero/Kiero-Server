@@ -1,19 +1,17 @@
 package com.kiero.global.infrastructure.sse.handler;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.feed.domain.enums.EventType;
 import com.kiero.feed.infrastructure.event.dto.FeedItemsCreatedEvent;
 import com.kiero.feed.repository.FeedItemRepository;
 import com.kiero.global.infrastructure.sse.domain.SseEventType;
-import com.kiero.global.infrastructure.sse.dto.SsePayload;
 import com.kiero.child.presentation.dto.ChildJoinedEvent;
 import com.kiero.mission.presentation.dto.MissionCreatedEvent;
 import com.kiero.schedule.presentation.dto.ScheduleCreatedEvent;
@@ -29,7 +27,6 @@ public class EventSsePushHandler {
 
 	private final FeedItemRepository feedItemRepository;
 	private final EventSseService eventSseService;
-	private final ObjectMapper objectMapper;
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(FeedItemsCreatedEvent event) {
@@ -38,75 +35,66 @@ public class EventSsePushHandler {
 		for (FeedItem fi : items) {
 			SseEventType sseEventType = mapToSseEventType(fi.getEventType());
 
-			SsePayload payload = SsePayload.ofFeed(
-				sseEventType,
-				fi.getId(),
-				fi.getChild().getId(),
-				fi.getOccurredAt(),
-				fi.getMetadata()
+			Map<String, Object> data = Map.of(
+				"eventType", sseEventType.name(),
+				"feedItemId", fi.getId(),
+				"childId", fi.getChild().getId(),
+				"occurredAt", fi.getOccurredAt().toString(),
+				"metadata", fi.getMetadata()
 			);
 
 			Long parentId = fi.getParent().getId();
 			log.debug("부모 SSE 푸시 (피드): parentId={}, childId={}, feedItemId={}, eventType={}",
 				parentId, fi.getChild().getId(), fi.getId(), sseEventType);
 
-			eventSseService.pushToParent(parentId, payload);
+			eventSseService.pushToParent(parentId, sseEventType, data);
 		}
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ChildJoinedEvent event) {
-		ObjectNode data = objectMapper.createObjectNode();
-		data.put("content", event.childName());
-
-		SsePayload payload = SsePayload.of(
-			SseEventType.CHILD_JOINED,
-			event.childId(),
-			event.occurredAt(),
-			data
+		Map<String, Object> data = Map.of(
+			"eventType", SseEventType.CHILD_JOINED.name(),
+			"childId", event.childId(),
+			"occurredAt", event.occurredAt().toString(),
+			"childName", event.childName()
 		);
 
 		log.debug("부모 SSE 푸시 (자녀 가입): parentId={}, childId={}, childName={}",
 			event.parentId(), event.childId(), event.childName());
 
-		eventSseService.pushToParent(event.parentId(), payload);
+		eventSseService.pushToParent(event.parentId(), SseEventType.CHILD_JOINED, data);
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(MissionCreatedEvent event) {
-		ObjectNode data = objectMapper.createObjectNode();
-		data.put("content", event.missionName());
-		data.put("amount", event.reward());
-
-		SsePayload payload = SsePayload.of(
-			SseEventType.MISSION_CREATED,
-			event.childId(),
-			event.occurredAt(),
-			data
+		Map<String, Object> data = Map.of(
+			"eventType", SseEventType.MISSION_CREATED.name(),
+			"childId", event.childId(),
+			"occurredAt", event.occurredAt().toString(),
+			"missionName", event.missionName(),
+			"reward", event.reward()
 		);
 
 		log.debug("자녀 SSE 푸시 (미션 생성): childId={}, missionName={}",
 			event.childId(), event.missionName());
 
-		eventSseService.pushToChild(event.childId(), payload);
+		eventSseService.pushToChild(event.childId(), SseEventType.MISSION_CREATED, data);
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleCreatedEvent event) {
-		ObjectNode data = objectMapper.createObjectNode();
-		data.put("content", event.scheduleName());
-
-		SsePayload payload = SsePayload.of(
-			SseEventType.SCHEDULE_CREATED,
-			event.childId(),
-			event.occurredAt(),
-			data
+		Map<String, Object> data = Map.of(
+			"eventType", SseEventType.SCHEDULE_CREATED.name(),
+			"childId", event.childId(),
+			"occurredAt", event.occurredAt().toString(),
+			"scheduleName", event.scheduleName()
 		);
 
 		log.debug("자녀 SSE 푸시 (스케줄 생성): childId={}, scheduleName={}",
 			event.childId(), event.scheduleName());
 
-		eventSseService.pushToChild(event.childId(), payload);
+		eventSseService.pushToChild(event.childId(), SseEventType.SCHEDULE_CREATED, data);
 	}
 
 	private SseEventType mapToSseEventType(EventType eventType) {
