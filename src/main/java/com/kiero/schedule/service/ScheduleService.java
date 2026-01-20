@@ -456,17 +456,13 @@ public class ScheduleService {
 					LocalTime.parse("14:00:00"), LocalTime.parse("16:00:00"),
 					ScheduleColor.SCHEDULE3, true),
 
-				Schedule.create(parent, child, "태권도",
-					LocalTime.parse("09:00:00"), LocalTime.parse("12:00:00"),
-					ScheduleColor.SCHEDULE3, true),
+				Schedule.create(parent, child, "데모데이",
+					LocalTime.parse("08:00:00"), LocalTime.parse("10:00:00"),
+					ScheduleColor.SCHEDULE5, false),
 
 				Schedule.create(parent, child, "피아노",
 					LocalTime.parse("14:00:00"), LocalTime.parse("16:00:00"),
 					ScheduleColor.SCHEDULE4, true),
-
-				Schedule.create(parent, child, "피아노",
-					LocalTime.parse("12:00:00"), LocalTime.parse("14:00:00"),
-					ScheduleColor.SCHEDULE4, false),
 
 				Schedule.create(parent, child, "수영 교실",
 					LocalTime.parse("16:00:00"), LocalTime.parse("17:00:00"),
@@ -478,11 +474,19 @@ public class ScheduleService {
 
 				Schedule.create(parent, child, "영어",
 					LocalTime.parse("19:00:00"), LocalTime.parse("20:00:00"),
-					ScheduleColor.SCHEDULE3, false)
+					ScheduleColor.SCHEDULE3, false),
+
+				Schedule.create(parent, child, "발표하기",
+					LocalTime.parse("10:30:00"), LocalTime.parse("14:00:00"),
+					ScheduleColor.SCHEDULE2, false)
 			);
+
+			LocalDateTime yesterday = LocalDateTime.now(clock).minusDays(1);
 
 			// schedule 생성
 			List<Schedule> savedSchedules = scheduleRepository.saveAll(schedulesToSave);
+
+			savedSchedules.forEach(s -> s.forceCreatedAtForTest(yesterday));
 
 			Schedule s1 = savedSchedules.get(0);
 			Schedule s2 = savedSchedules.get(1);
@@ -496,9 +500,10 @@ public class ScheduleService {
 
 			// schedule_detail 생성
 			List<ScheduleDetail> details = List.of(
-				ScheduleDetail.create(LocalDate.parse("2026-01-18"), null, null, ScheduleStatus.PENDING, null, s6),
-				ScheduleDetail.create(LocalDate.parse("2026-01-13"), null, null, ScheduleStatus.PENDING, null, s9),
-				ScheduleDetail.create(LocalDate.parse("2026-01-15"), null, null, ScheduleStatus.PENDING, null, s9)
+				ScheduleDetail.create(LocalDate.parse("2026-01-21"), null, null, ScheduleStatus.PENDING, null, s4),
+				ScheduleDetail.create(LocalDate.parse("2026-01-20"), null, null, ScheduleStatus.PENDING, null, s8),
+				ScheduleDetail.create(LocalDate.parse("2026-01-22"), null, null, ScheduleStatus.PENDING, null, s8),
+				ScheduleDetail.create(LocalDate.parse("2026-01-21"), null, null, ScheduleStatus.PENDING, null, s9)
 			);
 			scheduleDetailRepository.saveAll(details);
 
@@ -507,34 +512,59 @@ public class ScheduleService {
 				// (MON,TUE,WED,THU,FRI) -> 1
 				ScheduleRepeatDays.create(DayOfWeek.MON, s1),
 				ScheduleRepeatDays.create(DayOfWeek.TUE, s1),
-				ScheduleRepeatDays.create(DayOfWeek.WED, s1),
 				ScheduleRepeatDays.create(DayOfWeek.THU, s1),
 				ScheduleRepeatDays.create(DayOfWeek.FRI, s1),
 
-				// (MON,WED,SAT) -> 2
+				// (MON) -> 2
 				ScheduleRepeatDays.create(DayOfWeek.MON, s2),
-				ScheduleRepeatDays.create(DayOfWeek.WED, s2),
-				ScheduleRepeatDays.create(DayOfWeek.SAT, s2),
 
 				// (TUE) -> 3
 				ScheduleRepeatDays.create(DayOfWeek.TUE, s3),
 
-				// (SAT) -> 4
-				ScheduleRepeatDays.create(DayOfWeek.SAT, s4),
-
 				// (THU) -> 5
 				ScheduleRepeatDays.create(DayOfWeek.THU, s5),
 
-				// (WED,FRI,SAT) -> 7
-				ScheduleRepeatDays.create(DayOfWeek.WED, s7),
-				ScheduleRepeatDays.create(DayOfWeek.FRI, s7),
-				ScheduleRepeatDays.create(DayOfWeek.SAT, s7),
+				// (FRI) -> 6
+				ScheduleRepeatDays.create(DayOfWeek.FRI, s6),
 
-				// (MON, WED) -> 8
-				ScheduleRepeatDays.create(DayOfWeek.MON, s8),
-				ScheduleRepeatDays.create(DayOfWeek.WED, s8)
+				// (MON) -> 7
+				ScheduleRepeatDays.create(DayOfWeek.MON, s7)
 			);
 			scheduleRepeatDaysRepository.saveAll(repeatDays);
+
+			createTodayRecurringScheduleDetailsForDummy(savedSchedules, repeatDays);
+		}
+	}
+
+	private void createTodayRecurringScheduleDetailsForDummy(List<Schedule> savedSchedules, List<ScheduleRepeatDays> repeatDays) {
+		LocalDate today = LocalDate.now(clock);
+		DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
+
+		// repeatDays를 scheduleId -> 요일들로 매핑
+		Map<Long, List<DayOfWeek>> repeatDaysByScheduleId = repeatDays.stream()
+			.collect(Collectors.groupingBy(
+				rd -> rd.getSchedule().getId(),
+				Collectors.mapping(ScheduleRepeatDays::getDayOfWeek, Collectors.toList())
+			));
+
+		// 오늘 요일을 포함하는 반복 일정만 필터링
+		List<Schedule> schedulesToCreateTodayDetail = savedSchedules.stream()
+			.filter(Schedule::isRecurring)
+			.filter(s -> {
+				List<DayOfWeek> days = repeatDaysByScheduleId.getOrDefault(s.getId(), List.of());
+				return days.contains(todayDayOfWeek);
+			})
+			.toList();
+
+		if (schedulesToCreateTodayDetail.isEmpty()) return;
+
+		List<ScheduleDetail> details = schedulesToCreateTodayDetail.stream()
+			.filter(s -> !scheduleDetailRepository.existsByScheduleIdAndDate(s.getId(), today))
+			.map(s -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, s))
+			.toList();
+
+		if (!details.isEmpty()) {
+			scheduleDetailRepository.saveAll(details);
 		}
 	}
 

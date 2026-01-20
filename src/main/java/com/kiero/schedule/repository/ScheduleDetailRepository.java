@@ -56,6 +56,8 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 	데모데이용 임시 메서드
 	 */
 	void deleteByScheduleIn(List<Schedule> schedules);
+
+	boolean existsByScheduleIdAndDate(Long scheduleId, LocalDate today);
 	/*
 	 */
 }

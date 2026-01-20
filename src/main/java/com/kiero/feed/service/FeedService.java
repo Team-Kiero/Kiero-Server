@@ -99,6 +99,7 @@ public class FeedService {
 	 */
 	@Transactional
 	public void insertDummy(List<Long> parentIds, Long childId, String env) {
+		log.info("env: {}", env);
 		String sqlPath = "sql/" + env + "_feed_item_insert_dummy.sql";
 		String sql = loadSql(sqlPath);
 
