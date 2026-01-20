@@ -1,5 +1,9 @@
 package com.kiero.parent.service;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,10 +29,6 @@ import com.kiero.parent.service.socialService.SocialService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -39,6 +39,26 @@ public class ParentService {
 	private final AuthService authService;
 	private final TokenService tokenService;
 	private final ParentChildRepository parentChildRepository;
+
+	/*
+	데모데이용 임시 메서드
+	 */
+	public List<Long> getMyChildIds(Long parentId) {
+		return parentChildRepository.findChildIdsByParentId(parentId);
+	}
+
+	public List<Long> findParentIdByChildId(Long childId) {
+		return parentChildRepository.findParentsByChildId(childId).stream()
+			.map(Parent::getId)
+			.toList();
+	}
+	/*
+	 */
+
+	@Transactional
+	public void deleteParentChildByChildIds(List<Long> childIds) {
+		parentChildRepository.deleteByChildIdIn(childIds);
+	}
 
 	@Transactional
 	public ParentLoginResponse loginWithAuthorizationCode(String authorizationCode, SocialLoginRequest request) {

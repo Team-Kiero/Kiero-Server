@@ -401,7 +401,6 @@ public class ScheduleService {
 						.sorted()
 						.collect(Collectors.joining(", "));
 
-
 					return new RecurringScheduleDto(
 						schedule.getStartTime(),
 						schedule.getEndTime(),
@@ -454,17 +453,173 @@ public class ScheduleService {
 		scheduleDetailRepository.saveAll(scheduleDetails);
 	}
 
+	/*
+	솝트 데모데이 때 아이의 스케쥴 데이터를 삭제하기 위한 메서드
+	 */
+	@Transactional
+	public void deleteSchedulesDataByParentAndChild(List<Long> childIds) {
+		List<Schedule> schedules = scheduleRepository.findAllByChildIdIn(childIds);
+		scheduleRepeatDaysRepository.deleteByScheduleIn(schedules);
+		scheduleDetailRepository.deleteByScheduleIn(schedules);
+		scheduleRepository.deleteAll(schedules);
+	}
+	/*
+	 */
+
+	@Transactional
+	public void insertDummy(List<Long> parentIds, Long childId) {
+
+		for (Long parentId : parentIds) {
+			Parent parent = parentRepository.findById(parentId)
+				.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
+
+			Child child = childRepository.findById(childId)
+				.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+
+			if (!parentChildRepository.existsByParentAndChild(parent, child)) {
+				throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+			}
+
+			List<Schedule> schedulesToSave = List.of(
+				Schedule.create(parent, child, "학교",
+					LocalTime.parse("09:00:00"), LocalTime.parse("13:00:00"),
+					ScheduleColor.SCHEDULE1, true),
+
+				Schedule.create(parent, child, "돌봄 교실",
+					LocalTime.parse("13:00:00"), LocalTime.parse("15:00:00"),
+					ScheduleColor.SCHEDULE2, true),
+
+				Schedule.create(parent, child, "태권도",
+					LocalTime.parse("14:00:00"), LocalTime.parse("16:00:00"),
+					ScheduleColor.SCHEDULE3, true),
+
+				Schedule.create(parent, child, "데모데이",
+					LocalTime.parse("08:00:00"), LocalTime.parse("10:00:00"),
+					ScheduleColor.SCHEDULE5, false),
+
+				Schedule.create(parent, child, "피아노",
+					LocalTime.parse("14:00:00"), LocalTime.parse("16:00:00"),
+					ScheduleColor.SCHEDULE4, true),
+
+				Schedule.create(parent, child, "수영 교실",
+					LocalTime.parse("16:00:00"), LocalTime.parse("17:00:00"),
+					ScheduleColor.SCHEDULE5, true),
+
+				Schedule.create(parent, child, "수학",
+					LocalTime.parse("18:00:00"), LocalTime.parse("19:00:00"),
+					ScheduleColor.SCHEDULE2, true),
+
+				Schedule.create(parent, child, "영어",
+					LocalTime.parse("19:00:00"), LocalTime.parse("20:00:00"),
+					ScheduleColor.SCHEDULE3, false),
+
+				Schedule.create(parent, child, "발표하기",
+					LocalTime.parse("10:30:00"), LocalTime.parse("14:00:00"),
+					ScheduleColor.SCHEDULE2, false)
+			);
+
+			LocalDateTime yesterday = LocalDateTime.now(clock).minusDays(1);
+
+			// schedule 생성
+			List<Schedule> savedSchedules = scheduleRepository.saveAll(schedulesToSave);
+
+			savedSchedules.forEach(s -> s.forceCreatedAtForTest(yesterday));
+
+			Schedule s1 = savedSchedules.get(0);
+			Schedule s2 = savedSchedules.get(1);
+			Schedule s3 = savedSchedules.get(2);
+			Schedule s4 = savedSchedules.get(3);
+			Schedule s5 = savedSchedules.get(4);
+			Schedule s6 = savedSchedules.get(5);
+			Schedule s7 = savedSchedules.get(6);
+			Schedule s8 = savedSchedules.get(7);
+			Schedule s9 = savedSchedules.get(8);
+
+			// schedule_detail 생성
+			List<ScheduleDetail> details = List.of(
+				ScheduleDetail.create(LocalDate.parse("2026-01-21"), null, null, ScheduleStatus.PENDING, null, s4),
+				ScheduleDetail.create(LocalDate.parse("2026-01-20"), null, null, ScheduleStatus.PENDING, null, s8),
+				ScheduleDetail.create(LocalDate.parse("2026-01-22"), null, null, ScheduleStatus.PENDING, null, s8),
+				ScheduleDetail.create(LocalDate.parse("2026-01-21"), null, null, ScheduleStatus.PENDING, null, s9)
+			);
+			scheduleDetailRepository.saveAll(details);
+
+			// schedule_repeat_days 생성
+			List<ScheduleRepeatDays> repeatDays = List.of(
+				// (MON,TUE,WED,THU,FRI) -> 1
+				ScheduleRepeatDays.create(DayOfWeek.MON, s1),
+				ScheduleRepeatDays.create(DayOfWeek.TUE, s1),
+				ScheduleRepeatDays.create(DayOfWeek.THU, s1),
+				ScheduleRepeatDays.create(DayOfWeek.FRI, s1),
+
+				// (MON) -> 2
+				ScheduleRepeatDays.create(DayOfWeek.MON, s2),
+
+				// (TUE) -> 3
+				ScheduleRepeatDays.create(DayOfWeek.TUE, s3),
+
+				// (THU) -> 5
+				ScheduleRepeatDays.create(DayOfWeek.THU, s5),
+
+				// (FRI) -> 6
+				ScheduleRepeatDays.create(DayOfWeek.FRI, s6),
+
+				// (MON) -> 7
+				ScheduleRepeatDays.create(DayOfWeek.MON, s7)
+			);
+			scheduleRepeatDaysRepository.saveAll(repeatDays);
+
+			createTodayRecurringScheduleDetailsForDummy(savedSchedules, repeatDays);
+		}
+	}
+
+	private void createTodayRecurringScheduleDetailsForDummy(List<Schedule> savedSchedules,
+		List<ScheduleRepeatDays> repeatDays) {
+		LocalDate today = LocalDate.now(clock);
+		DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
+
+		// repeatDays를 scheduleId -> 요일들로 매핑
+		Map<Long, List<DayOfWeek>> repeatDaysByScheduleId = repeatDays.stream()
+			.collect(Collectors.groupingBy(
+				rd -> rd.getSchedule().getId(),
+				Collectors.mapping(ScheduleRepeatDays::getDayOfWeek, Collectors.toList())
+			));
+
+		// 오늘 요일을 포함하는 반복 일정만 필터링
+		List<Schedule> schedulesToCreateTodayDetail = savedSchedules.stream()
+			.filter(Schedule::isRecurring)
+			.filter(s -> {
+				List<DayOfWeek> days = repeatDaysByScheduleId.getOrDefault(s.getId(), List.of());
+				return days.contains(todayDayOfWeek);
+			})
+			.toList();
+
+		if (schedulesToCreateTodayDetail.isEmpty())
+			return;
+
+		List<ScheduleDetail> details = schedulesToCreateTodayDetail.stream()
+			.filter(s -> !scheduleDetailRepository.existsByScheduleIdAndDate(s.getId(), today))
+			.map(s -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, s))
+			.toList();
+
+		if (!details.isEmpty()) {
+			scheduleDetailRepository.saveAll(details);
+		}
+	}
+
 	private void throwExceptionWhenScheduleDuplicated(ScheduleAddRequest request, Long childId) {
 
 		// 반복일정일 경우
 		if (request.isRecurring()) {
 			// request의 요일에 해당하는 요일의 일정 조회 & 조회된 일정과 request 일정의 시간이 겹치면 exception
 			List<DayOfWeek> targetDays = dayOfWeekParser(request.dayOfWeek());
-			List<Schedule> existingRecurring = scheduleRepeatDaysRepository.findSchedulesByChildIdAndDayOfWeeks(childId,
+			List<Schedule> existingRecurring = scheduleRepeatDaysRepository.findSchedulesByChildIdAndDayOfWeeks(
+				childId,
 				targetDays);
 			boolean conflictWithRecurring = existingRecurring.stream()
 				.anyMatch(
-					s -> isTimeOverlapped(request.startTime(), request.endTime(), s.getStartTime(), s.getEndTime()));
+					s -> isTimeOverlapped(request.startTime(), request.endTime(), s.getStartTime(),
+						s.getEndTime()));
 
 			if (conflictWithRecurring) {
 				throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
@@ -502,13 +657,13 @@ public class ScheduleService {
 
 		boolean conflictWithNormal = thatDayDetails.stream()
 			.anyMatch(sd -> isTimeOverlapped(
-				request.startTime(), request.endTime(), sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
+				request.startTime(), request.endTime(), sd.getSchedule().getStartTime(),
+				sd.getSchedule().getEndTime()
 			));
 
 		if (conflictWithNormal) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
 		}
-
 
 		// 기존의 반복 일정과 충돌하는지 검사
 		// 입력된 날짜의 요일들 계산
@@ -522,7 +677,8 @@ public class ScheduleService {
 			childId, targetDays);
 
 		boolean conflictWithRecurring = existingRecurringOnThatDay.stream()
-			.anyMatch(s -> isTimeOverlapped(request.startTime(), request.endTime(), s.getStartTime(), s.getEndTime()));
+			.anyMatch(s -> isTimeOverlapped(request.startTime(), request.endTime(), s.getStartTime(),
+				s.getEndTime()));
 
 		if (conflictWithRecurring) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
@@ -559,7 +715,8 @@ public class ScheduleService {
 
 	}
 
-	private void stoneTypeCalculateAndSetter(List<ScheduleDetail> scheduleDetails, ScheduleDetail todoSchedule) {
+	private void stoneTypeCalculateAndSetter(List<ScheduleDetail> scheduleDetails, ScheduleDetail
+		todoSchedule) {
 		if (todoSchedule != null) {
 			switch (scheduleDetails.indexOf(todoSchedule) % 3) {
 				case 0 -> todoSchedule.changeStoneType(StoneType.COURAGE);
@@ -569,7 +726,8 @@ public class ScheduleService {
 		}
 	}
 
-	private List<ScheduleDetail> filterTodayCreatedSchedules(LocalDate today, List<ScheduleDetail> scheduleDetails,
+	private List<ScheduleDetail> filterTodayCreatedSchedules(LocalDate
+			today, List<ScheduleDetail> scheduleDetails,
 		LocalDateTime earliestStoneUsedAt) {
 		return scheduleDetails.stream()
 			.filter(sd -> {
@@ -605,7 +763,8 @@ public class ScheduleService {
 		LocalTime now = LocalTime.now(clock);
 		scheduleDetails.stream()
 			.filter(
-				sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.PENDING)
+				sd -> sd.getSchedule().getEndTime().isBefore(now)
+					&& sd.getScheduleStatus() == ScheduleStatus.PENDING)
 			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.FAILED));
 	}
 
@@ -613,7 +772,8 @@ public class ScheduleService {
 		LocalTime now = LocalTime.now(clock);
 		scheduleDetails.stream()
 			.filter(
-				sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
+				sd -> sd.getSchedule().getEndTime().isBefore(now)
+					&& sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
 			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.COMPLETED));
 	}
 

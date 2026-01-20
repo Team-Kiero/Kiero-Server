@@ -41,6 +41,13 @@ public interface ScheduleRepeatDaysRepository extends JpaRepository<ScheduleRepe
 		@Param("date") LocalDate date
 	);
 
+	/*
+	데모데이용 임시 메서드
+	 */
+	void deleteByScheduleIn(List<Schedule> schedules);
+	/*
+	 */
+
 	@Query("""
 		select s
 		from ScheduleRepeatDays srd

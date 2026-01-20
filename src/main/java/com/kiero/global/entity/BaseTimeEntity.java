@@ -16,7 +16,10 @@ import lombok.Getter;
 public class BaseTimeEntity {
 
 	@CreatedDate
-	@Column(nullable = false, updatable = false)
+	@Column(nullable = false)
 	private LocalDateTime createdAt;
 
+	public void forceCreatedAtForTest(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
 }

@@ -38,4 +38,11 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 	);
 
 	Optional<Schedule> findFirstByChildIdOrderByCreatedAtDesc(Long childId);
+
+	/*
+	데모데이용 임시 메서드
+	 */
+	List<Schedule> findAllByChildIdIn(List<Long> childIds);
+	/*
+	 */
 }

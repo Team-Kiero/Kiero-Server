@@ -1,16 +1,18 @@
 package com.kiero.mission.repository;
 
-import com.kiero.mission.domain.Mission;
-import jakarta.persistence.LockModeType;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import com.kiero.mission.domain.Mission;
+
+import jakarta.persistence.LockModeType;
 
 public interface MissionRepository extends JpaRepository<Mission, Long> {
 
@@ -28,4 +30,11 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
     @EntityGraph(attributePaths = {"child"})
     @Query("SELECT m FROM Mission m WHERE m.id = :missionId")
     Optional<Mission> findByIdWithLock(@Param("missionId") Long missionId);
+
+    /*
+    데모데이용 임시 메서드
+     */
+    void deleteByChildIdIn(List<Long> childIds);
+    /*
+     */
 }
