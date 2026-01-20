@@ -1,5 +1,20 @@
 package com.kiero.schedule.service;
 
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.kiero.child.domain.Child;
 import com.kiero.child.exception.ChildErrorCode;
 import com.kiero.child.repository.ChildRepository;
@@ -32,20 +47,9 @@ import com.kiero.schedule.repository.ScheduleDetailRepository;
 import com.kiero.schedule.repository.ScheduleRepeatDaysRepository;
 import com.kiero.schedule.repository.ScheduleRepository;
 import com.kiero.schedule.service.resolver.TodayScheduleStatusResolver;
-import java.time.Clock;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -282,24 +286,26 @@ public class ScheduleService {
 			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
 
-		Schedule schedule = Schedule.create(parent, child, request.name(), request.startTime(), request.endTime(),
-			request.scheduleColor(), request.isRecurring());
-		Schedule savedSchedule = scheduleRepository.save(schedule);
-
 		if (request.isRecurring()
 			&& (request.dayOfWeek() == null || request.dayOfWeek().isEmpty())) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE);
 		}
 
 		if (!request.isRecurring()
-			&& request.date() == null) {
+			&& (request.dates() == null || request.dates().isEmpty())) {
 			throw new KieroException(ScheduleErrorCode.DATE_NOT_NULLABLE_WHEN_IS_RECURRING_IS_FALSE);
 		}
 
 		if (request.dayOfWeek() != null
-			&& request.date() != null) {
+			&& request.dates() != null) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_XOR_DATE_REQUIRED);
 		}
+
+		throwExceptionWhenScheduleDuplicated(request, child.getId());
+
+		Schedule schedule = Schedule.create(parent, child, request.name(), request.startTime(), request.endTime(),
+			request.scheduleColor(), request.isRecurring());
+		Schedule savedSchedule = scheduleRepository.save(schedule);
 
 		if (request.isRecurring()) {
 			List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
@@ -311,9 +317,14 @@ public class ScheduleService {
 		}
 
 		if (!request.isRecurring()) {
-			ScheduleDetail scheduleDetail = ScheduleDetail.create(request.date(), null, null, ScheduleStatus.PENDING,
-				null, savedSchedule);
-			scheduleDetailRepository.save(scheduleDetail);
+			List<LocalDate> dates = dateParser(request.dates());
+			List<ScheduleDetail> details = dates.stream()
+				.distinct()
+				.sorted()
+				.map(date -> ScheduleDetail.create(date, null, null, ScheduleStatus.PENDING, null, savedSchedule))
+				.toList();
+
+			scheduleDetailRepository.saveAll(details);
 		}
 
 		eventPublisher.publishEvent(new ScheduleCreatedEvent(
@@ -325,12 +336,14 @@ public class ScheduleService {
 	@Transactional
 	public ScheduleTabResponse getSchedules(LocalDate startDate, LocalDate endDate, Long parentId, Long childId) {
 
+		// 요청 유효 검사
 		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
 
 		if (startDate.isAfter(endDate) || endDate.isBefore(startDate)) {
 			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
 		}
 
+		// 모든 일정 조회
 		List<Schedule> schedules = scheduleRepository.findAllByChildId(childId);
 		if (schedules.isEmpty())
 			return ScheduleTabResponse.of(false, List.of(), List.of());
@@ -339,6 +352,7 @@ public class ScheduleService {
 			.map(Schedule::getId)
 			.toList();
 
+		// 오늘 아이의 불피우기 여부
 		boolean isFireLitToday = scheduleDetailRepository.existsStoneUsedToday(scheduleIds,
 			LocalDate.now(clock));
 
@@ -352,10 +366,25 @@ public class ScheduleService {
 			.map(Schedule::getId)
 			.toList();
 
+		// 반복일정 처리
 		List<RecurringScheduleDto> recurringScheduleDtos = List.of();
 		if (!recurringIds.isEmpty()) {
+			// 모든 반복일정 조회
 			List<ScheduleRepeatDays> repeatDays = scheduleRepeatDaysRepository.findAllByScheduleIdsIn(recurringIds);
 			Map<Long, List<ScheduleRepeatDays>> repeatDaysByScheduleId = repeatDays.stream()
+				.filter(rd -> {
+					Schedule schedule = rd.getSchedule();
+
+					// 반복일정의 createdAt을 기준으로 그 주의 월요일을 구함
+					LocalDate createdWeekStart = schedule.getCreatedAt().toLocalDate().with(java.time.DayOfWeek.MONDAY);
+
+					// 조회하려는 기간의 시작 주 월요일을 구함
+					LocalDate queryWeekStart = startDate.with(java.time.DayOfWeek.MONDAY);
+
+					// ( 등록된 주 <= 조회하는 주 )이면 노출
+					// => 반복일정이 추가되면, 추가된 그 주 월요일부터 반복일정이 노출되고 그 이전 주에는 노출되지 않음
+					return !createdWeekStart.isAfter(queryWeekStart);
+				})
 				.collect(Collectors.groupingBy(rd -> rd.getSchedule().getId()));
 
 			recurringScheduleDtos = schedules.stream()
@@ -363,10 +392,15 @@ public class ScheduleService {
 				.map(schedule -> {
 					List<ScheduleRepeatDays> days = repeatDaysByScheduleId.getOrDefault(schedule.getId(), List.of());
 
+					if (days.isEmpty()) {
+						return null;
+					}
+
 					String dayOfWeek = days.stream()
 						.map(d -> d.getDayOfWeek().name())
 						.sorted()
 						.collect(Collectors.joining(", "));
+
 
 					return new RecurringScheduleDto(
 						schedule.getStartTime(),
@@ -376,6 +410,7 @@ public class ScheduleService {
 						dayOfWeek
 					);
 				})
+				.filter(Objects::nonNull)
 				.toList();
 		}
 
@@ -417,6 +452,98 @@ public class ScheduleService {
 			.toList();
 
 		scheduleDetailRepository.saveAll(scheduleDetails);
+	}
+
+	private void throwExceptionWhenScheduleDuplicated(ScheduleAddRequest request, Long childId) {
+
+		// 반복일정일 경우
+		if (request.isRecurring()) {
+			// request의 요일에 해당하는 요일의 일정 조회 & 조회된 일정과 request 일정의 시간이 겹치면 exception
+			List<DayOfWeek> targetDays = dayOfWeekParser(request.dayOfWeek());
+			List<Schedule> existingRecurring = scheduleRepeatDaysRepository.findSchedulesByChildIdAndDayOfWeeks(childId,
+				targetDays);
+			boolean conflictWithRecurring = existingRecurring.stream()
+				.anyMatch(
+					s -> isTimeOverlapped(request.startTime(), request.endTime(), s.getStartTime(), s.getEndTime()));
+
+			if (conflictWithRecurring) {
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
+			}
+
+			// 오늘 이후의 일정 중에 request의 요일에 해당하는 단일 일정을 조회하고, 조회된 일정과 request 일정의 시간이 겹치면 exception
+			LocalDate today = LocalDate.now(clock);
+			List<ScheduleDetail> normalsFromToday = scheduleDetailRepository.findAllByScheduleChildIdAndDateGreaterThanEqual(
+				childId, today);
+
+			boolean conflictWithNormal = normalsFromToday.stream()
+				.filter(sd -> {
+					java.time.DayOfWeek dow = sd.getDate().getDayOfWeek();
+					DayOfWeek custom = DayOfWeek.from(dow);
+					return targetDays.contains(custom);
+				})
+				.anyMatch(sd -> isTimeOverlapped(
+					request.startTime(), request.endTime(),
+					sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
+				));
+
+			if (conflictWithNormal) {
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
+			}
+
+			return;
+		}
+
+		// 단일 일정일 경우
+		List<LocalDate> dates = dateParser(request.dates());
+
+		// 기존의 단일 일정과 충돌하는지 검사
+		// 입력된 날짜에 해당하는 scheduleDetail 조회
+		List<ScheduleDetail> thatDayDetails = scheduleDetailRepository.findByDateInAndChildId(dates, childId);
+
+		boolean conflictWithNormal = thatDayDetails.stream()
+			.anyMatch(sd -> isTimeOverlapped(
+				request.startTime(), request.endTime(), sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
+			));
+
+		if (conflictWithNormal) {
+			throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
+		}
+
+
+		// 기존의 반복 일정과 충돌하는지 검사
+		// 입력된 날짜의 요일들 계산
+		List<DayOfWeek> targetDays = dates.stream()
+			.map(date -> DayOfWeek.from(date.getDayOfWeek()))
+			.distinct()
+			.toList();
+
+		// 입력된 날짜의 요일들에 해당하는 schedule 조회
+		List<Schedule> existingRecurringOnThatDay = scheduleRepeatDaysRepository.findSchedulesByChildIdAndDayOfWeekIn(
+			childId, targetDays);
+
+		boolean conflictWithRecurring = existingRecurringOnThatDay.stream()
+			.anyMatch(s -> isTimeOverlapped(request.startTime(), request.endTime(), s.getStartTime(), s.getEndTime()));
+
+		if (conflictWithRecurring) {
+			throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
+		}
+	}
+
+	private boolean isTimeOverlapped(LocalTime newStart, LocalTime newEnd, LocalTime oldStart, LocalTime oldEnd) {
+		return newStart.isBefore(oldEnd) && newEnd.isAfter(oldStart);
+	}
+
+	private List<LocalDate> dateParser(String dates) {
+		try {
+			return Stream.of(dates.split(","))
+				.map(String::trim)
+				.map(LocalDate::parse)
+				.distinct()
+				.sorted()
+				.toList();
+		} catch (DateTimeParseException e) {
+			throw new KieroException(ScheduleErrorCode.INVALID_DATE_FORMAT);
+		}
 	}
 
 	private List<DayOfWeek> dayOfWeekParser(String dayOfWeek) {

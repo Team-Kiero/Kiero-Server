@@ -50,4 +50,19 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 		@Param("date") LocalDate date,
 		@Param("childId") Long childId
 	);
+
+	@Query("""
+		select sd
+		from ScheduleDetail sd
+		join fetch sd.schedule s
+		where sd.date in :dates
+		  and s.child.id = :childId
+		order by s.startTime asc
+		""")
+	List<ScheduleDetail> findByDateInAndChildId(
+		@Param("dates") List<LocalDate> dates,
+		@Param("childId") Long childId
+	);
+
+	List<ScheduleDetail> findAllByScheduleChildIdAndDateGreaterThanEqual(Long childId, LocalDate date);
 }

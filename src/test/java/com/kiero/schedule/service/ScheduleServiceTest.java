@@ -102,6 +102,7 @@ public class ScheduleServiceTest {
 			// given
 			Long parentId = 1L;
 			Long childId = 1L;
+			ReflectionTestUtils.setField(scheduleService, "clock", fixedClock);
 
 			Parent parent = mock(Parent.class);
 			Child child = mock(Child.class);
@@ -114,6 +115,15 @@ public class ScheduleServiceTest {
 			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
 			given(childRepository.findById(childId)).willReturn(Optional.of(child));
 			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+
+			given(child.getId()).willReturn(childId);
+			given(scheduleRepeatDaysRepository
+				.findSchedulesByChildIdAndDayOfWeeks(anyLong(), anyList()))
+				.willReturn(List.of());
+
+			given(scheduleDetailRepository
+				.findAllByScheduleChildIdAndDateGreaterThanEqual(anyLong(), any(LocalDate.class)))
+				.willReturn(List.of());
 
 			given(scheduleRepository.save(any(Schedule.class))).willReturn(savedSchedule);
 
@@ -135,6 +145,7 @@ public class ScheduleServiceTest {
 			// given
 			Long parentId = 1L;
 			Long childId = 1L;
+			ReflectionTestUtils.setField(scheduleService, "clock", fixedClock);
 
 			Parent parent = mock(Parent.class);
 			Child child = mock(Child.class);
@@ -142,7 +153,7 @@ public class ScheduleServiceTest {
 
 			ScheduleAddRequest req = new ScheduleAddRequest("첫번째 일정", false, LocalTime.of(11, 0), LocalTime.of(11, 30),
 				ScheduleColor.SCHEDULE1,
-				null, LocalDate.of(2026, 1, 16));
+				null, "2026-01-16");
 
 			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
 			given(childRepository.findById(childId)).willReturn(Optional.of(child));
@@ -150,8 +161,22 @@ public class ScheduleServiceTest {
 
 			given(scheduleRepository.save(any(Schedule.class))).willReturn(savedSchedule);
 
+			given(child.getId()).willReturn(childId);
+			given(scheduleDetailRepository
+				.findByDateInAndChildId(anyList(), eq(childId)))
+				.willReturn(List.of());
+
+			given(scheduleRepeatDaysRepository
+				.findSchedulesByChildIdAndDayOfWeekIn(anyLong(), anyList()))
+				.willReturn(List.of());
+
 			// when
 			scheduleService.addSchedule(req, parentId, childId);
+
+			// then
+			verify(scheduleRepository).save(any(Schedule.class));
+			verify(scheduleDetailRepository).saveAll(anyList());
+			verify(scheduleRepeatDaysRepository, never()).saveAll(any());
 		}
 
 		@Test
@@ -222,7 +247,7 @@ public class ScheduleServiceTest {
 			Child child = mock(Child.class);
 
 			ScheduleAddRequest req = new ScheduleAddRequest(null, true, null, null, null,
-				"MON, TUE", LocalDate.of(2026, 1, 16));
+				"MON, TUE", "2026-01-01, 2026-01-02");
 
 			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
 			given(childRepository.findById(childId)).willReturn(Optional.of(child));
@@ -976,6 +1001,8 @@ public class ScheduleServiceTest {
 			ScheduleRepeatDays rdMon = mock(ScheduleRepeatDays.class);
 			ScheduleRepeatDays rdWed = mock(ScheduleRepeatDays.class);
 
+			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(2025, 12, 29, 10, 0));
+
 			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
 			given(childRepository.findById(childId)).willReturn(Optional.of(child));
 			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
@@ -1516,7 +1543,10 @@ public class ScheduleServiceTest {
 			given(s1.getEndTime()).willReturn(LocalTime.of(11, 59));
 
 			final StoneType[] holder = new StoneType[1];
-			doAnswer(inv -> { holder[0] = inv.getArgument(0); return null; })
+			doAnswer(inv -> {
+				holder[0] = inv.getArgument(0);
+				return null;
+			})
 				.when(sd1).changeStoneType(any(StoneType.class));
 			given(sd1.getStoneType()).willAnswer(inv -> holder[0]);
 
