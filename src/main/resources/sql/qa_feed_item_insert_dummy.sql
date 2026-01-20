@@ -9,7 +9,7 @@ INSERT INTO feed_item (
 VALUES
     (
         'SCHEDULE',
-        '{"content": "데모데이", "imageUrl": "https://kiero-bucket.s3.ap-northeast-2.amazonaws.com/schedule/piano.JPG"}',
+        '{"content": "데모데이", "imageUrl": "https://kiero-bucket.s3.ap-northeast-2.amazonaws.com/schedule/Demoday.JPG"}',
         '2026-01-21 07:53:00.000000',
         '2026-01-16 09:03:46.000000',
         :childId,
