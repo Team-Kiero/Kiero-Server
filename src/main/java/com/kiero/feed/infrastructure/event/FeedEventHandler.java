@@ -14,6 +14,7 @@ import com.kiero.coupon.presentation.dto.CouponPurchaseEvent;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.feed.domain.enums.EventType;
 import com.kiero.feed.infrastructure.event.dto.FeedItemsCreatedEvent;
+import com.kiero.feed.infrastructure.event.dto.FeedItemsCreatedEvent.FeedItemInfo;
 import com.kiero.feed.repository.FeedItemRepository;
 import com.kiero.mission.presentation.dto.MissionCompleteEvent;
 import com.kiero.parent.domain.Parent;
@@ -58,8 +59,17 @@ public class FeedEventHandler {
 
 		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
 
-		List<Long> ids = saved.stream().map(FeedItem::getId).toList();
-		publisher.publishEvent(new FeedItemsCreatedEvent(ids));
+		List<FeedItemInfo> items = saved.stream()
+			.map(fi -> new FeedItemInfo(
+				fi.getId(),
+				fi.getParent().getId(),
+				fi.getChild().getId(),
+				fi.getEventType(),
+				fi.getOccurredAt(),
+				fi.getMetadata()
+			))
+			.toList();
+		publisher.publishEvent(new FeedItemsCreatedEvent(items));
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
@@ -82,8 +92,17 @@ public class FeedEventHandler {
 
 		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
 
-		List<Long> ids = saved.stream().map(FeedItem::getId).toList();
-		publisher.publishEvent(new FeedItemsCreatedEvent(ids));
+		List<FeedItemInfo> items = saved.stream()
+			.map(fi -> new FeedItemInfo(
+				fi.getId(),
+				fi.getParent().getId(),
+				fi.getChild().getId(),
+				fi.getEventType(),
+				fi.getOccurredAt(),
+				fi.getMetadata()
+			))
+			.toList();
+		publisher.publishEvent(new FeedItemsCreatedEvent(items));
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
@@ -107,8 +126,17 @@ public class FeedEventHandler {
 
 		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
 
-		List<Long> ids = saved.stream().map(FeedItem::getId).toList();
-		publisher.publishEvent(new FeedItemsCreatedEvent(ids));
+		List<FeedItemInfo> items = saved.stream()
+			.map(fi -> new FeedItemInfo(
+				fi.getId(),
+				fi.getParent().getId(),
+				fi.getChild().getId(),
+				fi.getEventType(),
+				fi.getOccurredAt(),
+				fi.getMetadata()
+			))
+			.toList();
+		publisher.publishEvent(new FeedItemsCreatedEvent(items));
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
@@ -132,8 +160,17 @@ public class FeedEventHandler {
 
 		List<FeedItem> saved = feedItemRepository.saveAll(feedItems);
 
-		List<Long> ids = saved.stream().map(FeedItem::getId).toList();
-		publisher.publishEvent(new FeedItemsCreatedEvent(ids));
+		List<FeedItemInfo> items = saved.stream()
+			.map(fi -> new FeedItemInfo(
+				fi.getId(),
+				fi.getParent().getId(),
+				fi.getChild().getId(),
+				fi.getEventType(),
+				fi.getOccurredAt(),
+				fi.getMetadata()
+			))
+			.toList();
+		publisher.publishEvent(new FeedItemsCreatedEvent(items));
 	}
 
 }
