@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Base64;
 import java.util.Date;
-import java.util.List;
 
 import javax.crypto.SecretKey;
 
@@ -47,7 +46,6 @@ public class JwtTokenProvider {
 	private static final String MEMBER_ID = "member_Id";
 	private static final String ROLE_KEY = "role";
 	private static final String TOKEN_TYPE = "typ";
-	private static final String SCOPE = "scope";
 
 	@PostConstruct
 	protected void init() {
@@ -58,12 +56,33 @@ public class JwtTokenProvider {
 		return issueToken(authentication, accessTokenExpireTime);
 	}
 
-	public String issueTemporaryAccessToken(final Authentication authentication, final List<String> scope) {
-		return issueSubscribeToken(authentication, scope);
-	}
-
 	public String issueRefreshToken(final Authentication authentication) {
 		return issueToken(authentication, refreshTokenExpireTime);
+	}
+
+	public String issueSubscribeToken(final Authentication authentication) {
+		final Date now = new Date();
+
+		final Claims claims = Jwts.claims()
+			.setIssuedAt(now)
+			.setExpiration(new Date(now.getTime() + TEMPORARY_ACCESS_TOKEN_EXPIRE_TIME));
+
+		claims.put(MEMBER_ID, authentication.getPrincipal());
+
+		String role = authentication.getAuthorities()
+			.stream()
+			.map(GrantedAuthority::getAuthority)
+			.findFirst()
+			.orElseThrow(() -> new IllegalArgumentException("No authorities found"));
+
+		claims.put(ROLE_KEY, role);
+		claims.put(TOKEN_TYPE, "SUBSCRIBE");
+
+		return Jwts.builder()
+			.setHeaderParam(Header.TYPE, Header.JWT_TYPE)
+			.setClaims(claims)
+			.signWith(getSigningKey())
+			.compact();
 	}
 
 	public JwtValidationType validateToken(String token) {
@@ -105,17 +124,6 @@ public class JwtTokenProvider {
 		}
 	}
 
-	public List<String> getScopesFromJwt(String token) {
-		Claims claims = getBody(token);
-		Object raw = claims.get(SCOPE);
-		if (raw == null) return List.of();
-
-		if (raw instanceof List<?> list) {
-			return list.stream().map(String::valueOf).toList();
-		}
-		return List.of(String.valueOf(raw));
-	}
-
 	public String getTokenTypeFromJwt(String token) {
 		Claims claims = getBody(token);
 		Object raw = claims.get(TOKEN_TYPE);
@@ -147,32 +155,6 @@ public class JwtTokenProvider {
 			.orElseThrow(() -> new IllegalArgumentException("No authorities found"));
 
 		claims.put(ROLE_KEY, role);
-
-		return Jwts.builder()
-			.setHeaderParam(Header.TYPE, Header.JWT_TYPE)
-			.setClaims(claims)
-			.signWith(getSigningKey())
-			.compact();
-	}
-
-	private String issueSubscribeToken(final Authentication authentication, List<String> scope) {
-		final Date now = new Date();
-
-		final Claims claims = Jwts.claims()
-			.setIssuedAt(now)
-			.setExpiration(new Date(now.getTime() + TEMPORARY_ACCESS_TOKEN_EXPIRE_TIME));
-
-		claims.put(MEMBER_ID, authentication.getPrincipal());
-
-		String role = authentication.getAuthorities()
-			.stream()
-			.map(GrantedAuthority::getAuthority)
-			.findFirst()
-			.orElseThrow(() -> new IllegalArgumentException("No authorities found"));
-
-		claims.put(ROLE_KEY, role);
-		claims.put(TOKEN_TYPE, "SUBSCRIBE");
-		claims.put(SCOPE, scope);
 
 		return Jwts.builder()
 			.setHeaderParam(Header.TYPE, Header.JWT_TYPE)

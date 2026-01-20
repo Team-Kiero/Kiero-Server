@@ -88,6 +88,9 @@ dependencies {
 
     // monitoring
     implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // Sentry
+    implementation 'io.sentry:sentry-spring-boot-starter-jakarta:7.9.0'
 }
 
 dependencyManagement {

@@ -48,4 +48,27 @@ public interface ScheduleRepeatDaysRepository extends JpaRepository<ScheduleRepe
 	/*
 	 */
 
+	@Query("""
+		select s
+		from ScheduleRepeatDays srd
+		join srd.schedule s
+		where srd.dayOfWeek in :dayOfWeeks
+			and s.child.id = :childId
+		""")
+	List<Schedule> findSchedulesByChildIdAndDayOfWeeks(
+		@Param("childId") Long childId,
+		@Param("dayOfWeeks") List<DayOfWeek> dayOfWeeks
+	);
+
+	@Query("""
+		select distinct s
+		from ScheduleRepeatDays srd
+		join srd.schedule s
+		where srd.dayOfWeek in :dayOfWeeks
+		  and s.child.id = :childId
+		""")
+	List<Schedule> findSchedulesByChildIdAndDayOfWeekIn(
+		@Param("childId") Long childId,
+		@Param("dayOfWeeks") List<DayOfWeek> dayOfWeeks
+	);
 }
