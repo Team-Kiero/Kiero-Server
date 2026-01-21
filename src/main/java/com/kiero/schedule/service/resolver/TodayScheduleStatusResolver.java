@@ -33,10 +33,12 @@ public final class TodayScheduleStatusResolver {
 				.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.PENDING)
 				.count();
 
-			// 일정을 모두 완료하고, 불피우기는 진행하지 않았을 때
+			// 일정을 모두 거쳤고, 불피우기는 진행하지 않았을 때
 			if (passedScheduleCount == totalSchedule && earliestStoneUsedAt == null) {
 				log.info("totalSchedule" + totalSchedule + "passedScheduleCount" + passedScheduleCount);
-				if (earnedStones == 0) { return TodayScheduleStatus.FIRE_LIT; }
+				// 모든 일정을 스킵하거나 실패해서 얻은 불조각 수가 0개일 때
+				if (earnedStones == 0) { return TodayScheduleStatus.NO_SCHEDULE; }
+
 				return TodayScheduleStatus.FIRE_NOT_LIT;
 			}
 
