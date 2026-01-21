@@ -1189,7 +1189,7 @@ public class ScheduleServiceTest {
 			assertThat(response.scheduleOrder()).isEqualTo(0);
 			assertThat(response.totalSchedule()).isEqualTo(0);
 			assertThat(response.earnedStones()).isEqualTo(0);
-			assertThat(response.scheduleStatus()).isEqualTo(TodayScheduleStatus.FIRE_LIT);
+			assertThat(response.scheduleStatus()).isEqualTo(TodayScheduleStatus.NO_SCHEDULE);
 			assertThat(response.isSkippable()).isFalse();
 			assertThat(response.isNowScheduleVerified()).isFalse();
 		}
