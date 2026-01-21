@@ -27,6 +27,23 @@ public final class TodayScheduleStatusResolver {
 			return TodayScheduleStatus.NO_SCHEDULE;
 		}
 
+		if (filteredAllScheduleDetails != null) {
+			int passedScheduleCount = (int)filteredAllScheduleDetails.stream()
+				.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.PENDING)
+				.count();
+
+			// 일정을 모두 완료하고, 불피우기는 진행하지 않았을 때
+			if (passedScheduleCount == totalSchedule && earliestStoneUsedAt == null) {
+				log.info("totalSchedule" + totalSchedule + "passedScheduleCount" + passedScheduleCount);
+				return TodayScheduleStatus.FIRE_NOT_LIT;
+			}
+
+			// 일정을 모두 완료하고, 불피우기까지 완료했을 때
+			if (earliestStoneUsedAt != null) {
+				return TodayScheduleStatus.FIRE_LIT;
+			}
+		}
+
 		if (filteredAllScheduleDetails != null && todoScheduleDetail != null) {
 			// 첫번째 일정일 때
 			int index = filteredAllScheduleDetails.indexOf(todoScheduleDetail);
@@ -49,23 +66,6 @@ public final class TodayScheduleStatusResolver {
 			// 현재 진행해야 하는 일정이 있을 때
 			if (!now.isBefore(start) && now.isBefore(end)) {
 				return TodayScheduleStatus.NOW_SCHEDULE_EXIST;
-			}
-		}
-
-		if (filteredAllScheduleDetails != null) {
-			int passedScheduleCount = (int)filteredAllScheduleDetails.stream()
-				.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.PENDING)
-				.count();
-
-			// 일정을 모두 완료하고, 불피우기는 진행하지 않았을 때
-			if (passedScheduleCount == totalSchedule && earliestStoneUsedAt == null) {
-				log.info("totalSchedule" + totalSchedule + "passedScheduleCount" + passedScheduleCount);
-				return TodayScheduleStatus.FIRE_NOT_LIT;
-			}
-
-			// 일정을 모두 완료하고, 불피우기까지 완료했을 때
-			if (earliestStoneUsedAt != null) {
-				return TodayScheduleStatus.FIRE_LIT;
 			}
 		}
 
