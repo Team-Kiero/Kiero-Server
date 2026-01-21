@@ -127,6 +127,7 @@ public class ScheduleService {
 		boolean isSkippable = nextTodoScheduleDetail != null;
 
 		TodayScheduleStatus todayScheduleStatus = TodayScheduleStatusResolver.resolve(
+			earnedStones,
 			todoScheduleDetail,
 			filteredAllScheduleDetails,
 			earliestStoneUsedAt

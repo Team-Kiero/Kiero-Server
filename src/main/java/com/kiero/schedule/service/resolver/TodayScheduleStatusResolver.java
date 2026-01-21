@@ -16,6 +16,7 @@ public final class TodayScheduleStatusResolver {
 	}
 
 	public static TodayScheduleStatus resolve(
+		int earnedStones,
 		ScheduleDetail todoScheduleDetail,
 		List<ScheduleDetail> filteredAllScheduleDetails,
 		LocalDateTime earliestStoneUsedAt
@@ -35,6 +36,7 @@ public final class TodayScheduleStatusResolver {
 			// 일정을 모두 완료하고, 불피우기는 진행하지 않았을 때
 			if (passedScheduleCount == totalSchedule && earliestStoneUsedAt == null) {
 				log.info("totalSchedule" + totalSchedule + "passedScheduleCount" + passedScheduleCount);
+				if (earnedStones == 0) { return TodayScheduleStatus.FIRE_LIT; }
 				return TodayScheduleStatus.FIRE_NOT_LIT;
 			}
 
