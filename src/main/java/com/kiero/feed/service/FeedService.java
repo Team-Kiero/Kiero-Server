@@ -126,7 +126,7 @@ public class FeedService {
 	private FeedItemDto toItemDto(FeedItem feedItem) {
 		return new FeedItemDto(
 			feedItem.getEventType(),
-			feedItem.getCreatedAt(),
+			feedItem.getOccurredAt(),
 			feedItem.getMetadata()
 		);
 	}
