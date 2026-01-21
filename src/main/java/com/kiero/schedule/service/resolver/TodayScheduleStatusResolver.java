@@ -32,7 +32,7 @@ public final class TodayScheduleStatusResolver {
 			int index = filteredAllScheduleDetails.indexOf(todoScheduleDetail);
 			int order = index + 1;
 
-			if (order == 1) {
+			if (order == 1 && todoScheduleDetail.getScheduleStatus().equals(ScheduleStatus.PENDING)) {
 				return TodayScheduleStatus.FIRST_SCHEDULE;
 			}
 
