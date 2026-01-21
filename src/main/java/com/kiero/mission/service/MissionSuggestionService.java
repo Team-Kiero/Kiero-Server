@@ -10,196 +10,225 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Supplier;
 
 @Slf4j
 @Service
 public class MissionSuggestionService {
 
-    private final ChatClient chatClient;
-    private final HolidayService holidayService;
+  private static final int MAX_MISSIONS = 10;
+  private static final int REWARD = 20;
+  private static final int MAX_NAME_LEN = 15;
+  private static final int CALENDAR_REF_DAYS = 60;
 
-    private static final LocalDate UNSPECIFIED_DATE = LocalDate.of(1900, 1, 1);
+  private final ChatClient chatClient;
+  private final HolidayService holidayService;
+  private final Clock clock;
 
-    public MissionSuggestionService(ChatClient.Builder chatClientBuilder, HolidayService holidayService) {
-        this.chatClient = chatClientBuilder.build();
-        this.holidayService = holidayService;
+  private record AiGeneratedMission(String name, String dueAt) {}
+
+  private static final String MISSION_SUGGESTION_PROMPT = """
+      당신은 알림장을 분석하여 초등학생 자녀의 미션(할 일)을 추출하는 AI입니다.
+
+      [기준 데이터]
+      - 오늘: {today} ({dayOfWeek})
+      - 날짜 참조표 (이 표에 있는 날짜만 dueAt으로 사용 가능):
+      {calendarRef}
+
+      [알림장]
+      {noticeText}
+
+      [지시사항]
+      1. 분류: 알림장/가정통신문이 아니거나(뉴스, 광고 등), 아이가 해야 할 일이 없으면 빈 배열([])만 반환.
+      2. 추출: 아이가 실행 가능한 "구체적 행동"만 미션으로.
+      3. 미션명: 15자 이내, 간결하게.
+
+      4. 병합 및 분리 (핵심)
+         - 문맥상 동일 사건/준비물은 반드시 1개로 병합.
+           예) 준비물 '성금' + 안내 '성금 모금' -> '불우이웃돕기 성금 챙기기'
+         - 단일 과목 숙제는 절대 쪼개지 말 것.
+           예) '수학익힘 42~45쪽'은 1개 미션
+         - 과목/주제가 완전히 다를 때만 분리.
+
+      5. dueAt 추출 규칙 (매우 중요 - 엄격 적용)
+         - 원칙: 해당 미션 항목의 **본문** 또는 **같은 항목 내의 바로 앞 문장**에 날짜/요일이 명시된 경우 그 날짜를 추출한다.
+         - ★문맥 허용: "수요일 미술시간 준비물" 처럼, 특정 행사를 위한 준비물인 경우 그 행사의 날짜를 dueAt으로 잡는다.
+         - ★절대 금지: '오늘의 숙제', '알림장' 같은 **문서 전체의 제목/헤더**를 보고 날짜를 추측하지 말 것.
+         - ★결과: 위 조건에 맞는 날짜 정보가 없으면, 시스템이 처리하므로 **반드시 dueAt은 null**로 반환할 것.
+
+      6. 날짜 형식 및 선택 제한 (매우 중요)
+         - dueAt은 반드시 ISO 날짜 형식 "yyyy-MM-dd" 또는 null.
+         - dueAt은 반드시 [날짜 참조표]에 존재하는 날짜 중 하나만 선택.
+         - 참조표에 없는 날짜로 계산해야 한다면 dueAt은 null.
+
+      [예시 데이터 - 이 패턴을 따를 것]
+      입력: "1. 수학익힘책 40쪽 풀기"
+      출력: [\\{"name": "수학익힘책 40쪽 풀기", "dueAt": null\\}]
+      
+      입력: "2. 다음주 월요일까지 독서록 제출"
+      출력: [\\{"name": "독서록 제출", "dueAt": "2026-01-26"\\}]
+      
+      입력: "3. 다음주 수요일 미술시간. 준비물 붓 챙겨오기"
+      출력: [\\{"name": "미술 준비물 붓 챙기기", "dueAt": "2026-01-28"\\}]
+
+      [출력 포맷]
+      - JSON 배열만 출력 (Markdown 금지).
+      - 키: name(String), dueAt(String or null)
+      """;
+
+  public MissionSuggestionService(
+      ChatClient.Builder chatClientBuilder,
+      HolidayService holidayService,
+      Clock clock
+  ) {
+    this.chatClient = chatClientBuilder.build();
+    this.holidayService = holidayService;
+    this.clock = clock;
+  }
+
+  public MissionSuggestionResponse suggestMissions(String noticeText) {
+    if (noticeText == null || noticeText.isBlank()) {
+      return MissionSuggestionResponse.of(Collections.emptyList());
     }
 
-    private static final String MISSION_SUGGESTION_PROMPT = """
-              당신은 초등학생 자녀를 둔 부모를 돕는 AI 어시스턴트입니다.
-              학교 알림장 내용을 분석하여, 부모가 자녀에게 줄 수 있는 미션(할 일) 목록을 추천해주세요.
+    try {
+      LocalDate today = LocalDate.now(clock);
+      String dayOfWeek = today.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
 
-              [오늘 날짜]
-              {today} ({dayOfWeek})
-              
-              [날짜 참조표 (이 표를 보고 날짜를 찾으세요)]
-              {calendarRef}
+      String calendarRef = createCalendarReference(today, CALENDAR_REF_DAYS);
 
-              [알림장 내용]
-              {noticeText}
+      PromptTemplate promptTemplate = new PromptTemplate(MISSION_SUGGESTION_PROMPT);
+      Prompt prompt = promptTemplate.create(Map.of(
+          "noticeText", noticeText.trim(),
+          "today", today.toString(),
+          "dayOfWeek", dayOfWeek,
+          "calendarRef", calendarRef
+      ));
 
-              [요구사항]
-              1. 입력 텍스트가 학교 알림장, 가정통신문, 학원 공지사항 등 '자녀의 할 일'이 명시된 글인지 검토하세요.
-              2. 만약 뉴스 기사, 단순 정보 전달, 광고, 혹은 할 일을 도출할 수 없는 일반적인 글이라면 미션을 생성하지 말고 반드시 빈 JSON 배열([])만 응답하세요.
-              3. 알림장 내용에서 자녀가 해야 할 일들을 파악하세요.
-              4. 각 미션은 구체적이고 실행 가능해야 합니다.
-              5. 미션 이름은 반드시 15자 이내로 간결하게 작성하세요.
-              
-              6. **중복 및 연관 항목 병합 (매우 중요)**:
-                 - '가방 확인', '준비물', '할 일' 등 서로 다른 섹션에 있더라도, **문맥상 같은 사건이나 물건을 지칭한다면 반드시 하나의 미션으로 합치세요.**
-                 - **나쁜 예**: 
-                    1. 미션: 성금 봉투 챙기기 (가방 확인 섹션에서 추출)
-                    2. 미션: 성금 가져오기 (준비물 섹션에서 추출)
-                 - **좋은 예**: 
-                    1. 미션: 불우이웃돕기 성금 챙기기 (두 내용을 합쳐서 하나로 만듦)
-                 - 준비물(예: 리코더)과 수업(예: 음악시간)이 같이 언급되면 '리코더 챙기기' 하나로 만드세요.
+      List<AiGeneratedMission> rawMissions = chatClient.prompt(prompt)
+          .call()
+          .entity(new ParameterizedTypeReference<List<AiGeneratedMission>>() {});
 
-              7. 미션 분리 기준:
-                 - 서로 완전히 다른 과목이나 주제인 경우에만 분리하세요.
-                 - 예: 독후감 3편 써오기는 1개 미션으로 만드세요 (분리 금지)
+      if (rawMissions == null || rawMissions.isEmpty()) {
+        return MissionSuggestionResponse.of(Collections.emptyList());
+      }
 
-              8. 마감일(dueAt) 설정 규칙:
-                 **AI는 날짜를 직접 계산하지 말고, 반드시 위 [날짜 참조표]에서 해당하는 날짜를 찾아 입력해야 합니다.**
+       log.info("AI raw missions: {}", rawMissions);
 
-                 **규칙 A. 날짜가 명시된 경우 (우선순위 높음)**:
-                 - 텍스트에 "내일", "모레", "이번주 금요일", "1월 19일까지" 등 날짜 표현이 있다면, **[날짜 참조표]에서 해당 요일의 날짜(YYYY-MM-DD)를 찾아 그대로 적으세요.**
-                 - 병합된 미션의 경우, 언급된 날짜 중 가장 빠른 날짜(또는 명시된 마감일)를 따르세요.
+      List<SuggestedMission> processed = processMissions(rawMissions, today);
+      return MissionSuggestionResponse.of(processed);
 
-                 **규칙 B. 날짜가 명시되지 않은 경우**:
-                 - 알림장에 특정 마감 기한이 없다면, 반드시 "1900-01-01"로 설정하세요. (시스템이 자동으로 처리합니다)
+    } catch (Exception e) {
+      log.error("Failed to generate mission suggestions", e);
+      return MissionSuggestionResponse.of(Collections.emptyList());
+    }
+  }
 
-              9. 보상(reward)은 항상 20으로 설정하세요.
-              10. 최대 10개의 미션을 추천하세요.
+  private List<SuggestedMission> processMissions(List<AiGeneratedMission> rawMissions, LocalDate today) {
+    LocalDate oneYearLater = today.plusYears(1);
 
-              [응답 형식]
-              - 반드시 마크다운 없이 JSON 배열 형식으로만 응답하세요.
-              - 필드: name(문자열), dueAt(YYYY-MM-DD), reward(20)
-              """;
+    Supplier<LocalDate> nextSchoolDaySupplier = new Supplier<>() {
+      private LocalDate cached;
+      @Override
+      public LocalDate get() {
+        if (cached == null) cached = calculateNextSchoolDay(today);
+        return cached;
+      }
+    };
 
-    public MissionSuggestionResponse suggestMissions(String noticeText) {
-        log.info("Generating mission suggestions from notice text");
+    return rawMissions.stream()
+        .filter(m -> m != null && m.name() != null && !m.name().isBlank())
+        .map(m -> {
+          String name = sanitizeName(m.name());
 
-        if (noticeText == null || noticeText.isBlank()) {
-            return createFallbackResponse();
-        }
+          LocalDate dueAt = safeParseIsoDate(m.dueAt());
 
-        try {
-            LocalDate today = LocalDate.now();
-            String dayOfWeek = today.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
+          boolean needsFallback =
+              (dueAt == null) ||
+                  (dueAt.isBefore(today)) ||
+                  (dueAt.isAfter(oneYearLater));
 
-            String calendarRef = createCalendarReference(today);
+          if (needsFallback) {
+            dueAt = nextSchoolDaySupplier.get();
+          }
 
-            PromptTemplate promptTemplate = new PromptTemplate(MISSION_SUGGESTION_PROMPT);
-            Prompt prompt = promptTemplate.create(Map.of(
-                    "noticeText", noticeText.trim(),
-                    "today", today.toString(),
-                    "dayOfWeek", dayOfWeek,
-                    "calendarRef", calendarRef
-            ));
+          return new SuggestedMission(name, dueAt, REWARD);
+        })
+        .limit(MAX_MISSIONS)
+        .toList();
+  }
 
-            List<SuggestedMission> missions = chatClient.prompt(prompt)
-                    .call()
-                    .entity(new ParameterizedTypeReference<List<SuggestedMission>>() {});
+  private String sanitizeName(String raw) {
+    String cleaned = raw.trim();
+    if (cleaned.length() > MAX_NAME_LEN) {
+      cleaned = cleaned.substring(0, MAX_NAME_LEN);
+    }
+    return cleaned;
+  }
 
-            if (missions == null || missions.isEmpty()) {
-                return createFallbackResponse();
-            }
+  private LocalDate safeParseIsoDate(String rawDueAt) {
+    if (rawDueAt == null || rawDueAt.isBlank()) return null;
+    String s = rawDueAt.trim();
 
-            return MissionSuggestionResponse.of(validateAndCleanMissions(missions));
-
-        } catch (Exception e) {
-            log.error("Failed to generate mission suggestions", e);
-            return createFallbackResponse();
-        }
+    if (s.length() >= 10) {
+      s = s.substring(0, 10);
     }
 
-    private String createCalendarReference(LocalDate start) {
-        StringBuilder sb = new StringBuilder();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        for (int i = 0; i < 14; i++) {
-            LocalDate date = start.plusDays(i);
-            String dayStr = date.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.KOREAN);
-
-            sb.append(String.format("- %s (%s)", date.format(formatter), dayStr));
-
-            if (i == 0) sb.append(" [오늘]");
-            if (i == 1) sb.append(" [내일]");
-            if (i == 2) sb.append(" [모레]");
-
-            if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
-                sb.append("  <-- (여기까지 이번 주, 아래부터 다음 주) -->");
-            }
-            sb.append("\n");
-        }
-        return sb.toString();
+    try {
+      return LocalDate.parse(s, DateTimeFormatter.ISO_LOCAL_DATE);
+    } catch (DateTimeParseException e) {
+      return null;
     }
+  }
 
-    private List<SuggestedMission> validateAndCleanMissions(List<SuggestedMission> missions) {
-        LocalDate today = LocalDate.now();
-        LocalDate oneYearLater = today.plusYears(1);
+  private LocalDate calculateNextSchoolDay(LocalDate startDate) {
+    LocalDate endDate = startDate.plusDays(60);
+    Set<LocalDate> holidays = holidayService.getHolidayDatesBetween(startDate, endDate);
 
-        LocalDate nextSchoolDay = getNextSchoolDay(today);
+    LocalDate candidate = startDate.plusDays(1);
+    for (int i = 0; i < 60; i++) {
+      DayOfWeek dow = candidate.getDayOfWeek();
+      boolean isWeekend = (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY);
+      boolean isHoliday = holidays.contains(candidate);
 
-        return missions.stream()
-                .filter(m -> m.name() != null && !m.name().isBlank())
-                .map(m -> {
-                    String cleanedName = m.name().trim();
-                    if (cleanedName.length() > 15) {
-                        cleanedName = cleanedName.substring(0, 15);
-                    }
-
-                    LocalDate dueAt = m.dueAt();
-
-                    // 1. 날짜 미지정 -> 다음 등교일 사용
-                    if (UNSPECIFIED_DATE.equals(dueAt)) {
-                        dueAt = nextSchoolDay;
-                    }
-                    // 2. 유효하지 않은 날짜 -> 다음 등교일 사용
-                    else if (dueAt == null || dueAt.isBefore(today) || dueAt.isAfter(oneYearLater)) {
-                        dueAt = nextSchoolDay;
-                    }
-                    // 3. 명시적 날짜 -> 그대로 사용
-
-                    return new SuggestedMission(cleanedName, dueAt, 20);
-                })
-                .limit(10)
-                .toList();
+      if (!isWeekend && !isHoliday) {
+        return candidate;
+      }
+      candidate = candidate.plusDays(1);
     }
+    return startDate.plusDays(1);
+  }
 
-    private LocalDate getNextSchoolDay(LocalDate startDate) {
-        LocalDate endDate = startDate.plusDays(30);
+  private String createCalendarReference(LocalDate start, int days) {
+    StringBuilder sb = new StringBuilder();
+    DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
 
-        // 30일간의 공휴일을 한 번에 조회
-        Set<LocalDate> holidays = holidayService.getHolidayDatesBetween(startDate, endDate);
+    for (int i = 0; i < days; i++) {
+      LocalDate date = start.plusDays(i);
+      String dayStr = date.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.KOREAN);
 
-        LocalDate candidate = startDate.plusDays(1);
-        for (int i = 0; i < 30; i++) {
-            DayOfWeek dayOfWeek = candidate.getDayOfWeek();
+      sb.append("- ")
+          .append(date.format(formatter))
+          .append(" (")
+          .append(dayStr)
+          .append(")");
 
-            // 주말이 아니고 공휴일도 아니면 등교일
-            if (dayOfWeek != DayOfWeek.SATURDAY
-                    && dayOfWeek != DayOfWeek.SUNDAY
-                    && !holidays.contains(candidate)) {
-                return candidate;
-            }
-            candidate = candidate.plusDays(1);
-        }
-        return startDate.plusDays(1);
+      if (i == 0) sb.append(" [오늘]");
+      if (i == 1) sb.append(" [내일]");
+      if (i == 2) sb.append(" [모레]");
+
+      if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+        sb.append("  <-- (이번 주/다음 주 경계)");
+      }
+      sb.append("\n");
     }
-
-    private MissionSuggestionResponse createFallbackResponse() {
-        LocalDate nextSchoolDay = getNextSchoolDay(LocalDate.now());
-        return MissionSuggestionResponse.of(List.of(
-                new SuggestedMission("알림장 내용 확인하기", nextSchoolDay, 20)
-        ));
-    }
+    return sb.toString();
+  }
 }
