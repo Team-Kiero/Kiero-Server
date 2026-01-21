@@ -49,8 +49,8 @@ spring:
       api-key: ${OPENAI_API_KEY}
       chat:
         options:
-          model: gpt-4o-mini
-          temperature: 0.1
+          model: gpt-4.1
+          temperature: 0.0
 
 # 공공데이터 Open API
 open-api:
@@ -62,7 +62,7 @@ sentry:
   exception-resolver-order: -2147483647
   max-request-body-size: always
   send-default-pii: true
-  traces-sample-rate: 1.0
+  traces-sample-rate: 0.5
   environment: ${spring.profiles.active:local}
   ignored-exceptions-for-type:
     - org.springframework.security.access.AccessDeniedException
