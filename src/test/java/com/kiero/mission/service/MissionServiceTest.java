@@ -26,6 +26,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.*;
 import java.util.List;
@@ -79,7 +80,7 @@ public class MissionServiceTest {
 			.id(1L)
 			.name("수학 숙제하기")
 			.reward(50)
-			.dueAt(LocalDate.of(2026, 1, 20))
+			.dueAt(LocalDate.now().plusDays(1))
 			.isCompleted(false)
 			.parent(parent)
 			.child(child)
