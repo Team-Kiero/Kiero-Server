@@ -483,7 +483,7 @@ public class ScheduleService {
 
 			List<Schedule> schedulesToSave = List.of(
 				Schedule.create(parent, child, "학교",
-					LocalTime.parse("09:00:00"), LocalTime.parse("13:00:00"),
+					LocalTime.parse("09:00:00"), LocalTime.parse("12:00:00"),
 					ScheduleColor.SCHEDULE1, true),
 
 				Schedule.create(parent, child, "돌봄 교실",
@@ -515,7 +515,7 @@ public class ScheduleService {
 					ScheduleColor.SCHEDULE3, false),
 
 				Schedule.create(parent, child, "발표하기",
-					LocalTime.parse("01:10:00"), LocalTime.parse("04:00:00"),
+					LocalTime.parse("01:10:00"), LocalTime.parse("10:00:00"),
 					ScheduleColor.SCHEDULE2, false)
 			);
 
