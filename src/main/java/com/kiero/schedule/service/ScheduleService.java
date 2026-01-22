@@ -515,7 +515,7 @@ public class ScheduleService {
 					ScheduleColor.SCHEDULE3, false),
 
 				Schedule.create(parent, child, "발표하기",
-					LocalTime.parse("01:10:00"), LocalTime.parse("10:00:00"),
+					LocalTime.parse("01:10:00"), LocalTime.parse("05:00:00"),
 					ScheduleColor.SCHEDULE2, false)
 			);
 
