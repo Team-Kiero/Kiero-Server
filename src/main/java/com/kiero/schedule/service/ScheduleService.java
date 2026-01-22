@@ -495,7 +495,7 @@ public class ScheduleService {
 					ScheduleColor.SCHEDULE3, true),
 
 				Schedule.create(parent, child, "데모데이",
-					LocalTime.parse("08:00:00"), LocalTime.parse("10:00:00"),
+					LocalTime.parse("01:00:00"), LocalTime.parse("01:10:00"),
 					ScheduleColor.SCHEDULE5, false),
 
 				Schedule.create(parent, child, "피아노",
@@ -515,7 +515,7 @@ public class ScheduleService {
 					ScheduleColor.SCHEDULE3, false),
 
 				Schedule.create(parent, child, "발표하기",
-					LocalTime.parse("10:30:00"), LocalTime.parse("14:00:00"),
+					LocalTime.parse("01:10:00"), LocalTime.parse("04:00:00"),
 					ScheduleColor.SCHEDULE2, false)
 			);
 
@@ -538,10 +538,12 @@ public class ScheduleService {
 
 			// schedule_detail 생성
 			List<ScheduleDetail> details = List.of(
-				ScheduleDetail.create(LocalDate.parse("2026-01-21"), null, null, ScheduleStatus.PENDING, null, s4),
-				ScheduleDetail.create(LocalDate.parse("2026-01-20"), null, null, ScheduleStatus.PENDING, null, s8),
-				ScheduleDetail.create(LocalDate.parse("2026-01-22"), null, null, ScheduleStatus.PENDING, null, s8),
-				ScheduleDetail.create(LocalDate.parse("2026-01-21"), null, null, ScheduleStatus.PENDING, null, s9)
+				// 데모데이 일정 - imageUrl, ScheduleStatus.COMPLETED, stoneType COURAGE
+				ScheduleDetail.create(LocalDate.parse("2026-01-23"), "https://kiero-bucket.s3.ap-northeast-2.amazonaws.com/schedule/Demoday.JPG", null, ScheduleStatus.COMPLETED, StoneType.COURAGE, s4),
+				ScheduleDetail.create(LocalDate.parse("2026-01-19"), null, null, ScheduleStatus.PENDING, null, s8),
+				ScheduleDetail.create(LocalDate.parse("2026-01-21"), null, null, ScheduleStatus.PENDING, null, s8),
+				// 발표하기 일정 - imageUrl, ScheduleStatus.VERIFIED, stoneType GRIT
+				ScheduleDetail.create(LocalDate.parse("2026-01-23"), "https://kiero-bucket.s3.ap-northeast-2.amazonaws.com/schedule/%E1%84%8E%E1%85%AC%E1%84%80%E1%85%B3%E1%86%AB%E1%84%8B%E1%85%A7%E1%86%BC+%E1%84%87%E1%85%A1%E1%86%AF%E1%84%91%E1%85%AD%E1%84%89%E1%85%A1%E1%84%8C%E1%85%B5%E1%86%AB.jpeg", null, ScheduleStatus.VERIFIED, StoneType.GRIT, s9)
 			);
 			scheduleDetailRepository.saveAll(details);
 
@@ -550,11 +552,12 @@ public class ScheduleService {
 				// (MON,TUE,WED,THU,FRI) -> 1
 				ScheduleRepeatDays.create(DayOfWeek.MON, s1),
 				ScheduleRepeatDays.create(DayOfWeek.TUE, s1),
+				ScheduleRepeatDays.create(DayOfWeek.WED, s1),
 				ScheduleRepeatDays.create(DayOfWeek.THU, s1),
-				ScheduleRepeatDays.create(DayOfWeek.FRI, s1),
 
-				// (MON) -> 2
+				// (MON, WED) -> 2
 				ScheduleRepeatDays.create(DayOfWeek.MON, s2),
+				ScheduleRepeatDays.create(DayOfWeek.WED, s2),
 
 				// (TUE) -> 3
 				ScheduleRepeatDays.create(DayOfWeek.TUE, s3),
@@ -562,11 +565,12 @@ public class ScheduleService {
 				// (THU) -> 5
 				ScheduleRepeatDays.create(DayOfWeek.THU, s5),
 
-				// (FRI) -> 6
-				ScheduleRepeatDays.create(DayOfWeek.FRI, s6),
+				// (WED, FRI) -> 6
+				ScheduleRepeatDays.create(DayOfWeek.WED, s6),
 
-				// (MON) -> 7
-				ScheduleRepeatDays.create(DayOfWeek.MON, s7)
+				// (MON, WED) -> 7
+				ScheduleRepeatDays.create(DayOfWeek.MON, s7),
+				ScheduleRepeatDays.create(DayOfWeek.WED, s7)
 			);
 			scheduleRepeatDaysRepository.saveAll(repeatDays);
 

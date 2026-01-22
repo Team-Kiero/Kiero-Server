@@ -6,7 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kiero.child.service.ChildService;
@@ -35,15 +34,14 @@ public class DummyDataInsertController {
 	// 아이의 '여정 시작하기'버튼 클릭 시 추가로 호출되는 api
 	@PostMapping()
 	ResponseEntity<Void> insertDummyData(
-		@CurrentMember CurrentAuth currentAuth,
-		@RequestParam String env
+		@CurrentMember CurrentAuth currentAuth
 	) {
 		Long childId = currentAuth.memberId();
 		List<Long> parentIds = parentService.findParentIdByChildId(childId);
 		log.info("parentId = {}의 더미데이터 처리를 시작합니다. (ง •̀ω•́)ง✧", childId);
 
-		missionService.insertDummy(parentIds, childId, env);
-		feedService.insertDummy(parentIds, childId, env);
+		missionService.insertDummy(parentIds, childId);
+		feedService.insertDummy(parentIds, childId);
 		scheduleService.insertDummy(parentIds, childId);
 
 		return ResponseEntity.ok()
