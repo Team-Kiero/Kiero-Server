@@ -540,6 +540,7 @@ public class ScheduleService {
 				ScheduleRepeatDays.create(DayOfWeek.TUE, s1),
 				ScheduleRepeatDays.create(DayOfWeek.WED, s1),
 				ScheduleRepeatDays.create(DayOfWeek.THU, s1),
+				ScheduleRepeatDays.create(DayOfWeek.FRI, s1),
 
 				// (MON, WED) -> 2
 				ScheduleRepeatDays.create(DayOfWeek.MON, s2),
@@ -553,6 +554,7 @@ public class ScheduleService {
 
 				// (WED, FRI) -> 6
 				ScheduleRepeatDays.create(DayOfWeek.WED, s5),
+				ScheduleRepeatDays.create(DayOfWeek.FRI, s5),
 
 				// (MON, WED) -> 7
 				ScheduleRepeatDays.create(DayOfWeek.MON, s6),
