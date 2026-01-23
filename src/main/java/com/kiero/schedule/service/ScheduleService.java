@@ -495,7 +495,7 @@ public class ScheduleService {
 					ScheduleColor.SCHEDULE3, true),
 
 				Schedule.create(parent, child, "데모데이",
-					LocalTime.parse("01:00:00"), LocalTime.parse("01:10:00"),
+					LocalTime.parse("08:00:00"), LocalTime.parse("10:00:00"),
 					ScheduleColor.SCHEDULE5, false),
 
 				Schedule.create(parent, child, "피아노",
@@ -515,7 +515,7 @@ public class ScheduleService {
 					ScheduleColor.SCHEDULE3, false),
 
 				Schedule.create(parent, child, "발표하기",
-					LocalTime.parse("01:10:00"), LocalTime.parse("05:00:00"),
+					LocalTime.parse("10:30:00"), LocalTime.parse("12:00:00"),
 					ScheduleColor.SCHEDULE2, false)
 			);
 
@@ -543,7 +543,7 @@ public class ScheduleService {
 				ScheduleDetail.create(LocalDate.parse("2026-01-19"), null, null, ScheduleStatus.PENDING, null, s8),
 				ScheduleDetail.create(LocalDate.parse("2026-01-21"), null, null, ScheduleStatus.PENDING, null, s8),
 				// 발표하기 일정 - imageUrl, ScheduleStatus.VERIFIED, stoneType GRIT
-				ScheduleDetail.create(LocalDate.parse("2026-01-23"), "https://kiero-bucket.s3.ap-northeast-2.amazonaws.com/schedule/%E1%84%8E%E1%85%AC%E1%84%80%E1%85%B3%E1%86%AB%E1%84%8B%E1%85%A7%E1%86%BC+%E1%84%87%E1%85%A1%E1%86%AF%E1%84%91%E1%85%AD%E1%84%89%E1%85%A1%E1%84%8C%E1%85%B5%E1%86%AB.jpeg", null, ScheduleStatus.VERIFIED, StoneType.GRIT, s9)
+				ScheduleDetail.create(LocalDate.parse("2026-01-23"), "https://kiero-bucket.s3.ap-northeast-2.amazonaws.com/schedule/%E1%84%83%E1%85%A6%E1%84%86%E1%85%A9%E1%84%83%E1%85%A6%E1%84%8B%E1%85%B5+%E1%84%89%E1%85%A1%E1%84%8C%E1%85%B5%E1%86%AB.jpeg", null, ScheduleStatus.COMPLETED, StoneType.GRIT, s9)
 			);
 			scheduleDetailRepository.saveAll(details);
 
