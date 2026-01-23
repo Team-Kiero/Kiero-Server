@@ -67,6 +67,8 @@
 | **`DB / Storage / Cache`** | AWS RDS (MySQL), AWS S3, Redis | 영속 데이터 저장, 파일 저장 및 캐싱 처리 |
 | **`Cache/Inmemory Store`** | Redis | 캐싱, 토큰 관리 및 빠른 데이터 조회 |
 | **`Monitoring`** | Prometheus, Grafana | 서버 메트릭 수집 및 시각화 모니터링 |
+| **`Error Tracking`** | Sentry | 에러 추적 및 Slack/Discord 알림 |
+| **`Uptime Monitoring`** | BetterStack, UptimeRobot | 헬스체크 및 장애 알림 |
 | **`Infrastructure`** | AWS EC2, Docker, GitHub Actions | 서버 인프라 구성 및 CI/CD 자동화 |
 | **`Collaboration Tools`** | GitHub, Notion, Swagger, Figma, NocoDB | 협업, 문서화 및 API 명세 관리 |
 
