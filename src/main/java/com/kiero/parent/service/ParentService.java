@@ -40,26 +40,6 @@ public class ParentService {
 	private final TokenService tokenService;
 	private final ParentChildRepository parentChildRepository;
 
-	/*
-	데모데이용 임시 메서드
-	 */
-	public List<Long> getMyChildIds(Long parentId) {
-		return parentChildRepository.findChildIdsByParentId(parentId);
-	}
-
-	public List<Long> findParentIdByChildId(Long childId) {
-		return parentChildRepository.findParentsByChildId(childId).stream()
-			.map(Parent::getId)
-			.toList();
-	}
-	/*
-	 */
-
-	@Transactional
-	public void deleteParentChildByChildIds(List<Long> childIds) {
-		parentChildRepository.deleteByChildIdIn(childIds);
-	}
-
 	@Transactional
 	public ParentLoginResponse loginWithAuthorizationCode(String authorizationCode, SocialLoginRequest request) {
 

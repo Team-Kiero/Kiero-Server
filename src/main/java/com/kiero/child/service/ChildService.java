@@ -1,7 +1,15 @@
 package com.kiero.child.service;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.kiero.child.domain.Child;
 import com.kiero.child.exception.ChildErrorCode;
+import com.kiero.child.presentation.dto.ChildJoinedEvent;
 import com.kiero.child.presentation.dto.ChildLoginResponse;
 import com.kiero.child.presentation.dto.ChildMeResponse;
 import com.kiero.child.presentation.dto.ChildSignupRequest;
@@ -16,17 +24,9 @@ import com.kiero.parent.domain.Parent;
 import com.kiero.parent.domain.ParentChild;
 import com.kiero.parent.repository.ParentChildRepository;
 import com.kiero.parent.repository.ParentRepository;
-import com.kiero.child.presentation.dto.ChildJoinedEvent;
 
-import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -97,13 +97,4 @@ public class ChildService {
         return ChildMeResponse.from(child, today);
     }
 
-    /*
-    데모데이용 임시 메서드
-     */
-    @Transactional
-    public void deleteChildByIds(List<Long> childIds) {
-        childRepository.deleteByIdIn(childIds);
-    }
-    /*
-     */
 }

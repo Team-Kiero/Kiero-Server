@@ -34,10 +34,4 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		Pageable pageable
 	);
 
-	/*
-	데모데이용 임시 메서드
-	 */
-	void deleteByChildIdIn(List<Long> childIds);
-	/*
-	 */
 }
