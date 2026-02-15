@@ -1,5 +1,14 @@
 package com.kiero.mission.service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.kiero.child.domain.Child;
 import com.kiero.child.exception.ChildErrorCode;
 import com.kiero.child.repository.ChildRepository;
@@ -9,31 +18,16 @@ import com.kiero.mission.exception.MissionErrorCode;
 import com.kiero.mission.presentation.dto.MissionBulkCreateRequest;
 import com.kiero.mission.presentation.dto.MissionCompleteEvent;
 import com.kiero.mission.presentation.dto.MissionCreateRequest;
-import com.kiero.mission.presentation.dto.MissionResponse;
 import com.kiero.mission.presentation.dto.MissionCreatedEvent;
+import com.kiero.mission.presentation.dto.MissionResponse;
 import com.kiero.mission.repository.MissionRepository;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.exception.ParentErrorCode;
 import com.kiero.parent.repository.ParentChildRepository;
 import com.kiero.parent.repository.ParentRepository;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -46,9 +40,6 @@ public class MissionService {
     private final ParentRepository parentRepository;
     private final ChildRepository childRepository;
     private final ParentChildRepository parentChildRepository;
-
-    private final EntityManager em;
-    private final ResourceLoader resourceLoader;
 
   @Transactional
   public MissionResponse createMission(Long parentId, Long childId, MissionCreateRequest request) {
@@ -203,45 +194,6 @@ public class MissionService {
         .map(MissionResponse::from)
         .toList();
   }
-
-    /*
-    데모데이용 임시 메서드
-    */
-    @Transactional
-    public void deleteMissionsByChildIds(List<Long> childIds) {
-        missionRepository.deleteByChildIdIn(childIds);
-    }
-    /*
-     */
-
-    /*
-    솝트 데모데이 때 더미데이터를 넣기 위한 메서드
-    */
-    @Transactional
-    public void insertDummy(List<Long> parentIds, Long childId) {
-        String sqlPath = "sql/demo_mission_insert_dummy.sql";
-        String sql = loadSql(sqlPath);
-
-        Query missionQuery = em.createNativeQuery(sql);
-
-        for (Long parentId : parentIds) {
-            missionQuery.setParameter("parentId", parentId);
-            missionQuery.setParameter("childId", childId);
-            log.info("mission query: " + missionQuery);
-            missionQuery.executeUpdate();
-        }
-    }
-
-    private String loadSql(String path) {
-        try {
-            Resource resource = resourceLoader.getResource("classpath:" + path);
-            return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalStateException("더미 SQL 로딩 실패", e);
-        }
-    }
-    /*
-     */
 
     private void validateParentChildRelation(Long parentId, Long childId) {
         if (!parentChildRepository.existsByParentIdAndChildId(parentId, childId)) {

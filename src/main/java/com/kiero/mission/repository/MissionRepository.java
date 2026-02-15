@@ -31,10 +31,4 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
     @Query("SELECT m FROM Mission m WHERE m.id = :missionId")
     Optional<Mission> findByIdWithLock(@Param("missionId") Long missionId);
 
-    /*
-    데모데이용 임시 메서드
-     */
-    void deleteByChildIdIn(List<Long> childIds);
-    /*
-     */
 }
