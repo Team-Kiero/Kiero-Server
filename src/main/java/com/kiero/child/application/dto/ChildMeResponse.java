@@ -1,10 +1,10 @@
-package com.kiero.child.presentation.dto;
-
-import com.kiero.child.domain.Child;
+package com.kiero.child.application.dto;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+
+import com.kiero.child.domain.Child;
 
 public record ChildMeResponse(
         String lastName,

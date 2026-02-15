@@ -20,7 +20,7 @@ import com.kiero.global.exception.KieroException;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.presentation.dto.ParentLoginResponse;
 import com.kiero.child.domain.Child;
-import com.kiero.child.presentation.dto.ChildLoginResponse;
+import com.kiero.child.application.dto.ChildLoginResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
