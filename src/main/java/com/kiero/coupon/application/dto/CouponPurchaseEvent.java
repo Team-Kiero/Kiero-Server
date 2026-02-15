@@ -1,4 +1,4 @@
-package com.kiero.coupon.presentation.dto;
+package com.kiero.coupon.application.dto;
 
 import java.time.LocalDateTime;
 

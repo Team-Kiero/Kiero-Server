@@ -1,9 +1,11 @@
-package com.kiero.coupon.exception;
+package com.kiero.coupon.application.exception;
+
+import org.springframework.http.HttpStatus;
 
 import com.kiero.global.response.base.BaseCode;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
