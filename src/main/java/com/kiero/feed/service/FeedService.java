@@ -12,16 +12,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.child.domain.Child;
-import com.kiero.child.exception.ChildErrorCode;
-import com.kiero.child.repository.ChildRepository;
+import com.kiero.child.application.exception.ChildErrorCode;
+import com.kiero.child.adapter.out.persistence.ChildRepository;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.feed.presentation.dto.FeedCursor;
 import com.kiero.feed.presentation.dto.FeedGetResponse;
 import com.kiero.feed.presentation.dto.FeedItemDto;
 import com.kiero.feed.repository.FeedItemRepository;
 import com.kiero.global.exception.KieroException;
-import com.kiero.parent.exception.ParentErrorCode;
-import com.kiero.parent.repository.ParentChildRepository;
+import com.kiero.parent.application.exception.ParentErrorCode;
+import com.kiero.parent.adapter.out.persistence.ParentChildRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;

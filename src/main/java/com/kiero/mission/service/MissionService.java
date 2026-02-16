@@ -1,8 +1,8 @@
 package com.kiero.mission.service;
 
 import com.kiero.child.domain.Child;
-import com.kiero.child.exception.ChildErrorCode;
-import com.kiero.child.repository.ChildRepository;
+import com.kiero.child.application.exception.ChildErrorCode;
+import com.kiero.child.adapter.out.persistence.ChildRepository;
 import com.kiero.global.exception.KieroException;
 import com.kiero.mission.domain.Mission;
 import com.kiero.mission.exception.MissionErrorCode;
@@ -13,9 +13,9 @@ import com.kiero.mission.presentation.dto.MissionResponse;
 import com.kiero.mission.presentation.dto.MissionCreatedEvent;
 import com.kiero.mission.repository.MissionRepository;
 import com.kiero.parent.domain.Parent;
-import com.kiero.parent.exception.ParentErrorCode;
-import com.kiero.parent.repository.ParentChildRepository;
-import com.kiero.parent.repository.ParentRepository;
+import com.kiero.parent.application.exception.ParentErrorCode;
+import com.kiero.parent.adapter.out.persistence.ParentChildRepository;
+import com.kiero.parent.adapter.out.persistence.ParentRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;

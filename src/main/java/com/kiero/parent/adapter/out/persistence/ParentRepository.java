@@ -1,4 +1,4 @@
-package com.kiero.parent.repository;
+package com.kiero.parent.adapter.out.persistence;
 
 import java.util.Optional;
 

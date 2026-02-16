@@ -1,4 +1,4 @@
-package com.kiero.parent.exception;
+package com.kiero.parent.application.exception;
 
 import org.springframework.http.HttpStatus;
 

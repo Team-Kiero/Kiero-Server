@@ -10,7 +10,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kiero.child.domain.Child;
-import com.kiero.coupon.presentation.dto.CouponPurchaseEvent;
+import com.kiero.coupon.application.dto.CouponPurchaseEvent;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.feed.domain.enums.EventType;
 import com.kiero.feed.infrastructure.event.dto.FeedItemsCreatedEvent;
@@ -18,7 +18,7 @@ import com.kiero.feed.infrastructure.event.dto.FeedItemsCreatedEvent.FeedItemInf
 import com.kiero.feed.repository.FeedItemRepository;
 import com.kiero.mission.presentation.dto.MissionCompleteEvent;
 import com.kiero.parent.domain.Parent;
-import com.kiero.parent.repository.ParentChildRepository;
+import com.kiero.parent.adapter.out.persistence.ParentChildRepository;
 import com.kiero.schedule.presentation.dto.NowScheduleCompleteEvent;
 import com.kiero.schedule.presentation.dto.FireLitEvent;
 

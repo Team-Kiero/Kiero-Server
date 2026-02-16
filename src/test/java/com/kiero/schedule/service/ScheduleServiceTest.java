@@ -26,13 +26,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.kiero.child.domain.Child;
-import com.kiero.child.exception.ChildErrorCode;
-import com.kiero.child.repository.ChildRepository;
+import com.kiero.child.application.exception.ChildErrorCode;
+import com.kiero.child.adapter.out.persistence.ChildRepository;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.domain.Parent;
-import com.kiero.parent.exception.ParentErrorCode;
-import com.kiero.parent.repository.ParentChildRepository;
-import com.kiero.parent.repository.ParentRepository;
+import com.kiero.parent.application.exception.ParentErrorCode;
+import com.kiero.parent.adapter.out.persistence.ParentChildRepository;
+import com.kiero.parent.adapter.out.persistence.ParentRepository;
 import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;

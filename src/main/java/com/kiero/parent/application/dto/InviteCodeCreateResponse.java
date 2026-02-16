@@ -1,4 +1,4 @@
-package com.kiero.parent.presentation.dto;
+package com.kiero.parent.application.dto;
 
 public record InviteCodeCreateResponse(
         String code,

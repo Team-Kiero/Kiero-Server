@@ -1,7 +1,7 @@
-package com.kiero.parent.service.socialService;
+package com.kiero.parent.adapter.out.social;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
 import com.kiero.global.auth.client.dto.SocialLoginResponse;
@@ -12,16 +12,17 @@ import com.kiero.global.auth.client.kakao.KakaoAuthApiClient;
 import com.kiero.global.auth.client.kakao.dto.KakaoAccessTokenResponse;
 import com.kiero.global.auth.client.kakao.dto.KakaoUserResponse;
 import com.kiero.global.exception.KieroException;
+import com.kiero.parent.application.port.out.SocialLoginPort;
 
 import feign.FeignException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
+@Component
 @Slf4j
 @RequiredArgsConstructor
-public class KakaoSocialService implements SocialService {
+public class KakaoSocialLoginAdapter implements SocialLoginPort {
 
 	private static final String AUTH_CODE = "authorization_code";
 
@@ -39,12 +40,10 @@ public class KakaoSocialService implements SocialService {
 
 	@Transactional
 	@Override
-	public SocialLoginResponse login(
-		final String authorizationCode,
-		final SocialLoginRequest loginRequest
-	) {
-		log.info("카카오 로그인을 시도합니다. - Authorization Code: {}, Provider: {}", authorizationCode,
-			loginRequest.provider());
+	public SocialLoginResponse login(final String authorizationCode, final SocialLoginRequest loginRequest) {
+
+		log.info("카카오 로그인을 시도합니다. - Authorization Code: {}, Provider: {}",
+			authorizationCode, loginRequest.provider());
 
 		String accessToken;
 		try {
@@ -57,15 +56,13 @@ public class KakaoSocialService implements SocialService {
 		return getLoginDto(loginRequest.provider(), getUserInfo(accessToken));
 	}
 
+	@Override
 	public SocialLoginResponse loginWithAccessToken(String kakaoAccessToken) {
-
 		KakaoUserResponse kakaoUserResponse = getUserInfo("Bearer " + kakaoAccessToken);
 		return getLoginDto(Provider.KAKAO, kakaoUserResponse);
 	}
 
-	private String getOAuth2Authentication(
-		final String authorizationCode
-	) {
+	private String getOAuth2Authentication(final String authorizationCode) {
 		KakaoAccessTokenResponse response;
 		try {
 			response = kakaoAuthApiClient.getOAuth2AccessToken(
@@ -81,10 +78,7 @@ public class KakaoSocialService implements SocialService {
 		return "Bearer " + response.accessToken();
 	}
 
-	private KakaoUserResponse getUserInfo(
-		final String accessToken
-	) {
-
+	private KakaoUserResponse getUserInfo(final String accessToken) {
 		KakaoUserResponse response;
 		try {
 			response = kakaoApiClient.getUserInformation(accessToken);
@@ -96,12 +90,7 @@ public class KakaoSocialService implements SocialService {
 		return response;
 	}
 
-	private SocialLoginResponse getLoginDto(
-		final Provider provider,
-		final KakaoUserResponse kakaoUserResponse
-	) {
-
-		// 카카오 기본이미지일 시 키어로 디폴트 이미지 설정 필요.
+	private SocialLoginResponse getLoginDto(final Provider provider, final KakaoUserResponse kakaoUserResponse) {
 		String profileImage = kakaoUserResponse.kakaoAccount().profile().profileImageUrl();
 		String image =
 			(profileImage == null) ? kakaoUserResponse.kakaoAccount().profile().thumbnailImageUrl() : profileImage;
@@ -114,6 +103,4 @@ public class KakaoSocialService implements SocialService {
 			image
 		);
 	}
-
 }
-

@@ -1,4 +1,4 @@
-package com.kiero.parent.repository;
+package com.kiero.parent.adapter.out.persistence;
 
 import java.util.List;
 
@@ -30,10 +30,4 @@ public interface ParentChildRepository extends JpaRepository<ParentChild, Long> 
 		""")
 	List<Parent> findParentsByChildId(@Param("childId") Long childId);
 
-	/*
-	데모데이용 임시 메서드
-	 */
-	void deleteByChildIdIn(List<Long> childIds);
-	/*
-	 */
 }

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 import com.kiero.child.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
-import com.kiero.parent.repository.ParentRepository;
+import com.kiero.parent.adapter.out.persistence.ParentRepository;
 
 import lombok.RequiredArgsConstructor;
 
