@@ -1,12 +1,9 @@
-package com.kiero.global.auth.jwt.service;
+package com.kiero.global.auth.jwt.infrastructure.persistence.redis;
 
 import org.springframework.stereotype.Service;
 
 import com.kiero.global.auth.enums.Role;
-import com.kiero.global.auth.jwt.exception.TokenErrorCode;
-import com.kiero.global.auth.redis.Token;
-import com.kiero.global.auth.redis.TokenRepository;
-import com.kiero.global.auth.redis.util.TokenKeyGenerator;
+import com.kiero.global.auth.jwt.application.exception.TokenErrorCode;
 import com.kiero.global.exception.KieroException;
 
 import jakarta.transaction.Transactional;
@@ -33,7 +30,7 @@ public class TokenService {
 		String key = TokenKeyGenerator.refreshKey(memberId, role);
 		return tokenRepository.findById(key)
 			.map(Token::getRefreshToken)
-			.orElseThrow(()-> new KieroException(TokenErrorCode.REFRESH_TOKEN_NOT_FOUND));
+			.orElseThrow(() -> new KieroException(TokenErrorCode.REFRESH_TOKEN_NOT_FOUND));
 	}
 
 	@Transactional
@@ -56,8 +53,8 @@ public class TokenService {
 		}
 
 		List<String> keys = memberIds.stream()
-				.map(id -> TokenKeyGenerator.refreshKey(id, role))
-				.toList();
+			.map(id -> TokenKeyGenerator.refreshKey(id, role))
+			.toList();
 
 		tokenRepository.deleteAllById(keys);
 

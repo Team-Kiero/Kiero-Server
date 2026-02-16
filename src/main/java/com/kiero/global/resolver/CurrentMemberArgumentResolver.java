@@ -13,7 +13,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.auth.enums.Role;
-import com.kiero.global.auth.jwt.exception.TokenErrorCode;
+import com.kiero.global.auth.jwt.application.exception.TokenErrorCode;
 import com.kiero.global.exception.KieroException;
 
 @Component

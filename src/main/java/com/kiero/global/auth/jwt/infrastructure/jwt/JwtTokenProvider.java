@@ -1,4 +1,4 @@
-package com.kiero.global.auth.jwt.service;
+package com.kiero.global.auth.jwt.infrastructure.jwt;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -15,7 +15,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import com.kiero.global.auth.enums.Role;
-import com.kiero.global.auth.jwt.enums.JwtValidationType;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;

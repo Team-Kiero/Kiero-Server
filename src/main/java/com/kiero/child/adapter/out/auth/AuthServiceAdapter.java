@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import com.kiero.child.application.dto.ChildLoginResponse;
 import com.kiero.child.application.port.out.AuthGeneratePort;
 import com.kiero.child.domain.Child;
-import com.kiero.global.auth.jwt.service.AuthService;
+import com.kiero.global.auth.jwt.infrastructure.auth.AuthService;
 
 import lombok.RequiredArgsConstructor;
 

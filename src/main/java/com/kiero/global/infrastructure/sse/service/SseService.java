@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.kiero.global.auth.jwt.service.JwtTokenProvider;
+import com.kiero.global.auth.jwt.infrastructure.jwt.JwtTokenProvider;
 import com.kiero.global.infrastructure.sse.repository.SseEmitterRepository;
 import com.kiero.global.infrastructure.sse.repository.SseEmitterWrapper;
 

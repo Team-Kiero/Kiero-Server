@@ -1,4 +1,4 @@
-package com.kiero.global.auth.redis;
+package com.kiero.global.auth.jwt.infrastructure.persistence.redis;
 
 import java.util.Optional;
 

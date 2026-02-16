@@ -1,4 +1,4 @@
-package com.kiero.global.auth.jwt.exception;
+package com.kiero.global.auth.jwt.application.exception;
 
 import org.springframework.http.HttpStatus;
 

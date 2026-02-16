@@ -1,9 +1,10 @@
-package com.kiero.global.auth.jwt.service;
+package com.kiero.global.auth.jwt.infrastructure.security;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
+import com.kiero.global.auth.jwt.infrastructure.jwt.JwtTokenProvider;
 import com.kiero.global.exception.KieroException;
 import com.kiero.global.response.code.ErrorCode;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,10 +16,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.kiero.global.auth.enums.Role;
-import com.kiero.global.auth.jwt.enums.JwtValidationType;
-import com.kiero.global.auth.security.ParentAuthentication;
-import com.kiero.global.auth.security.ChildAuthentication;
-import com.kiero.global.auth.security.AdminAuthentication;
+import com.kiero.global.auth.jwt.infrastructure.jwt.JwtValidationType;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

@@ -1,10 +1,9 @@
-package com.kiero.global.auth.redis;
+package com.kiero.global.auth.jwt.infrastructure.persistence.redis;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 
 import com.kiero.global.auth.enums.Role;
-import com.kiero.global.auth.redis.util.TokenKeyGenerator;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,6 +24,6 @@ public class Token {
 
 	public static Token of(Long memberId, String refreshToken, Role role) {
 		String key = TokenKeyGenerator.refreshKey(memberId, role);
-		return new Token(key, memberId,refreshToken, role.name());
+		return new Token(key, memberId, refreshToken, role.name());
 	}
 }

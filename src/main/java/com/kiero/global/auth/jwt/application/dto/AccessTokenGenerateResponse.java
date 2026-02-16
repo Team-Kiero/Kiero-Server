@@ -1,4 +1,4 @@
-package com.kiero.global.auth.jwt.dto;
+package com.kiero.global.auth.jwt.application.dto;
 
 public record AccessTokenGenerateResponse(
 	String accessToken

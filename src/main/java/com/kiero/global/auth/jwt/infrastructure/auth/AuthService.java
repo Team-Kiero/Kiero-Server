@@ -1,4 +1,4 @@
-package com.kiero.global.auth.jwt.service;
+package com.kiero.global.auth.jwt.infrastructure.auth;
 
 import java.util.Collection;
 import java.util.List;
@@ -9,16 +9,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.global.auth.enums.Role;
-import com.kiero.global.auth.jwt.enums.JwtValidationType;
-import com.kiero.global.auth.jwt.dto.AccessTokenGenerateResponse;
-import com.kiero.global.auth.jwt.exception.TokenErrorCode;
-import com.kiero.global.auth.security.AdminAuthentication;
-import com.kiero.global.auth.security.ParentAuthentication;
-import com.kiero.global.auth.security.ChildAuthentication;
+import com.kiero.global.auth.jwt.infrastructure.jwt.JwtValidationType;
+import com.kiero.global.auth.jwt.application.dto.AccessTokenGenerateResponse;
+import com.kiero.global.auth.jwt.application.exception.TokenErrorCode;
+import com.kiero.global.auth.jwt.infrastructure.jwt.JwtTokenProvider;
+import com.kiero.global.auth.jwt.infrastructure.persistence.redis.TokenService;
+import com.kiero.global.auth.jwt.infrastructure.security.AdminAuthentication;
+import com.kiero.global.auth.jwt.infrastructure.security.ParentAuthentication;
+import com.kiero.global.auth.jwt.infrastructure.security.ChildAuthentication;
 
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.domain.Parent;
-import com.kiero.parent.presentation.dto.ParentLoginResponse;
+import com.kiero.parent.application.dto.ParentLoginResponse;
 import com.kiero.child.domain.Child;
 import com.kiero.child.application.dto.ChildLoginResponse;
 

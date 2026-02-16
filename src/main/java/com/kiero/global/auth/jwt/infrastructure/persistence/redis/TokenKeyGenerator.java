@@ -1,4 +1,4 @@
-package com.kiero.global.auth.redis.util;
+package com.kiero.global.auth.jwt.infrastructure.persistence.redis;
 
 import com.kiero.global.auth.enums.Role;
 
