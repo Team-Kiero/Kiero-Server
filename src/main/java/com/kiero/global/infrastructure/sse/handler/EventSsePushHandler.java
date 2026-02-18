@@ -11,7 +11,7 @@ import com.kiero.feed.domain.enums.EventType;
 import com.kiero.feed.infrastructure.event.dto.FeedItemsCreatedEvent;
 import com.kiero.feed.infrastructure.event.dto.FeedItemsCreatedEvent.FeedItemInfo;
 import com.kiero.global.infrastructure.sse.domain.SseEventType;
-import com.kiero.child.presentation.dto.ChildJoinedEvent;
+import com.kiero.child.application.dto.ChildJoinedEvent;
 import com.kiero.mission.presentation.dto.MissionCreatedEvent;
 import com.kiero.schedule.application.dto.ScheduleCreatedEvent;
 import com.kiero.global.infrastructure.sse.service.EventSseService;
