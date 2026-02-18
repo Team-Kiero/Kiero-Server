@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 
 public interface ScheduleDetailPersistencePort {
@@ -25,5 +24,4 @@ public interface ScheduleDetailPersistencePort {
 
 	void saveAll(List<ScheduleDetail> details);
 
-	void deleteByScheduleIn(List<Schedule> schedules);
 }

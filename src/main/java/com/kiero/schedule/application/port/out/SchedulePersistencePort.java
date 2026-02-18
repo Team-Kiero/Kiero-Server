@@ -26,5 +26,4 @@ public interface SchedulePersistencePort {
 		LocalDate today
 	);
 
-	void deleteAll(List<Schedule> schedules);
 }

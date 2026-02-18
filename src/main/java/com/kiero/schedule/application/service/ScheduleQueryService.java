@@ -223,10 +223,6 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 		return ScheduleTabResponse.of(isFireLitToday, recurringDtos, normalDtos);
 	}
 
-	// ======================
-	// private helpers
-	// ======================
-
 	private void checkIsExistsAndAccessibleByParentIdAndChildId(Long parentId, Long childId) {
 		Parent parent = parentLoadPort.findById(parentId)
 			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));

@@ -75,8 +75,6 @@ public class ScheduleServiceTest {
 	ScheduleDetailRepository scheduleDetailRepository;
 	@Mock
 	ApplicationEventPublisher eventPublisher;
-	@Mock
-	Clock clock;
 
 	@InjectMocks
 	ScheduleQueryService scheduleQueryService;
