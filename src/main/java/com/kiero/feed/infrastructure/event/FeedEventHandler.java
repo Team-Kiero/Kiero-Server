@@ -19,8 +19,8 @@ import com.kiero.feed.repository.FeedItemRepository;
 import com.kiero.mission.presentation.dto.MissionCompleteEvent;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.adapter.out.persistence.ParentChildRepository;
-import com.kiero.schedule.presentation.dto.NowScheduleCompleteEvent;
-import com.kiero.schedule.presentation.dto.FireLitEvent;
+import com.kiero.schedule.application.dto.NowScheduleCompleteEvent;
+import com.kiero.schedule.application.dto.FireLitEvent;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

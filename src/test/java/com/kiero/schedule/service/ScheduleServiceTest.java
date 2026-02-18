@@ -41,20 +41,20 @@ import com.kiero.schedule.domain.enums.ScheduleColor;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
 import com.kiero.schedule.domain.enums.TodayScheduleStatus;
-import com.kiero.schedule.exception.ScheduleErrorCode;
-import com.kiero.schedule.presentation.dto.DefaultScheduleContentResponse;
-import com.kiero.schedule.presentation.dto.FireLitEvent;
-import com.kiero.schedule.presentation.dto.FireLitResponse;
-import com.kiero.schedule.presentation.dto.NormalScheduleDto;
-import com.kiero.schedule.presentation.dto.NowScheduleCompleteEvent;
-import com.kiero.schedule.presentation.dto.NowScheduleCompleteRequest;
-import com.kiero.schedule.presentation.dto.RecurringScheduleDto;
-import com.kiero.schedule.presentation.dto.ScheduleAddRequest;
-import com.kiero.schedule.presentation.dto.ScheduleTabResponse;
-import com.kiero.schedule.presentation.dto.TodayScheduleResponse;
-import com.kiero.schedule.repository.ScheduleDetailRepository;
-import com.kiero.schedule.repository.ScheduleRepeatDaysRepository;
-import com.kiero.schedule.repository.ScheduleRepository;
+import com.kiero.schedule.application.exception.ScheduleErrorCode;
+import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
+import com.kiero.schedule.application.dto.FireLitEvent;
+import com.kiero.schedule.application.dto.FireLitResponse;
+import com.kiero.schedule.application.dto.NormalScheduleDto;
+import com.kiero.schedule.application.dto.NowScheduleCompleteEvent;
+import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
+import com.kiero.schedule.application.dto.RecurringScheduleDto;
+import com.kiero.schedule.application.dto.ScheduleAddRequest;
+import com.kiero.schedule.application.dto.ScheduleTabResponse;
+import com.kiero.schedule.application.dto.TodayScheduleResponse;
+import com.kiero.schedule.adapter.out.persistence.ScheduleDetailRepository;
+import com.kiero.schedule.adapter.out.persistence.ScheduleRepeatDaysRepository;
+import com.kiero.schedule.adapter.out.persistence.ScheduleRepository;
 
 @ExtendWith(MockitoExtension.class)
 public class ScheduleServiceTest {

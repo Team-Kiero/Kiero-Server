@@ -13,7 +13,7 @@ import com.kiero.feed.infrastructure.event.dto.FeedItemsCreatedEvent.FeedItemInf
 import com.kiero.global.infrastructure.sse.domain.SseEventType;
 import com.kiero.child.presentation.dto.ChildJoinedEvent;
 import com.kiero.mission.presentation.dto.MissionCreatedEvent;
-import com.kiero.schedule.presentation.dto.ScheduleCreatedEvent;
+import com.kiero.schedule.application.dto.ScheduleCreatedEvent;
 import com.kiero.global.infrastructure.sse.service.EventSseService;
 
 import lombok.RequiredArgsConstructor;
