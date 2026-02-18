@@ -123,12 +123,6 @@ public class JwtTokenProvider {
 		}
 	}
 
-	public String getTokenTypeFromJwt(String token) {
-		Claims claims = getBody(token);
-		Object raw = claims.get(TOKEN_TYPE);
-		return raw == null ? null : String.valueOf(raw);
-	}
-
 	public LocalDateTime getExpirationDateTime(String token) {
 		Claims claims = getBody(token);
 		Date expiration = claims.getExpiration();
