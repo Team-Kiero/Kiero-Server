@@ -63,6 +63,10 @@ public class ParentService {
 
 	public Parent findParentOrCreateParentWithSocialLoginResponse(SocialLoginResponse response){
 		return parentRepository.findParentBySocialIdAndProvider(response.socialId(), response.provider())
+			.map(parent -> {
+				parent.updateKakaoProfile(response.name(), response.email(), response.image());
+				return parent;
+			})
 			.orElseGet(()-> saveSocialInfoToParent(response));
 	}
 
