@@ -7,9 +7,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.kiero.feeds.domain.enums.EventType;
-import com.kiero.feeds.infrastructure.dto.FeedItemsCreatedEvent;
-import com.kiero.feeds.infrastructure.dto.FeedItemsCreatedEvent.FeedItemInfo;
+import com.kiero.feed.domain.enums.EventType;
+import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent;
+import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent.FeedItemInfo;
 import com.kiero.global.infrastructure.sse.domain.SseEventType;
 import com.kiero.child.application.dto.ChildJoinedEvent;
 import com.kiero.mission.application.dto.MissionCreatedEvent;

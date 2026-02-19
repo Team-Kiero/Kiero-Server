@@ -49,8 +49,4 @@ public class SchedulePersistenceAdapter implements SchedulePersistencePort {
 		return scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(startOfToday, todayDayOfWeek, today);
 	}
 
-	@Override
-	public void deleteAll(List<Schedule> schedules) {
-		scheduleRepository.deleteAll(schedules);
-	}
 }

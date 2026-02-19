@@ -7,7 +7,6 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
-import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 
 import lombok.RequiredArgsConstructor;
@@ -58,8 +57,4 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 		scheduleDetailRepository.saveAll(details);
 	}
 
-	@Override
-	public void deleteByScheduleIn(List<Schedule> schedules) {
-		scheduleDetailRepository.deleteByScheduleIn(schedules);
-	}
 }
