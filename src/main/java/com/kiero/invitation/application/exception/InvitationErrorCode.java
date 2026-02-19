@@ -1,4 +1,4 @@
-package com.kiero.invitation.exception;
+package com.kiero.invitation.application.exception;
 
 import com.kiero.global.response.base.BaseCode;
 import lombok.Getter;

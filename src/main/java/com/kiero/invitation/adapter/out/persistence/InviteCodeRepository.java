@@ -1,11 +1,8 @@
-package com.kiero.invitation.repository;
+package com.kiero.invitation.adapter.out.persistence;
 
 import com.kiero.invitation.domain.InviteCode;
 import org.springframework.data.repository.CrudRepository;
 
-import java.util.Optional;
-
 public interface InviteCodeRepository extends CrudRepository<InviteCode, String> {
 
-    Optional<InviteCode> findByParentId(Long parentId);
 }

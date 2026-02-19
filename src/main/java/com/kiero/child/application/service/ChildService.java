@@ -25,7 +25,7 @@ import com.kiero.child.domain.Child;
 import com.kiero.global.auth.enums.Role;
 import com.kiero.global.exception.KieroException;
 import com.kiero.invitation.domain.InviteCode;
-import com.kiero.invitation.exception.InvitationErrorCode;
+import com.kiero.invitation.application.exception.InvitationErrorCode;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.domain.ParentChild;
 

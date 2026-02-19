@@ -1,4 +1,4 @@
-package com.kiero.invitation.enums;
+package com.kiero.invitation.domain.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

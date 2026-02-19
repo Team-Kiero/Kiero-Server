@@ -13,7 +13,7 @@ import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
-import com.kiero.invitation.service.InviteCodeService;
+import com.kiero.invitation.application.service.InviteCodeService;
 import com.kiero.parent.application.dto.ChildInfoResponse;
 import com.kiero.parent.application.dto.InviteStatusResponse;
 import com.kiero.parent.application.dto.ParentLoginResponse;
