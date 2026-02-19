@@ -14,10 +14,10 @@ import java.util.function.Supplier;
 
 import org.springframework.stereotype.Service;
 
+import com.kiero.holiday.application.port.out.HolidayLoadPort;
 import com.kiero.mission.application.dto.MissionSuggestionResponse;
 import com.kiero.mission.application.dto.MissionSuggestionResponse.SuggestedMission;
 import com.kiero.mission.application.port.in.MissionSuggestionUseCase;
-import com.kiero.mission.application.port.out.HolidayQueryPort;
 import com.kiero.mission.application.port.out.MissionSuggestionAiPort;
 
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ public class MissionSuggestionService implements MissionSuggestionUseCase {
 	private static final int CALENDAR_REF_DAYS = 60;
 
 	private final MissionSuggestionAiPort aiPort;
-	private final HolidayQueryPort holidayQueryPort;
+	private final HolidayLoadPort holidayLoadPort;
 	private final Clock clock;
 
 	@Override
@@ -124,7 +124,7 @@ public class MissionSuggestionService implements MissionSuggestionUseCase {
 
 	private LocalDate calculateNextSchoolDay(LocalDate startDate) {
 		LocalDate endDate = startDate.plusDays(60);
-		Set<LocalDate> holidays = holidayQueryPort.getHolidayDatesBetween(startDate, endDate);
+		Set<LocalDate> holidays = holidayLoadPort.findHolidayDatesBetween(startDate, endDate);
 
 		LocalDate candidate = startDate.plusDays(1);
 		for (int i = 0; i < 60; i++) {
