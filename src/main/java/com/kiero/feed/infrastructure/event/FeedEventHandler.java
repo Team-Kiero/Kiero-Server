@@ -16,7 +16,7 @@ import com.kiero.feed.domain.enums.EventType;
 import com.kiero.feed.infrastructure.event.dto.FeedItemsCreatedEvent;
 import com.kiero.feed.infrastructure.event.dto.FeedItemsCreatedEvent.FeedItemInfo;
 import com.kiero.feed.repository.FeedItemRepository;
-import com.kiero.missions.application.dto.MissionCompleteEvent;
+import com.kiero.mission.application.dto.MissionCompleteEvent;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.adapter.out.persistence.ParentChildRepository;
 import com.kiero.schedule.application.dto.NowScheduleCompleteEvent;
