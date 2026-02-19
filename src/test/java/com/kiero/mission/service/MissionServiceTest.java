@@ -24,13 +24,16 @@ import com.kiero.child.adapter.out.persistence.ChildRepository;
 import com.kiero.child.application.exception.ChildErrorCode;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
-import com.kiero.mission.domain.Mission;
-import com.kiero.mission.exception.MissionErrorCode;
-import com.kiero.mission.presentation.dto.MissionBulkCreateRequest;
-import com.kiero.mission.presentation.dto.MissionCompleteEvent;
-import com.kiero.mission.presentation.dto.MissionCreateRequest;
-import com.kiero.mission.presentation.dto.MissionResponse;
-import com.kiero.mission.repository.MissionRepository;
+import com.kiero.missions.application.service.MissionCommandService;
+import com.kiero.missions.application.service.MissionQueryService;
+import com.kiero.missions.application.service.MissionSuggestionService;
+import com.kiero.missions.domain.Mission;
+import com.kiero.missions.application.exception.MissionErrorCode;
+import com.kiero.missions.application.dto.MissionBulkCreateRequest;
+import com.kiero.missions.application.dto.MissionCompleteEvent;
+import com.kiero.missions.application.dto.MissionCreateRequest;
+import com.kiero.missions.application.dto.MissionResponse;
+import com.kiero.missions.adapter.out.persistence.MissionRepository;
 import com.kiero.parent.adapter.out.persistence.ParentChildRepository;
 import com.kiero.parent.adapter.out.persistence.ParentRepository;
 import com.kiero.parent.application.exception.ParentErrorCode;
@@ -51,7 +54,8 @@ public class MissionServiceTest {
 	ApplicationEventPublisher eventPublisher;
 
 	@InjectMocks
-	MissionService missionService;
+	MissionCommandService missionCommandService;
+
 
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
@@ -104,7 +108,7 @@ public class MissionServiceTest {
 				.willReturn(Optional.of(child));
 
 			// When
-			MissionResponse response = missionService.completeMission(childId, missionId);
+			MissionResponse response = missionCommandService.completeMission(childId, missionId);
 
 			// Then 1: 미션 완료 상태 확인
 			assertThat(mission.isCompleted()).isTrue();
@@ -142,7 +146,7 @@ public class MissionServiceTest {
 				.willReturn(Optional.empty());
 
 			// When & Then 1
-			assertThatThrownBy(() -> missionService.completeMission(childId, invalidMissionId))
+			assertThatThrownBy(() -> missionCommandService.completeMission(childId, invalidMissionId))
 				.isInstanceOf(KieroException.class)
 				.hasFieldOrPropertyWithValue("baseCode", MissionErrorCode.MISSION_NOT_FOUND);
 
@@ -160,7 +164,7 @@ public class MissionServiceTest {
 				.willReturn(Optional.of(mission));
 
 			// When & Then 1
-			assertThatThrownBy(() -> missionService.completeMission(otherChildId, missionId))
+			assertThatThrownBy(() -> missionCommandService.completeMission(otherChildId, missionId))
 				.isInstanceOf(KieroException.class)
 				.hasFieldOrPropertyWithValue("baseCode", MissionErrorCode.NOT_YOUR_MISSION);
 
@@ -182,7 +186,7 @@ public class MissionServiceTest {
 				.willReturn(Optional.of(mission));
 
 			// When & Then 1
-			assertThatThrownBy(() -> missionService.completeMission(childId, missionId))
+			assertThatThrownBy(() -> missionCommandService.completeMission(childId, missionId))
 				.isInstanceOf(KieroException.class)
 				.hasFieldOrPropertyWithValue("baseCode", MissionErrorCode.MISSION_ALREADY_COMPLETED);
 
@@ -210,7 +214,7 @@ public class MissionServiceTest {
 				.willReturn(Optional.of(expiredMission));
 
 			// When & Then 1
-			assertThatThrownBy(() -> missionService.completeMission(childId, missionId))
+			assertThatThrownBy(() -> missionCommandService.completeMission(childId, missionId))
 				.isInstanceOf(KieroException.class)
 				.hasFieldOrPropertyWithValue("baseCode", MissionErrorCode.MISSION_EXPIRED);
 
@@ -260,7 +264,7 @@ public class MissionServiceTest {
 				.willReturn(savedMission);
 
 			// When
-			MissionResponse response = missionService.createMission(parentId, childId, request);
+			MissionResponse response = missionCommandService.createMission(parentId, childId, request);
 
 			// Then 1: 응답 검증
 			assertThat(response).isNotNull();
@@ -290,7 +294,7 @@ public class MissionServiceTest {
 				.willReturn(false);
 
 			// When & Then 1
-			assertThatThrownBy(() -> missionService.createMission(parentId, otherChildId, request))
+			assertThatThrownBy(() -> missionCommandService.createMission(parentId, otherChildId, request))
 				.isInstanceOf(KieroException.class)
 				.hasFieldOrPropertyWithValue("baseCode", MissionErrorCode.NOT_YOUR_CHILD);
 
@@ -313,7 +317,7 @@ public class MissionServiceTest {
 				.willReturn(Optional.empty());
 
 			// When & Then 1
-			assertThatThrownBy(() -> missionService.createMission(invalidParentId, childId, request))
+			assertThatThrownBy(() -> missionCommandService.createMission(invalidParentId, childId, request))
 				.isInstanceOf(KieroException.class)
 				.hasFieldOrPropertyWithValue("baseCode", ParentErrorCode.PARENT_NOT_FOUND);
 
@@ -338,7 +342,7 @@ public class MissionServiceTest {
 				.willReturn(Optional.empty());
 
 			// When & Then
-			assertThatThrownBy(() -> missionService.createMission(parentId, invalidChildId, request))
+			assertThatThrownBy(() -> missionCommandService.createMission(parentId, invalidChildId, request))
 				.isInstanceOf(KieroException.class)
 				.hasFieldOrPropertyWithValue("baseCode", ChildErrorCode.CHILD_NOT_FOUND);
 
@@ -382,7 +386,7 @@ public class MissionServiceTest {
 				.willReturn(savedMissions);
 
 			// When
-			List<MissionResponse> responses = missionService.bulkCreateMissions(parentId, childId, request);
+			List<MissionResponse> responses = missionCommandService.bulkCreateMissions(parentId, childId, request);
 
 			// Then 1: 응답 개수 검증
 			assertThat(responses).hasSize(3);
@@ -413,7 +417,7 @@ public class MissionServiceTest {
 				.willReturn(List.of());
 
 			// When
-			List<MissionResponse> responses = missionService.bulkCreateMissions(parentId, childId, request);
+			List<MissionResponse> responses = missionCommandService.bulkCreateMissions(parentId, childId, request);
 
 			// Then
 			assertThat(responses).isEmpty();
@@ -434,7 +438,7 @@ public class MissionServiceTest {
 				.willReturn(false);
 
 			// When & Then 1
-			assertThatThrownBy(() -> missionService.bulkCreateMissions(parentId, otherChildId, request))
+			assertThatThrownBy(() -> missionCommandService.bulkCreateMissions(parentId, otherChildId, request))
 				.isInstanceOf(KieroException.class)
 				.hasFieldOrPropertyWithValue("baseCode", MissionErrorCode.NOT_YOUR_CHILD);
 
