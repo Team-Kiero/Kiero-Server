@@ -1,4 +1,4 @@
-package com.kiero.holidays.adapter.out.persistence;
+package com.kiero.holiday.adapter.out.persistence;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -7,9 +7,9 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.kiero.holidays.application.port.out.HolidayLoadPort;
-import com.kiero.holidays.application.port.out.HolidaySavePort;
-import com.kiero.holidays.domain.Holiday;
+import com.kiero.holiday.application.port.out.HolidayLoadPort;
+import com.kiero.holiday.application.port.out.HolidaySavePort;
+import com.kiero.holiday.domain.Holiday;
 
 import lombok.RequiredArgsConstructor;
 

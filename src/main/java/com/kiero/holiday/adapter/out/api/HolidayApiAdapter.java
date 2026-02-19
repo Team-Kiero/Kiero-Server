@@ -1,4 +1,4 @@
-package com.kiero.holidays.adapter.out.api;
+package com.kiero.holiday.adapter.out.api;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -10,9 +10,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.kiero.holidays.application.dto.HolidayApiResponse;
-import com.kiero.holidays.application.port.out.HolidayApiPort;
-import com.kiero.holidays.domain.Holiday;
+import com.kiero.holiday.application.dto.HolidayApiResponse;
+import com.kiero.holiday.application.port.out.HolidayApiPort;
+import com.kiero.holiday.domain.Holiday;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

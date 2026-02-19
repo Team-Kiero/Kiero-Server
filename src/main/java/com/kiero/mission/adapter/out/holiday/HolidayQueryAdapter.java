@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
-import com.kiero.holidays.application.port.in.HolidayQueryUseCase;
+import com.kiero.holiday.application.port.in.HolidayQueryUseCase;
 import com.kiero.mission.application.port.out.HolidayQueryPort;
 
 import lombok.RequiredArgsConstructor;

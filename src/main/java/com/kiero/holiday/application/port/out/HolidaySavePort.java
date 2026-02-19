@@ -1,8 +1,8 @@
-package com.kiero.holidays.application.port.out;
+package com.kiero.holiday.application.port.out;
 
 import java.util.List;
 
-import com.kiero.holidays.domain.Holiday;
+import com.kiero.holiday.domain.Holiday;
 
 public interface HolidaySavePort {
 	void saveAll(List<Holiday> holidays);

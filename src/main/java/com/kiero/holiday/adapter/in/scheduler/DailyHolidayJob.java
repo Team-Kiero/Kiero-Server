@@ -1,10 +1,10 @@
-package com.kiero.holidays.adapter.in.scheduler;
+package com.kiero.holiday.adapter.in.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.kiero.holidays.application.port.in.FetchHolidayUseCase;
+import com.kiero.holiday.application.port.in.FetchHolidayUseCase;
 
 @Component
 @RequiredArgsConstructor

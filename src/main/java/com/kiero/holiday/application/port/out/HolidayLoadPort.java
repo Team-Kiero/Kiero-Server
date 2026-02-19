@@ -1,4 +1,4 @@
-package com.kiero.holidays.application.port.out;
+package com.kiero.holiday.application.port.out;
 
 import java.time.LocalDate;
 import java.util.Set;

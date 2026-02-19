@@ -1,4 +1,4 @@
-package com.kiero.holidays.application.port.in;
+package com.kiero.holiday.application.port.in;
 
 public interface FetchHolidayUseCase {
 	void fetchAndSaveHolidays();

@@ -1,12 +1,12 @@
-package com.kiero.holidays.application.service;
+package com.kiero.holiday.application.service;
 
 import java.time.LocalDate;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
-import com.kiero.holidays.application.port.in.HolidayQueryUseCase;
-import com.kiero.holidays.application.port.out.HolidayLoadPort;
+import com.kiero.holiday.application.port.in.HolidayQueryUseCase;
+import com.kiero.holiday.application.port.out.HolidayLoadPort;
 
 import lombok.RequiredArgsConstructor;
 

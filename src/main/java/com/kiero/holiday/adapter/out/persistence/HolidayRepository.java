@@ -1,6 +1,6 @@
-package com.kiero.holidays.adapter.out.persistence;
+package com.kiero.holiday.adapter.out.persistence;
 
-import com.kiero.holidays.domain.Holiday;
+import com.kiero.holiday.domain.Holiday;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
