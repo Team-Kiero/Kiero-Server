@@ -1,4 +1,4 @@
-package com.kiero.feeds.application.port.out;
+package com.kiero.feed.application.port.out;
 
 import java.util.Optional;
 

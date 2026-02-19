@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class SpringEventPublisherAdapter implements ChildJoinedEventPort {
+public class ChildEventPublisherAdapter implements ChildJoinedEventPort {
 
 	private final ApplicationEventPublisher publisher;
 
