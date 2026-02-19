@@ -1,4 +1,4 @@
-package com.kiero.feed.presentation.dto;
+package com.kiero.feeds.application.dto;
 
 import java.util.List;
 

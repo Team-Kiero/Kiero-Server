@@ -1,45 +1,40 @@
-package com.kiero.feed.service;
+package com.kiero.feeds.application.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kiero.child.domain.Child;
 import com.kiero.child.application.exception.ChildErrorCode;
-import com.kiero.child.adapter.out.persistence.ChildRepository;
-import com.kiero.feeds.domain.FeedItem;
+import com.kiero.child.domain.Child;
 import com.kiero.feeds.application.dto.FeedCursor;
 import com.kiero.feeds.application.dto.FeedGetResponse;
 import com.kiero.feeds.application.dto.FeedItemDto;
-import com.kiero.feeds.adapter.out.persistence.FeedItemRepository;
+import com.kiero.feeds.application.port.in.FeedQueryUseCase;
+import com.kiero.feeds.application.port.out.ChildLoadPort;
+import com.kiero.feeds.application.port.out.FeedItemQueryPort;
+import com.kiero.feeds.application.port.out.ParentChildAccessPort;
+import com.kiero.feeds.domain.FeedItem;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.exception.ParentErrorCode;
-import com.kiero.parent.adapter.out.persistence.ParentChildRepository;
 
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
-public class FeedService {
+public class FeedQueryService implements FeedQueryUseCase {
 
-	private final FeedItemRepository feedItemRepository;
-	private final ParentChildRepository parentChildRepository;
-	private final ChildRepository childRepository;
+	private final FeedItemQueryPort feedItemQueryPort;
+	private final ParentChildAccessPort parentChildAccessPort;
+	private final ChildLoadPort childLoadPort;
 
-	private final EntityManager em;
-	private final ResourceLoader resourceLoader;
-
+	@Override
 	@Transactional(readOnly = true)
 	public FeedGetResponse getFeed(Long parentId, Long childId, Integer size, String cursor) {
 
-		Child child = childRepository.findById(childId)
+		Child child = childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
 		isParentChildValid(parentId, childId);
@@ -49,7 +44,7 @@ public class FeedService {
 		LocalDateTime cursorOccurredAt = (feedCursor == null ? null : feedCursor.occurredAt());
 		Long cursorId = (feedCursor == null ? null : feedCursor.id());
 
-		List<FeedItem> feedItems = feedItemRepository.findFeedItemsByCursor(
+		List<FeedItem> feedItems = feedItemQueryPort.findByCursor(
 			parentId,
 			childId,
 			cursorOccurredAt,
@@ -58,8 +53,9 @@ public class FeedService {
 		);
 
 		boolean hasNext = feedItems.size() > size;
-		if (hasNext)
+		if (hasNext) {
 			feedItems = feedItems.subList(0, size);
+		}
 
 		List<FeedItemDto> items = feedItems.stream()
 			.map(this::toItemDto)
@@ -74,12 +70,12 @@ public class FeedService {
 		return new FeedGetResponse(child.getFirstName(), items, nextCursor);
 	}
 
-	public void isParentChildValid(Long parentId, Long childId) {
-		boolean parentChildExists = parentChildRepository.existsByParentIdAndChildId(parentId, childId);
-		if (!parentChildExists)
+	private void isParentChildValid(Long parentId, Long childId) {
+		boolean parentChildExists = parentChildAccessPort.existsByParentIdAndChildId(parentId, childId);
+		if (!parentChildExists) {
 			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+		}
 	}
-
 
 	private FeedItemDto toItemDto(FeedItem feedItem) {
 		return new FeedItemDto(

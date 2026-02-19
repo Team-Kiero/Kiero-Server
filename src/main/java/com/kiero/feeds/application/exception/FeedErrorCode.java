@@ -1,4 +1,4 @@
-package com.kiero.feed.exception;
+package com.kiero.feeds.application.exception;
 
 import org.springframework.http.HttpStatus;
 

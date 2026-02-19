@@ -1,4 +1,4 @@
-package com.kiero.feed.domain.enums;
+package com.kiero.feeds.domain.enums;
 
 public enum EventType {
 	MISSION,

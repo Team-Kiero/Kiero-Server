@@ -1,8 +1,8 @@
-package com.kiero.feed.infrastructure.converter;
+package com.kiero.feeds.infrastructure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kiero.feed.exception.FeedErrorCode;
+import com.kiero.feeds.application.exception.FeedErrorCode;
 import com.kiero.global.exception.KieroException;
 
 import jakarta.persistence.AttributeConverter;

@@ -1,4 +1,4 @@
-package com.kiero.feed.repository;
+package com.kiero.feeds.adapter.out.persistence;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.kiero.feed.domain.FeedItem;
+import com.kiero.feeds.domain.FeedItem;
 
 @Repository
 public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
@@ -34,10 +34,4 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		Pageable pageable
 	);
 
-	/*
-	데모데이용 임시 메서드
-	 */
-	void deleteByChildIdIn(List<Long> childIds);
-	/*
-	 */
 }

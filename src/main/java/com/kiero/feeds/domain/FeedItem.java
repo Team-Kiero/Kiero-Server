@@ -1,11 +1,11 @@
-package com.kiero.feed.domain;
+package com.kiero.feeds.domain;
 
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.kiero.child.domain.Child;
-import com.kiero.feed.domain.enums.EventType;
-import com.kiero.feed.infrastructure.converter.JsonNodeConverter;
+import com.kiero.feeds.domain.enums.EventType;
+import com.kiero.feeds.infrastructure.JsonNodeConverter;
 import com.kiero.global.entity.BaseTimeEntity;
 import com.kiero.parent.domain.Parent;
 

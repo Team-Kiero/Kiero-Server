@@ -1,4 +1,4 @@
-package com.kiero.feed.domain;
+package com.kiero.feeds.domain;
 
 public class FeedItemTableConstants {
 	public static final String TABLE_FEED_ITEM = "feed_item";

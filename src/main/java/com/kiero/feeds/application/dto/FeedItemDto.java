@@ -1,10 +1,10 @@
-package com.kiero.feed.presentation.dto;
+package com.kiero.feeds.application.dto;
 
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.kiero.feed.domain.enums.EventType;
+import com.kiero.feeds.domain.enums.EventType;
 
 public record FeedItemDto(
 	EventType eventType,

@@ -1,8 +1,8 @@
-package com.kiero.feed.presentation.dto;
+package com.kiero.feeds.application.dto;
 
 import java.time.LocalDateTime;
 
-import com.kiero.feed.exception.FeedErrorCode;
+import com.kiero.feeds.application.exception.FeedErrorCode;
 import com.kiero.global.exception.KieroException;
 
 public record FeedCursor(
@@ -10,7 +10,8 @@ public record FeedCursor(
 	Long id
 ) {
 	public static FeedCursor parse(String cursor) {
-		if (cursor == null || cursor.isBlank()) return null;
+		if (cursor == null || cursor.isBlank())
+			return null;
 
 		try {
 			String[] parts = cursor.split("\\|");
