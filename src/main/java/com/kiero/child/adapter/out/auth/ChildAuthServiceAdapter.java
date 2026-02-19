@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class AuthServiceAdapter implements AuthGeneratePort {
+public class ChildAuthServiceAdapter implements AuthGeneratePort {
 
 	private final AuthService authService;
 

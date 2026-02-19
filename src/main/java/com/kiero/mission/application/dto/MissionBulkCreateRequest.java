@@ -1,11 +1,11 @@
 package com.kiero.mission.application.dto;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-
-import java.util.List;
 
 public record MissionBulkCreateRequest(
         @NotEmpty(message = "미션 목록은 비어있을 수 없습니다.")

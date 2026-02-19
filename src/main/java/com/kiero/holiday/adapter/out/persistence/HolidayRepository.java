@@ -1,10 +1,11 @@
 package com.kiero.holiday.adapter.out.persistence;
 
-import com.kiero.holiday.domain.Holiday;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.time.LocalDate;
 import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.kiero.holiday.domain.Holiday;
 
 public interface HolidayRepository extends JpaRepository<Holiday, LocalDate> {
 

@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class SpringEventPublisherAdapter implements MissionEventPort {
+public class MissionEventPublisherAdapter implements MissionEventPort {
 	private final ApplicationEventPublisher publisher;
 
 	@Override

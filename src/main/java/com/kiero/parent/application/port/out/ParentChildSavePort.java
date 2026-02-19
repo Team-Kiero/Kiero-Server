@@ -1,7 +1,7 @@
-package com.kiero.child.application.port.out;
+package com.kiero.parent.application.port.out;
 
 import com.kiero.parent.domain.ParentChild;
 
-public interface ParentChildPersistencePort {
+public interface ParentChildSavePort {
 	ParentChild save(ParentChild parentChild);
 }

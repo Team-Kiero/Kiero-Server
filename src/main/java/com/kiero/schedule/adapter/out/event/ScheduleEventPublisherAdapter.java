@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class SpringEventPublisherAdapter implements ScheduleEventPort {
+public class ScheduleEventPublisherAdapter implements ScheduleEventPort {
 
 	private final ApplicationEventPublisher publisher;
 

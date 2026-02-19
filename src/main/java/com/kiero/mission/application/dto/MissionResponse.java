@@ -1,8 +1,8 @@
 package com.kiero.mission.application.dto;
 
-import com.kiero.mission.domain.Mission;
-
 import java.time.LocalDate;
+
+import com.kiero.mission.domain.Mission;
 
 public record MissionResponse(
         Long id,

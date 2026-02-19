@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class SpringEventPublisherAdapter implements CouponPurchaseEventPort {
+public class CouponEventPublisherAdapter implements CouponPurchaseEventPort {
 
 	private final ApplicationEventPublisher publisher;
 

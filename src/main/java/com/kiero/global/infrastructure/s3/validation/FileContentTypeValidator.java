@@ -1,10 +1,11 @@
 package com.kiero.global.infrastructure.s3.validation;
 
+import java.util.Set;
+
 import com.kiero.global.infrastructure.s3.enums.AllowedFileType;
+
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-
-import java.util.Set;
 
 // 파일 Content-Type 검증 Validator
 public class FileContentTypeValidator implements ConstraintValidator<ValidFileContentType, String> {

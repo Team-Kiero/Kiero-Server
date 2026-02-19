@@ -5,8 +5,8 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
-import com.kiero.coupon.domain.Coupon;
 import com.kiero.coupon.application.port.out.CouponLoadPort;
+import com.kiero.coupon.domain.Coupon;
 
 import lombok.RequiredArgsConstructor;
 

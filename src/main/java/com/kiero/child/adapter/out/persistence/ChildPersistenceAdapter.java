@@ -4,14 +4,15 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
-import com.kiero.child.application.port.out.ChildPersistencePort;
+import com.kiero.child.application.port.out.ChildLoadPort;
+import com.kiero.child.application.port.out.ChildSavePort;
 import com.kiero.child.domain.Child;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class ChildPersistenceAdapter implements ChildPersistencePort {
+public class ChildPersistenceAdapter implements ChildSavePort, ChildLoadPort {
 
 	private final ChildRepository childRepository;
 

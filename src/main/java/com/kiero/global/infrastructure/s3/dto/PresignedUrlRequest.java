@@ -2,6 +2,7 @@ package com.kiero.global.infrastructure.s3.dto;
 
 import com.kiero.global.infrastructure.s3.enums.AllowedFileType;
 import com.kiero.global.infrastructure.s3.validation.ValidFileContentType;
+
 import jakarta.validation.constraints.NotBlank;
 
 public record PresignedUrlRequest(

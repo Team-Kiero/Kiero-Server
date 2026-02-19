@@ -1,10 +1,11 @@
 package com.kiero.invitation.adapter.out.generator;
 
-import com.kiero.invitation.domain.enums.InviteCodeFirstWord;
-import com.kiero.invitation.domain.enums.InviteCodeSecondWord;
+import java.security.SecureRandom;
+
 import org.springframework.stereotype.Component;
 
-import java.security.SecureRandom;
+import com.kiero.invitation.domain.enums.InviteCodeFirstWord;
+import com.kiero.invitation.domain.enums.InviteCodeSecondWord;
 
 @Component
 public class InviteCodeGenerator {

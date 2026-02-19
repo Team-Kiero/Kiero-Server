@@ -11,7 +11,7 @@ import com.kiero.child.domain.Child;
 import com.kiero.parent.application.dto.ChildInfoResponse;
 import com.kiero.parent.application.dto.InviteStatusResponse;
 import com.kiero.parent.application.port.in.ParentQueryUseCase;
-import com.kiero.parent.application.port.out.ParentChildQueryPort;
+import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.domain.ParentChild;
 
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ParentQueryService implements ParentQueryUseCase {
 
-	private final ParentChildQueryPort parentChildQueryPort;
+	private final ParentChildLoadPort parentChildQueryPort;
 
 	@Override
 	@Transactional(readOnly = true)

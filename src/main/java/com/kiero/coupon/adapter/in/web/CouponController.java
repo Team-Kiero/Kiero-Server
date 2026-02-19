@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kiero.coupon.application.exception.CouponSuccessCode;
 import com.kiero.coupon.application.dto.CouponResponse;
 import com.kiero.coupon.application.dto.PurchaseCouponCommand;
+import com.kiero.coupon.application.exception.CouponSuccessCode;
 import com.kiero.coupon.application.port.in.GetCouponsUseCase;
 import com.kiero.coupon.application.port.in.PurchaseCouponUseCase;
 import com.kiero.global.auth.annotation.CurrentMember;

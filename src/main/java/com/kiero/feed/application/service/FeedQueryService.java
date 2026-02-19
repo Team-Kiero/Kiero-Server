@@ -8,17 +8,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.child.application.exception.ChildErrorCode;
+import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.feed.application.dto.FeedCursor;
 import com.kiero.feed.application.dto.FeedGetResponse;
 import com.kiero.feed.application.dto.FeedItemDto;
 import com.kiero.feed.application.port.in.FeedQueryUseCase;
-import com.kiero.feed.application.port.out.ChildLoadPort;
 import com.kiero.feed.application.port.out.FeedItemQueryPort;
-import com.kiero.feed.application.port.out.ParentChildAccessPort;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.exception.ParentErrorCode;
+import com.kiero.parent.application.port.out.ParentChildAccessPort;
 
 import lombok.RequiredArgsConstructor;
 

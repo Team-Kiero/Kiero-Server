@@ -1,5 +1,7 @@
 package com.kiero.global.auth.jwt.infrastructure.persistence.redis;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import com.kiero.global.auth.enums.Role;
@@ -9,8 +11,6 @@ import com.kiero.global.exception.KieroException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor

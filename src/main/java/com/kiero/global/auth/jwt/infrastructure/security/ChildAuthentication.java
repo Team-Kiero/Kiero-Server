@@ -1,9 +1,9 @@
 package com.kiero.global.auth.jwt.infrastructure.security;
 
+import java.util.Collection;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
-
-import java.util.Collection;
 
 public class ChildAuthentication extends UsernamePasswordAuthenticationToken {
 

@@ -1,10 +1,10 @@
 package com.kiero.global.infrastructure.s3.enums;
 
-import lombok.Getter;
-
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import lombok.Getter;
 
 @Getter
 public enum AllowedFileType {

@@ -7,14 +7,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.kiero.child.application.dto.ChildJoinedEvent;
 import com.kiero.feed.domain.enums.EventType;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent.FeedItemInfo;
 import com.kiero.global.infrastructure.sse.domain.SseEventType;
-import com.kiero.child.application.dto.ChildJoinedEvent;
+import com.kiero.global.infrastructure.sse.service.EventSseService;
 import com.kiero.mission.application.dto.MissionCreatedEvent;
 import com.kiero.schedule.application.dto.ScheduleCreatedEvent;
-import com.kiero.global.infrastructure.sse.service.EventSseService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

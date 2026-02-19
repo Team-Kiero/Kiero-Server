@@ -8,21 +8,20 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kiero.child.application.dto.ChildLoginResponse;
+import com.kiero.child.domain.Child;
 import com.kiero.global.auth.enums.Role;
-import com.kiero.global.auth.jwt.infrastructure.jwt.JwtValidationType;
 import com.kiero.global.auth.jwt.application.dto.AccessTokenGenerateResponse;
 import com.kiero.global.auth.jwt.application.exception.TokenErrorCode;
 import com.kiero.global.auth.jwt.infrastructure.jwt.JwtTokenProvider;
+import com.kiero.global.auth.jwt.infrastructure.jwt.JwtValidationType;
 import com.kiero.global.auth.jwt.infrastructure.persistence.redis.TokenService;
 import com.kiero.global.auth.jwt.infrastructure.security.AdminAuthentication;
-import com.kiero.global.auth.jwt.infrastructure.security.ParentAuthentication;
 import com.kiero.global.auth.jwt.infrastructure.security.ChildAuthentication;
-
+import com.kiero.global.auth.jwt.infrastructure.security.ParentAuthentication;
 import com.kiero.global.exception.KieroException;
-import com.kiero.parent.domain.Parent;
 import com.kiero.parent.application.dto.ParentLoginResponse;
-import com.kiero.child.domain.Child;
-import com.kiero.child.application.dto.ChildLoginResponse;
+import com.kiero.parent.domain.Parent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

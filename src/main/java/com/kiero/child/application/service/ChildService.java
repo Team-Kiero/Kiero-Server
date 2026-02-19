@@ -7,25 +7,26 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kiero.child.application.exception.ChildErrorCode;
 import com.kiero.child.application.dto.ChildJoinedEvent;
 import com.kiero.child.application.dto.ChildLoginResponse;
 import com.kiero.child.application.dto.ChildMeResponse;
 import com.kiero.child.application.dto.ChildSignupRequest;
+import com.kiero.child.application.exception.ChildErrorCode;
 import com.kiero.child.application.port.in.ChildMeUseCase;
 import com.kiero.child.application.port.in.ChildQueryUseCase;
 import com.kiero.child.application.port.in.ChildSignupUseCase;
 import com.kiero.child.application.port.out.AuthGeneratePort;
 import com.kiero.child.application.port.out.ChildJoinedEventPort;
-import com.kiero.child.application.port.out.ChildPersistencePort;
+import com.kiero.child.application.port.out.ChildLoadPort;
+import com.kiero.child.application.port.out.ChildSavePort;
 import com.kiero.child.application.port.out.InviteCodeValidatePort;
-import com.kiero.child.application.port.out.ParentChildPersistencePort;
-import com.kiero.child.application.port.out.ParentLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.auth.enums.Role;
 import com.kiero.global.exception.KieroException;
-import com.kiero.invitation.domain.InviteCode;
 import com.kiero.invitation.application.exception.InvitationErrorCode;
+import com.kiero.invitation.domain.InviteCode;
+import com.kiero.parent.application.port.out.ParentChildSavePort;
+import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.domain.ParentChild;
 
@@ -39,8 +40,9 @@ public class ChildService implements ChildSignupUseCase, ChildMeUseCase, ChildQu
 
 	private final InviteCodeValidatePort inviteCodeValidatePort;
 	private final ParentLoadPort parentLoadPort;
-	private final ChildPersistencePort childPersistencePort;
-	private final ParentChildPersistencePort parentChildPersistencePort;
+	private final ParentChildSavePort parentChildSavePort;
+	private final ChildSavePort childSavePort;
+	private final ChildLoadPort childLoadPort;
 	private final AuthGeneratePort authGeneratePort;
 	private final ChildJoinedEventPort childJoinedEventPort;
 
@@ -70,13 +72,13 @@ public class ChildService implements ChildSignupUseCase, ChildMeUseCase, ChildQu
 
 		// 3. 아이 엔티티 생성
 		Child child = Child.create(request.lastName(), request.firstName(), Role.CHILD);
-		Child savedChild = childPersistencePort.save(child);
+		Child savedChild = childSavePort.save(child);
 
 		log.info("Child created: childId={}, childName={}", savedChild.getId(), savedChild.getFullName());
 
 		// 4. ParentChild 관계 생성
 		ParentChild parentChild = ParentChild.create(parent, savedChild);
-		parentChildPersistencePort.save(parentChild);
+		parentChildSavePort.save(parentChild);
 
 		log.info("ParentChild relationship created: parentId={}, childId={}", parent.getId(), savedChild.getId());
 
@@ -92,7 +94,7 @@ public class ChildService implements ChildSignupUseCase, ChildMeUseCase, ChildQu
 	@Override
 	@Transactional(readOnly = true)
 	public ChildMeResponse getMyInfo(Long childId) {
-		Child child = childPersistencePort.findById(childId)
+		Child child = childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
 		LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
@@ -106,7 +108,7 @@ public class ChildService implements ChildSignupUseCase, ChildMeUseCase, ChildQu
 	@Override
 	@Transactional(readOnly = true)
 	public Optional<Child> findByIdWithLock(Long childId) {
-		return childPersistencePort.findByIdWithLock(childId);
+		return childLoadPort.findByIdWithLock(childId);
 	}
 
 }
