@@ -1,20 +1,19 @@
-package com.kiero.holiday.scheduler;
+package com.kiero.holidays.adapter.in.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.kiero.holiday.service.HolidayService;
+import com.kiero.holidays.application.port.in.FetchHolidayUseCase;
 
 @Component
 @RequiredArgsConstructor
 public class DailyHolidayJob {
 
-    private final HolidayService holidayService;
+    private final FetchHolidayUseCase fetchHolidayUseCase;
 
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void runDailyJob() {
-            holidayService.fetchAndSaveHolidays();
+        fetchHolidayUseCase.fetchAndSaveHolidays();
     }
 }

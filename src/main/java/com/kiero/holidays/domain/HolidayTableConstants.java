@@ -1,4 +1,4 @@
-package com.kiero.holiday.domain;
+package com.kiero.holidays.domain;
 
 public class HolidayTableConstants {
     public static final String TABLE_HOLIDAY = "holiday";

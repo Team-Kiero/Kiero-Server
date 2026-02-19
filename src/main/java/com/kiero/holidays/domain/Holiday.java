@@ -1,4 +1,4 @@
-package com.kiero.holiday.domain;
+package com.kiero.holidays.domain;
 
 import com.kiero.global.entity.BaseTimeEntity;
 import jakarta.persistence.Column;

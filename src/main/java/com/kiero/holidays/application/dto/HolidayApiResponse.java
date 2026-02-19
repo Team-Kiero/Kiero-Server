@@ -1,4 +1,4 @@
-package com.kiero.holiday.dto;
+package com.kiero.holidays.application.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
