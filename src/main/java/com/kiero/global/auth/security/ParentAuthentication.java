@@ -1,18 +1,14 @@
-package com.kiero.global.auth.jwt.infrastructure.security;
+package com.kiero.global.auth.security;
 
 import java.util.Collection;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
-public class ChildAuthentication extends UsernamePasswordAuthenticationToken {
+public class ParentAuthentication extends UsernamePasswordAuthenticationToken {
 
-	public ChildAuthentication(Object principal, Object credentials,
+	public ParentAuthentication(Object principal, Object credentials,
 		Collection<? extends GrantedAuthority> authorities) {
 		super(principal, credentials, authorities);
-	}
-
-	public Long getId() {
-		return (Long)getPrincipal();
 	}
 }

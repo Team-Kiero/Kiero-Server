@@ -1,4 +1,4 @@
-package com.kiero.global.auth.jwt.infrastructure.jwt;
+package com.kiero.global.auth.jwt.infrastructure;
 
 import lombok.AllArgsConstructor;
 

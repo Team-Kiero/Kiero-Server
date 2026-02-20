@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Component;
 
-import com.kiero.global.auth.jwt.infrastructure.jwt.JwtTokenProvider;
+import com.kiero.global.auth.jwt.infrastructure.JwtTokenProvider;
 import com.kiero.global.sse.application.port.out.TokenExpiryPort;
 
 import lombok.RequiredArgsConstructor;

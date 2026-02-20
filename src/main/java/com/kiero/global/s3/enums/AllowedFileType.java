@@ -1,4 +1,4 @@
-package com.kiero.global.infrastructure.s3.enums;
+package com.kiero.global.s3.enums;
 
 import java.util.Set;
 import java.util.stream.Collectors;

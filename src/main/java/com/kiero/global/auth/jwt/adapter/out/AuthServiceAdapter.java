@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 
 import com.kiero.global.auth.jwt.application.dto.AccessTokenGenerateResponse;
 import com.kiero.global.auth.jwt.application.port.out.AuthTokenPort;
-import com.kiero.global.auth.jwt.infrastructure.auth.AuthService;
+import com.kiero.global.auth.jwt.application.service.AuthService;
 
 import lombok.RequiredArgsConstructor;
 

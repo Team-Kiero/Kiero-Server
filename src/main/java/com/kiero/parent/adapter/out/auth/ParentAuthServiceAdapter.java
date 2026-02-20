@@ -2,7 +2,7 @@ package com.kiero.parent.adapter.out.auth;
 
 import org.springframework.stereotype.Component;
 
-import com.kiero.global.auth.jwt.infrastructure.auth.AuthService;
+import com.kiero.global.auth.jwt.application.service.AuthService;
 import com.kiero.parent.application.dto.ParentLoginResponse;
 import com.kiero.parent.application.port.out.AuthGeneratePort;
 import com.kiero.parent.domain.Parent;

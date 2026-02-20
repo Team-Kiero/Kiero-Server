@@ -1,4 +1,4 @@
-package com.kiero.global.auth.jwt.infrastructure.jwt;
+package com.kiero.global.auth.jwt.infrastructure;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;

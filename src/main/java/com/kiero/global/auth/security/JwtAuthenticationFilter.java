@@ -1,4 +1,4 @@
-package com.kiero.global.auth.jwt.infrastructure.security;
+package com.kiero.global.auth.security;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -13,8 +13,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.kiero.global.auth.enums.Role;
-import com.kiero.global.auth.jwt.infrastructure.jwt.JwtTokenProvider;
-import com.kiero.global.auth.jwt.infrastructure.jwt.JwtValidationType;
+import com.kiero.global.auth.jwt.infrastructure.JwtTokenProvider;
+import com.kiero.global.auth.jwt.infrastructure.JwtValidationType;
 import com.kiero.global.exception.KieroException;
 import com.kiero.global.response.code.ErrorCode;
 
