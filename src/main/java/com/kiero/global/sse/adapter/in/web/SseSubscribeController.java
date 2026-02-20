@@ -1,4 +1,4 @@
-package com.kiero.global.infrastructure.sse.controller;
+package com.kiero.global.sse.adapter.in.web;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,16 +10,16 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.auth.enums.Role;
-import com.kiero.global.infrastructure.sse.service.EventSseService;
+import com.kiero.global.sse.application.port.in.SseSubscribeUseCase;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/subscribe")
-public class EventController {
+public class SseSubscribeController {
 
-	private final EventSseService eventSseService;
+	private final SseSubscribeUseCase sseSubscribeUseCase;
 
 	@PreAuthorize("hasAnyRole('PARENT', 'CHILD', 'ADMIN')")
 	@GetMapping(produces = "text/event-stream")
@@ -32,9 +32,9 @@ public class EventController {
 		Role role = currentAuth.role();
 
 		if (role == Role.CHILD) {
-			return eventSseService.subscribeAsChild(memberId, token);
+			return sseSubscribeUseCase.subscribeAsChild(memberId, token);
 		} else {
-			return eventSseService.subscribeAsParent(memberId, token);
+			return sseSubscribeUseCase.subscribeAsParent(memberId, token);
 		}
 	}
 }

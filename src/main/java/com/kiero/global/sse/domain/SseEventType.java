@@ -1,4 +1,4 @@
-package com.kiero.global.infrastructure.sse.domain;
+package com.kiero.global.sse.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

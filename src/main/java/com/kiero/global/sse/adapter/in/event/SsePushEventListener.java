@@ -1,4 +1,4 @@
-package com.kiero.global.infrastructure.sse.handler;
+package com.kiero.global.sse.adapter.in.event;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -11,8 +11,8 @@ import com.kiero.child.application.dto.ChildJoinedEvent;
 import com.kiero.feed.domain.enums.EventType;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent.FeedItemInfo;
-import com.kiero.global.infrastructure.sse.domain.SseEventType;
-import com.kiero.global.infrastructure.sse.service.EventSseService;
+import com.kiero.global.sse.application.port.in.SsePushUseCase;
+import com.kiero.global.sse.domain.SseEventType;
 import com.kiero.mission.application.dto.MissionCreatedEvent;
 import com.kiero.schedule.application.dto.ScheduleCreatedEvent;
 
@@ -22,9 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class EventSsePushHandler {
+public class SsePushEventListener {
 
-	private final EventSseService eventSseService;
+	private final SsePushUseCase ssePushUseCase;
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(FeedItemsCreatedEvent event) {
@@ -41,7 +41,7 @@ public class EventSsePushHandler {
 			log.debug("부모 SSE 푸시 (피드): parentId={}, childId={}, feedItemId={}, eventType={}",
 				item.parentId(), item.childId(), item.feedItemId(), sseEventType);
 
-			eventSseService.pushToParent(item.parentId(), sseEventType, data);
+			ssePushUseCase.pushToParent(item.parentId(), sseEventType, data);
 		}
 	}
 
@@ -54,7 +54,7 @@ public class EventSsePushHandler {
 		log.debug("부모 SSE 푸시 (자녀 가입): parentId={}, childId={}",
 			event.parentId(), event.childId());
 
-		eventSseService.pushToParent(event.parentId(), SseEventType.CHILD_JOINED, data);
+		ssePushUseCase.pushToParent(event.parentId(), SseEventType.CHILD_JOINED, data);
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -67,7 +67,7 @@ public class EventSsePushHandler {
 		log.debug("자녀 SSE 푸시 (미션 생성): childId={}, missionName={}",
 			event.childId(), event.missionName());
 
-		eventSseService.pushToChild(event.childId(), SseEventType.MISSION_CREATED, data);
+		ssePushUseCase.pushToChild(event.childId(), SseEventType.MISSION_CREATED, data);
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -79,7 +79,7 @@ public class EventSsePushHandler {
 		log.debug("자녀 SSE 푸시 (스케줄 생성): childId={}, scheduleName={}",
 			event.childId(), event.scheduleName());
 
-		eventSseService.pushToChild(event.childId(), SseEventType.SCHEDULE_CREATED, data);
+		ssePushUseCase.pushToChild(event.childId(), SseEventType.SCHEDULE_CREATED, data);
 	}
 
 	private SseEventType mapToSseEventType(EventType eventType) {

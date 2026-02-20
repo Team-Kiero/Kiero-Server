@@ -1,13 +1,13 @@
-package com.kiero.global.infrastructure.sse.service;
+package com.kiero.global.sse.application.service;
 
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.kiero.global.auth.jwt.infrastructure.jwt.JwtTokenProvider;
-import com.kiero.global.infrastructure.sse.repository.SseEmitterRepository;
-import com.kiero.global.infrastructure.sse.repository.SseEmitterWrapper;
+import com.kiero.global.sse.application.port.out.SseEmitterRepositoryPort;
+import com.kiero.global.sse.application.port.out.TokenExpiryPort;
+import com.kiero.global.sse.domain.SseEmitterWrapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,15 +15,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SseService {
+public class SseConnectionService {
 
 	private static final long DEFAULT_TIMEOUT_MILLIS = 30 * 60 * 1000L;
 
-	private final SseEmitterRepository<String> emitterRepository;
-	private final JwtTokenProvider jwtTokenProvider;
+	private final SseEmitterRepositoryPort emitterRepository;
+	private final TokenExpiryPort tokenExpiryPort;
 
 	public SseEmitter subscribe(String key, String token) {
-		LocalDateTime tokenExpiresAt = jwtTokenProvider.getExpirationDateTime(token);
+		LocalDateTime tokenExpiresAt = tokenExpiryPort.getExpirationDateTime(token);
 
 		SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT_MILLIS);
 

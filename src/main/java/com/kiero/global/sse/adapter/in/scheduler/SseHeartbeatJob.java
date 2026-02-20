@@ -1,4 +1,4 @@
-package com.kiero.global.infrastructure.sse.scheduler;
+package com.kiero.global.sse.adapter.in.scheduler;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -9,15 +9,16 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.kiero.global.infrastructure.sse.repository.InMemorySseEmitterRepository;
-import com.kiero.global.infrastructure.sse.repository.SseEmitterWrapper;
+import com.kiero.global.sse.application.port.out.SseEmitterRepositoryPort;
+import com.kiero.global.sse.domain.SseEmitterWrapper;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class SseHeartbeatScheduler {
-	private final InMemorySseEmitterRepository emitterRepository;
+public class SseHeartbeatJob {
+
+	private final SseEmitterRepositoryPort emitterRepository;
 
 	@Scheduled(fixedRate = 25_000)
 	public void heartbeat() {
@@ -41,7 +42,6 @@ public class SseHeartbeatScheduler {
 		}
 	}
 
-	// accessToken 만료시각이 지나면 연결을 complete
 	private boolean completeWhenTokenExpired(SseEmitterWrapper wrappedEmitter, String key) {
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime tokenExpiresAt = wrappedEmitter.getExpiresAt();

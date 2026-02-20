@@ -1,4 +1,4 @@
-package com.kiero.global.infrastructure.sse.repository;
+package com.kiero.global.sse.domain;
 
 import java.time.LocalDateTime;
 
