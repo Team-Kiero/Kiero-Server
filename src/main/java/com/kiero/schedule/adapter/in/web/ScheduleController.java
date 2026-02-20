@@ -23,8 +23,8 @@ import com.kiero.schedule.application.dto.ScheduleAddRequest;
 import com.kiero.schedule.application.dto.ScheduleTabResponse;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleSuccessCode;
-import com.kiero.schedule.application.service.ScheduleCommandService;
-import com.kiero.schedule.application.service.ScheduleQueryService;
+import com.kiero.schedule.application.port.in.ScheduleCommandUseCase;
+import com.kiero.schedule.application.port.in.ScheduleQueryUseCase;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,8 +34,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ScheduleController {
 
-	private final ScheduleCommandService scheduleCommandService;
-	private final ScheduleQueryService scheduleQueryService;
+	private final ScheduleCommandUseCase scheduleCommandUseCase;
+	private final ScheduleQueryUseCase scheduleQueryUseCase;
 
 	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@PostMapping("/{childId}")
@@ -44,7 +44,7 @@ public class ScheduleController {
 		@PathVariable Long childId,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		scheduleCommandService.addSchedule(request, currentAuth.memberId(), childId);
+		scheduleCommandUseCase.addSchedule(request, currentAuth.memberId(), childId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_CREATED));
 	}
@@ -57,7 +57,7 @@ public class ScheduleController {
 		@PathVariable Long childId,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		ScheduleTabResponse response = scheduleQueryService.getSchedules(startDate, endDate, currentAuth.memberId(),
+		ScheduleTabResponse response = scheduleQueryUseCase.getSchedules(startDate, endDate, currentAuth.memberId(),
 			childId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_TAB_GET_SUCCESS, response));
@@ -68,7 +68,7 @@ public class ScheduleController {
 	public ResponseEntity<SuccessResponse<TodayScheduleResponse>> updateAndGetTodaySchedule(
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(currentAuth.memberId());
+		TodayScheduleResponse response = scheduleQueryUseCase.getTodaySchedule(currentAuth.memberId());
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.TODAY_SCHEDULE_GET_SUCCESS, response));
 	}
@@ -79,7 +79,7 @@ public class ScheduleController {
 		@PathVariable("scheduleDetailId") Long scheduleDetailId,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		scheduleCommandService.skipNowSchedule(currentAuth.memberId(), scheduleDetailId);
+		scheduleCommandUseCase.skipNowSchedule(currentAuth.memberId(), scheduleDetailId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_SKIP_SUCCESS));
 	}
@@ -91,7 +91,7 @@ public class ScheduleController {
 		@PathVariable("scheduleDetailId") Long scheduleDetailId,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		scheduleCommandService.completeNowSchedule(currentAuth.memberId(), scheduleDetailId, request);
+		scheduleCommandUseCase.completeNowSchedule(currentAuth.memberId(), scheduleDetailId, request);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.NOW_SCHEDULE_COMPLETE_SUCCESS));
 	}
@@ -101,7 +101,7 @@ public class ScheduleController {
 	public ResponseEntity<SuccessResponse<FireLitResponse>> fireLit(
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		FireLitResponse response = scheduleCommandService.fireLit(currentAuth.memberId());
+		FireLitResponse response = scheduleCommandUseCase.fireLit(currentAuth.memberId());
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.FIRE_LIT_SUCCESS, response));
 	}
@@ -112,7 +112,7 @@ public class ScheduleController {
 		@PathVariable("childId") Long childId,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		DefaultScheduleContentResponse response = scheduleQueryService.getDefaultSchedule(currentAuth.memberId(), childId);
+		DefaultScheduleContentResponse response = scheduleQueryUseCase.getDefaultSchedule(currentAuth.memberId(), childId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.DEFAULT_CONTENT_GET_SUCCESS, response));
 	}

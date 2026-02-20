@@ -1,4 +1,4 @@
-package com.kiero.global.infrastructure.s3.dto;
+package com.kiero.global.s3.dto;
 
 public record PresignedUrlResponse(
 	String presignedUrl,

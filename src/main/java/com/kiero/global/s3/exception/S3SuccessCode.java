@@ -1,4 +1,4 @@
-package com.kiero.global.infrastructure.s3.exception;
+package com.kiero.global.s3.exception;
 
 import org.springframework.http.HttpStatus;
 

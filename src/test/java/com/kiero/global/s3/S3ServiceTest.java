@@ -1,8 +1,8 @@
-package com.kiero.global.infrastructure.s3;
+package com.kiero.global.s3;
 
-import com.kiero.global.infrastructure.s3.dto.PresignedUrlRequest;
-import com.kiero.global.infrastructure.s3.dto.PresignedUrlResponse;
-import com.kiero.global.infrastructure.s3.service.S3Service;
+import com.kiero.global.s3.dto.PresignedUrlRequest;
+import com.kiero.global.s3.dto.PresignedUrlResponse;
+import com.kiero.global.s3.service.S3Service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

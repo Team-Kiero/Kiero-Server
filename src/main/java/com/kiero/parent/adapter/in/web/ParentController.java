@@ -18,15 +18,15 @@ import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
-import com.kiero.invitation.application.service.InviteCodeService;
+import com.kiero.invitation.application.port.in.InviteCodeUseCase;
 import com.kiero.parent.application.dto.ChildInfoResponse;
 import com.kiero.parent.application.dto.InviteCodeCreateRequest;
 import com.kiero.parent.application.dto.InviteCodeCreateResponse;
 import com.kiero.parent.application.dto.InviteStatusResponse;
 import com.kiero.parent.application.dto.ParentLoginResponse;
 import com.kiero.parent.application.exception.ParentSuccessCode;
+import com.kiero.parent.application.port.in.ParentChildQueryUseCase;
 import com.kiero.parent.application.port.in.ParentLoginUseCase;
-import com.kiero.parent.application.port.in.ParentQueryUseCase;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -43,9 +43,10 @@ public class ParentController {
 	private static final String REFRESH_TOKEN = "refreshToken";
 	private static final int COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 
+	private final ParentChildQueryUseCase parentChildQueryUseCase;
 	private final ParentLoginUseCase parentLoginUseCase;
-	private final ParentQueryUseCase parentQueryUseCase;
-	private final InviteCodeService inviteCodeService;
+
+	private final InviteCodeUseCase inviteCodeUseCase;
 
 	@PostMapping("/login")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> login(
@@ -92,7 +93,7 @@ public class ParentController {
 		@CurrentMember CurrentAuth currentAuth,
 		@Valid @RequestBody InviteCodeCreateRequest request
 	) {
-		String inviteCode = inviteCodeService.createInviteCode(
+		String inviteCode = inviteCodeUseCase.createInviteCode(
 			currentAuth.memberId(),
 			request.childLastName(),
 			request.childFirstName()
@@ -116,7 +117,7 @@ public class ParentController {
 		@RequestParam("childLastName") @NotBlank(message = "자녀의 성은 필수입니다.") String childLastName,
 		@RequestParam("childFirstName") @NotBlank(message = "자녀의 이름은 필수입니다.") String childFirstName
 	) {
-		InviteStatusResponse response = parentQueryUseCase.checkInviteStatus(
+		InviteStatusResponse response = parentChildQueryUseCase.checkInviteStatus(
 			currentAuth.memberId(),
 			childLastName,
 			childFirstName
@@ -131,7 +132,7 @@ public class ParentController {
 	public ResponseEntity<SuccessResponse<List<ChildInfoResponse>>> getMyChildren(
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		List<ChildInfoResponse> children = parentQueryUseCase.getMyChildren(currentAuth.memberId());
+		List<ChildInfoResponse> children = parentChildQueryUseCase.getMyChildren(currentAuth.memberId());
 
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ParentSuccessCode.GET_CHILDREN_SUCCESS, children));

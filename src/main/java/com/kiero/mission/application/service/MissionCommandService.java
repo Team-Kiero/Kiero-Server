@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.child.application.exception.ChildErrorCode;
-import com.kiero.child.application.port.out.ChildLoadPort;
+import com.kiero.child.application.port.in.ChildByIdUseCase;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
 import com.kiero.mission.application.dto.MissionBulkCreateRequest;
@@ -23,8 +23,8 @@ import com.kiero.mission.application.port.out.MissionEventPort;
 import com.kiero.mission.application.port.out.MissionPersistencePort;
 import com.kiero.mission.domain.Mission;
 import com.kiero.parent.application.exception.ParentErrorCode;
-import com.kiero.parent.application.port.out.ParentChildAccessPort;
-import com.kiero.parent.application.port.out.ParentLoadPort;
+import com.kiero.parent.application.port.in.ParentByIdUseCase;
+import com.kiero.parent.application.port.in.ParentChildAccessUseCase;
 import com.kiero.parent.domain.Parent;
 
 import lombok.RequiredArgsConstructor;
@@ -38,19 +38,20 @@ public class MissionCommandService implements MissionCommandUseCase {
 	private final MissionEventPort eventPort;
 
 	private final MissionPersistencePort missionPort;
-	private final ParentLoadPort parentLoadPort;
-	private final ChildLoadPort childLoadPort;
-	private final ParentChildAccessPort parentChildAccessPort;
+
+	private final ParentByIdUseCase parentByIdUseCase;
+	private final ParentChildAccessUseCase parentChildAccessUseCase;
+	private final ChildByIdUseCase childByIdUseCase;
 
 	@Override
 	@Transactional
 	public MissionResponse createMission(Long parentId, Long childId, MissionCreateRequest request) {
 		validateParentChildRelation(parentId, childId);
 
-		Parent parent = parentLoadPort.findById(parentId)
+		Parent parent = parentByIdUseCase.findById(parentId)
 			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
 
-		Child child = childLoadPort.findById(childId)
+		Child child = childByIdUseCase.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
 		Mission mission = Mission.create(
@@ -80,10 +81,10 @@ public class MissionCommandService implements MissionCommandUseCase {
 	public List<MissionResponse> bulkCreateMissions(Long parentId, Long childId, MissionBulkCreateRequest request) {
 		validateParentChildRelation(parentId, childId);
 
-		Parent parent = parentLoadPort.findById(parentId)
+		Parent parent = parentByIdUseCase.findById(parentId)
 			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
 
-		Child child = childLoadPort.findById(childId)
+		Child child = childByIdUseCase.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
 		List<Mission> missions = new ArrayList<>();
@@ -120,7 +121,7 @@ public class MissionCommandService implements MissionCommandUseCase {
 			throw new KieroException(MissionErrorCode.MISSION_EXPIRED);
 		}
 
-		Child child = childLoadPort.findByIdWithLock(childId)
+		Child child = childByIdUseCase.findByIdWithLock(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
 		mission.complete();
@@ -140,7 +141,7 @@ public class MissionCommandService implements MissionCommandUseCase {
 	}
 
 	private void validateParentChildRelation(Long parentId, Long childId) {
-		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
+		if (!parentChildAccessUseCase.existsByParentIdAndChildId(parentId, childId)) {
 			throw new KieroException(MissionErrorCode.NOT_YOUR_CHILD);
 		}
 	}

@@ -13,12 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.child.application.exception.ChildErrorCode;
-import com.kiero.child.application.port.out.ChildLoadPort;
+import com.kiero.child.application.port.in.ChildByIdUseCase;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.exception.ParentErrorCode;
-import com.kiero.parent.application.port.out.ParentChildAccessPort;
-import com.kiero.parent.application.port.out.ParentLoadPort;
+import com.kiero.parent.application.port.in.ParentByIdUseCase;
+import com.kiero.parent.application.port.in.ParentChildAccessUseCase;
 import com.kiero.parent.domain.Parent;
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.NormalScheduleDto;
@@ -46,9 +46,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ScheduleQueryService implements ScheduleQueryUseCase {
 
-	private final ParentLoadPort parentLoadPort;
-	private final ChildLoadPort childLoadPort;
-	private final ParentChildAccessPort parentChildAccessPort;
+	private final ParentByIdUseCase parentByIdUseCase;
+	private final ChildByIdUseCase childByIdUseCase;
+	private final ParentChildAccessUseCase parentChildAccessUseCase;
 
 	private final SchedulePersistencePort schedulePort;
 	private final ScheduleRepeatDaysPersistencePort repeatDaysPort;
@@ -224,12 +224,12 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 	}
 
 	private void checkIsExistsAndAccessibleByParentIdAndChildId(Long parentId, Long childId) {
-		Parent parent = parentLoadPort.findById(parentId)
+		Parent parent = parentByIdUseCase.findById(parentId)
 			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
-		Child child = childLoadPort.findById(childId)
+		Child child = childByIdUseCase.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
-		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
+		if (!parentChildAccessUseCase.existsByParentIdAndChildId(parentId, childId)) {
 			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
 	}

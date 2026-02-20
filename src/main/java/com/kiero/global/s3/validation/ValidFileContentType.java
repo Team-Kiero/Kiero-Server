@@ -1,4 +1,4 @@
-package com.kiero.global.infrastructure.s3.validation;
+package com.kiero.global.s3.validation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -6,7 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.kiero.global.infrastructure.s3.enums.AllowedFileType;
+import com.kiero.global.s3.enums.AllowedFileType;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;

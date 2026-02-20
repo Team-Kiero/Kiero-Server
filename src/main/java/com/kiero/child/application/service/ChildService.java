@@ -12,7 +12,7 @@ import com.kiero.child.application.dto.ChildLoginResponse;
 import com.kiero.child.application.dto.ChildMeResponse;
 import com.kiero.child.application.dto.ChildSignupRequest;
 import com.kiero.child.application.exception.ChildErrorCode;
-import com.kiero.child.application.port.in.ChildMeUseCase;
+import com.kiero.child.application.port.in.ChildByIdUseCase;
 import com.kiero.child.application.port.in.ChildQueryUseCase;
 import com.kiero.child.application.port.in.ChildSignupUseCase;
 import com.kiero.child.application.port.out.AuthGeneratePort;
@@ -25,8 +25,8 @@ import com.kiero.global.auth.enums.Role;
 import com.kiero.global.exception.KieroException;
 import com.kiero.invitation.application.exception.InvitationErrorCode;
 import com.kiero.invitation.domain.InviteCode;
-import com.kiero.parent.application.port.out.ParentChildSavePort;
-import com.kiero.parent.application.port.out.ParentLoadPort;
+import com.kiero.parent.application.port.in.ParentByIdUseCase;
+import com.kiero.parent.application.port.in.ParentChildSaveUseCase;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.domain.ParentChild;
 
@@ -36,11 +36,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ChildService implements ChildSignupUseCase, ChildMeUseCase, ChildQueryUseCase {
+public class ChildService implements ChildSignupUseCase, ChildQueryUseCase, ChildByIdUseCase {
 
 	private final InviteCodeValidatePort inviteCodeValidatePort;
-	private final ParentLoadPort parentLoadPort;
-	private final ParentChildSavePort parentChildSavePort;
+
+	private final ParentByIdUseCase parentByIdUseCase;
+	private final ParentChildSaveUseCase parentChildSaveUseCase;
+
 	private final ChildSavePort childSavePort;
 	private final ChildLoadPort childLoadPort;
 	private final AuthGeneratePort authGeneratePort;
@@ -62,7 +64,7 @@ public class ChildService implements ChildSignupUseCase, ChildMeUseCase, ChildQu
 		log.info("Invite code validated. Searching for parent with ID: {}", inviteCode.getParentId());
 
 		// 2. 부모 엔티티 조회
-		Parent parent = parentLoadPort.findById(inviteCode.getParentId())
+		Parent parent = parentByIdUseCase.findById(inviteCode.getParentId())
 			.orElseThrow(() -> {
 				log.error("Parent not found in DB with ID: {}", inviteCode.getParentId());
 				return new KieroException(InvitationErrorCode.PARENT_NOT_FOUND);
@@ -78,7 +80,7 @@ public class ChildService implements ChildSignupUseCase, ChildMeUseCase, ChildQu
 
 		// 4. ParentChild 관계 생성
 		ParentChild parentChild = ParentChild.create(parent, savedChild);
-		parentChildSavePort.save(parentChild);
+		parentChildSaveUseCase.save(parentChild);
 
 		log.info("ParentChild relationship created: parentId={}, childId={}", parent.getId(), savedChild.getId());
 
@@ -111,4 +113,7 @@ public class ChildService implements ChildSignupUseCase, ChildMeUseCase, ChildQu
 		return childLoadPort.findByIdWithLock(childId);
 	}
 
+
+	@Override
+	public Optional<Child> findById(Long childId) { return childLoadPort.findById(childId); }
 }

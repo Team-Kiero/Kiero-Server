@@ -12,7 +12,7 @@ import com.kiero.feed.application.port.out.FeedItemCommandPort;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent.FeedItemInfo;
-import com.kiero.parent.application.port.out.ParentChildLoadPort;
+import com.kiero.parent.application.port.in.ParentChildQueryUseCase;
 import com.kiero.parent.domain.Parent;
 
 import jakarta.persistence.EntityManager;
@@ -26,8 +26,9 @@ public class FeedCreateService implements FeedCreateUseCase {
 	@PersistenceContext
 	private final EntityManager entityManager;
 
+	private final ParentChildQueryUseCase parentChildQueryUseCase;
+
 	private final FeedItemCommandPort feedItemCommandPort;
-	private final ParentChildLoadPort parentChildLoadPort;
 	private final ApplicationEventPublisher publisher;
 
 	@Override
@@ -35,7 +36,7 @@ public class FeedCreateService implements FeedCreateUseCase {
 	public void createForParentsOfChild(CreateFeedCommand command) {
 
 		Child childRef = entityManager.getReference(Child.class, command.childId());
-		List<Parent> parents = parentChildLoadPort.findParentsByChildId(command.childId());
+		List<Parent> parents = parentChildQueryUseCase.findParentsByChildId(command.childId());
 
 		List<FeedItem> feedItems = parents.stream()
 			.map(parent -> FeedItem.create(

@@ -35,11 +35,6 @@ public class ParentChildPersistenceAdapter implements ParentChildLoadPort, Paren
 	}
 
 	@Override
-	public boolean existsByParentAndChild(Parent parent, Child child) {
-		return parentChildRepository.existsByParentAndChild(parent, child);
-	}
-
-	@Override
 	public boolean existsByParentIdAndChildId(Long parentId, Long childId) {
 		return parentChildRepository.existsByParentIdAndChildId(parentId, childId);
 	}

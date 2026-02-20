@@ -1,7 +1,7 @@
-package com.kiero.global.infrastructure.s3.dto;
+package com.kiero.global.s3.dto;
 
-import com.kiero.global.infrastructure.s3.enums.AllowedFileType;
-import com.kiero.global.infrastructure.s3.validation.ValidFileContentType;
+import com.kiero.global.s3.enums.AllowedFileType;
+import com.kiero.global.s3.validation.ValidFileContentType;
 
 import jakarta.validation.constraints.NotBlank;
 

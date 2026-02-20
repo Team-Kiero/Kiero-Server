@@ -14,7 +14,7 @@ import com.kiero.child.application.dto.ChildLoginResponse;
 import com.kiero.child.application.dto.ChildMeResponse;
 import com.kiero.child.application.dto.ChildSignupRequest;
 import com.kiero.child.application.exception.ChildSuccessCode;
-import com.kiero.child.application.port.in.ChildMeUseCase;
+import com.kiero.child.application.port.in.ChildQueryUseCase;
 import com.kiero.child.application.port.in.ChildSignupUseCase;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
@@ -33,7 +33,7 @@ public class ChildController {
 	private static final String REFRESH_TOKEN = "refreshToken";
 	private static final int COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 	private final ChildSignupUseCase childSignupUseCase;
-	private final ChildMeUseCase childMeUseCase;
+	private final ChildQueryUseCase childQueryUseCase;
 
 	@PostMapping("/signup")
 	public ResponseEntity<SuccessResponse<ChildLoginResponse>> signup(
@@ -59,7 +59,7 @@ public class ChildController {
 	public ResponseEntity<SuccessResponse<ChildMeResponse>> getMyInfo(
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		ChildMeResponse response = childMeUseCase.getMyInfo(currentAuth.memberId());
+		ChildMeResponse response = childQueryUseCase.getMyInfo(currentAuth.memberId());
 
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ChildSuccessCode.GET_INFO_SUCCESS, response));

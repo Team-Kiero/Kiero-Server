@@ -11,6 +11,8 @@ import com.kiero.mission.application.dto.MissionResponse;
 import com.kiero.mission.application.exception.MissionErrorCode;
 import com.kiero.mission.application.port.in.MissionQueryUseCase;
 import com.kiero.mission.application.port.out.MissionPersistencePort;
+import com.kiero.parent.application.port.in.ParentChildAccessUseCase;
+import com.kiero.parent.application.port.in.ParentChildQueryUseCase;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class MissionQueryService implements MissionQueryUseCase {
 
 	private final MissionPersistencePort missionPort;
-	private final ParentChildAccessPort parentChildAccessPort;
+	private final ParentChildAccessUseCase parentChildAccessUseCase;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -29,7 +31,7 @@ public class MissionQueryService implements MissionQueryUseCase {
 
 		// 1. 특정 자녀 조회
 		if (childId != null) {
-			if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
+			if (!parentChildAccessUseCase.existsByParentIdAndChildId(parentId, childId)) {
 				throw new KieroException(MissionErrorCode.NOT_YOUR_CHILD);
 			}
 			return missionPort.findAllByChildIdAndDueAtGreaterThanEqual(childId, today)

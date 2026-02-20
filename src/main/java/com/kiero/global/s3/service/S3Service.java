@@ -1,4 +1,4 @@
-package com.kiero.global.infrastructure.s3.service;
+package com.kiero.global.s3.service;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -6,8 +6,8 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.kiero.global.infrastructure.s3.dto.PresignedUrlRequest;
-import com.kiero.global.infrastructure.s3.dto.PresignedUrlResponse;
+import com.kiero.global.s3.dto.PresignedUrlRequest;
+import com.kiero.global.s3.dto.PresignedUrlResponse;
 
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;

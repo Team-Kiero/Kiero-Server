@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.kiero.global.auth.jwt.application.port.out.ParentChildRelationQueryPort;
-import com.kiero.parent.application.port.in.ParentQueryUseCase;
+import com.kiero.parent.application.port.in.ParentChildQueryUseCase;
 
 import lombok.RequiredArgsConstructor;
 
@@ -13,10 +13,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ParentChildRelationQueryAdapter implements ParentChildRelationQueryPort {
 
-	private final ParentQueryUseCase parentQueryUseCase;
+	private final ParentChildQueryUseCase parentChildQueryUseCase;
 
 	@Override
 	public List<Long> findChildIdsByParentId(Long parentId) {
-		return parentQueryUseCase.getMyChildIds(parentId);
+		return parentChildQueryUseCase.getMyChildIds(parentId);
 	}
 }

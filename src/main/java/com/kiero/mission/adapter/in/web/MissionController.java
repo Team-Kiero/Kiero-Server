@@ -26,6 +26,9 @@ import com.kiero.mission.application.dto.MissionSuggestionRequest;
 import com.kiero.mission.application.dto.MissionSuggestionResponse;
 import com.kiero.mission.application.dto.MissionsByDateResponse;
 import com.kiero.mission.application.exception.MissionSuccessCode;
+import com.kiero.mission.application.port.in.MissionCommandUseCase;
+import com.kiero.mission.application.port.in.MissionQueryUseCase;
+import com.kiero.mission.application.port.in.MissionSuggestionUseCase;
 import com.kiero.mission.application.service.MissionCommandService;
 import com.kiero.mission.application.service.MissionQueryService;
 import com.kiero.mission.application.service.MissionSuggestionService;
@@ -39,9 +42,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
 public class MissionController {
-    private final MissionCommandService missionCommandService;
-    private final MissionQueryService missionQueryService;
-    private final MissionSuggestionService missionSuggestionService;
+    private final MissionCommandUseCase missionCommandUseCase;
+    private final MissionQueryUseCase missionQueryUseCase;
+    private final MissionSuggestionUseCase missionSuggestionUseCase;
 
     @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
     @PostMapping("/missions/{childId}")
@@ -50,7 +53,7 @@ public class MissionController {
             @PathVariable Long childId,
             @Valid @RequestBody MissionCreateRequest request
     ) {
-        MissionResponse response = missionCommandService.createMission(currentAuth.memberId(), childId, request);
+        MissionResponse response = missionCommandUseCase.createMission(currentAuth.memberId(), childId, request);
 
         return ResponseEntity.ok()
                 .body(SuccessResponse.of(MissionSuccessCode.MISSION_CREATED, response));
@@ -63,7 +66,7 @@ public class MissionController {
             @PathVariable Long childId,
             @Valid @RequestBody MissionBulkCreateRequest request
     ) {
-        List<MissionResponse> responses = missionCommandService.bulkCreateMissions(currentAuth.memberId(), childId, request);
+        List<MissionResponse> responses = missionCommandUseCase.bulkCreateMissions(currentAuth.memberId(), childId, request);
 
         return ResponseEntity.ok()
                 .body(SuccessResponse.of(MissionSuccessCode.MISSIONS_BULK_CREATED, responses));
@@ -78,9 +81,9 @@ public class MissionController {
         List<MissionResponse> missions;
 
         if (currentAuth.role() == Role.PARENT) {
-            missions = missionQueryService.getMissionsByParent(currentAuth.memberId(), childId);
+            missions = missionQueryUseCase.getMissionsByParent(currentAuth.memberId(), childId);
         } else if (currentAuth.role() == Role.CHILD) {
-            missions = missionQueryService.getMissionsByChild(currentAuth.memberId());
+            missions = missionQueryUseCase.getMissionsByChild(currentAuth.memberId());
         } else {
             throw new KieroException(ErrorCode.ACCESS_DENIED);
         }
@@ -97,7 +100,7 @@ public class MissionController {
             @CurrentMember CurrentAuth currentAuth,
             @PathVariable Long missionId
     ) {
-        MissionResponse response = missionCommandService.completeMission(currentAuth.memberId(), missionId);
+        MissionResponse response = missionCommandUseCase.completeMission(currentAuth.memberId(), missionId);
 
         return ResponseEntity.ok()
                 .body(SuccessResponse.of(MissionSuccessCode.MISSION_COMPLETED, response));
@@ -109,7 +112,7 @@ public class MissionController {
             @CurrentMember CurrentAuth currentAuth,
             @Valid @RequestBody MissionSuggestionRequest request
     ) {
-        MissionSuggestionResponse response = missionSuggestionService.suggestMissions(request.noticeText());
+        MissionSuggestionResponse response = missionSuggestionUseCase.suggestMissions(request.noticeText());
 
         log.info("Mission suggestions generated for parentId={}", currentAuth.memberId());
 
