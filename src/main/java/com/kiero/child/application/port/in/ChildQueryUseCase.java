@@ -6,5 +6,7 @@ import com.kiero.child.application.dto.ChildMeResponse;
 import com.kiero.child.domain.Child;
 
 public interface ChildQueryUseCase {
+	Optional<Child> findById(Long childId);
+	Optional<Child> findByIdWithLock(Long childId);
 	ChildMeResponse getMyInfo(Long childId);
 }

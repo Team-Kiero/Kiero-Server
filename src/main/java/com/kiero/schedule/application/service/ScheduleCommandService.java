@@ -13,12 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.child.application.exception.ChildErrorCode;
-import com.kiero.child.application.port.in.ChildByIdUseCase;
+import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.exception.ParentErrorCode;
-import com.kiero.parent.application.port.in.ParentByIdUseCase;
-import com.kiero.parent.application.port.in.ParentChildAccessUseCase;
+import com.kiero.parent.application.port.out.ParentChildAccessPort;
+import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 import com.kiero.schedule.application.dto.FireLitEvent;
 import com.kiero.schedule.application.dto.FireLitResponse;
@@ -47,9 +47,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 	private static final int ALL_SCHEDULE_SUCCESS_REWARD = 10;
 
-	private final ParentByIdUseCase parentByIdUseCase;
-	private final ChildByIdUseCase childByIdUseCase;
-	private final ParentChildAccessUseCase parentChildAccessUseCase;
+	private final ParentLoadPort parentLoadPort;
+	private final ChildLoadPort childLoadPort;
+	private final ParentChildAccessPort parentChildAccessPort;
 
 	private final SchedulePersistencePort schedulePort;
 	private final ScheduleRepeatDaysPersistencePort repeatDaysPort;
@@ -61,12 +61,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	@Override
 	@Transactional
 	public void addSchedule(ScheduleAddRequest request, Long parentId, Long childId) {
-		Parent parent = parentByIdUseCase.findById(parentId)
+		Parent parent = parentLoadPort.findById(parentId)
 			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
-		Child child = childByIdUseCase.findById(childId)
+		Child child = childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
-		if (!parentChildAccessUseCase.existsByParentIdAndChildId(parentId, childId)) {
+		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
 			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
 
@@ -106,7 +106,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	@Override
 	@Transactional
 	public void skipNowSchedule(Long childId, Long scheduleDetailId) {
-		childByIdUseCase.findById(childId)
+		childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
 		ScheduleDetail scheduleDetail = detailPort.findById(scheduleDetailId)
@@ -160,7 +160,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	public FireLitResponse fireLit(Long childId) {
 		LocalDate today = LocalDate.now(clock);
 
-		Child child = childByIdUseCase.findById(childId)
+		Child child = childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
 		List<ScheduleDetail> all = detailPort.findByDateAndChildId(today, childId);

@@ -10,9 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.kiero.child.domain.Child;
 import com.kiero.parent.application.dto.ChildInfoResponse;
 import com.kiero.parent.application.dto.InviteStatusResponse;
-import com.kiero.parent.application.port.in.ParentChildAccessUseCase;
-import com.kiero.parent.application.port.in.ParentChildSaveUseCase;
 import com.kiero.parent.application.port.in.ParentChildQueryUseCase;
+import com.kiero.parent.application.port.in.ParentChildSaveUseCase;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.application.port.out.ParentChildSavePort;
@@ -25,8 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ParentChildService implements ParentChildQueryUseCase, ParentChildSaveUseCase,
-	ParentChildAccessUseCase {
+public class ParentChildService implements ParentChildQueryUseCase, ParentChildSaveUseCase {
 
 	private final ParentChildLoadPort parentChildLoadPort;
 	private final ParentChildAccessPort parentChildAccessPort;

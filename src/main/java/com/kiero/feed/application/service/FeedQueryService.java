@@ -8,8 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.child.application.exception.ChildErrorCode;
-import com.kiero.child.application.port.in.ChildByIdUseCase;
-import com.kiero.child.application.port.in.ChildQueryUseCase;
+import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.feed.application.dto.FeedCursor;
 import com.kiero.feed.application.dto.FeedGetResponse;
@@ -19,8 +18,7 @@ import com.kiero.feed.application.port.out.FeedItemQueryPort;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.exception.ParentErrorCode;
-import com.kiero.parent.application.port.in.ParentChildAccessUseCase;
-import com.kiero.parent.application.port.in.ParentChildQueryUseCase;
+import com.kiero.parent.application.port.out.ParentChildAccessPort;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,14 +28,14 @@ public class FeedQueryService implements FeedQueryUseCase {
 
 	private final FeedItemQueryPort feedItemQueryPort;
 
-	private final ParentChildAccessUseCase parentChildAccessUseCase;
-	private final ChildByIdUseCase childByIdUseCase;
+	private final ParentChildAccessPort parentChildAccessPort;
+	private final ChildLoadPort childLoadPort;
 
 	@Override
 	@Transactional(readOnly = true)
 	public FeedGetResponse getFeed(Long parentId, Long childId, Integer size, String cursor) {
 
-		Child child = childByIdUseCase.findById(childId)
+		Child child = childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
 		isParentChildValid(parentId, childId);
@@ -74,7 +72,7 @@ public class FeedQueryService implements FeedQueryUseCase {
 	}
 
 	private void isParentChildValid(Long parentId, Long childId) {
-		boolean parentChildExists = parentChildAccessUseCase.existsByParentIdAndChildId(parentId, childId);
+		boolean parentChildExists = parentChildAccessPort.existsByParentIdAndChildId(parentId, childId);
 		if (!parentChildExists) {
 			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
 		}

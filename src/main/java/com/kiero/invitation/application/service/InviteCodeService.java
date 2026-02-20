@@ -25,7 +25,6 @@ public class InviteCodeService implements InviteCodeUseCase {
     private final InviteCodeQueryPort inviteCodeQueryPort;
     private final InviteCodeCommandPort inviteCodeCommandPort;
     private final InviteCodeGeneratorPort inviteCodeGeneratorPort;
-
     private final InviteLockPort inviteLockPort;
 
     @Override

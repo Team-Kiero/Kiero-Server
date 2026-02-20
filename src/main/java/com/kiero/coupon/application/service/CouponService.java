@@ -6,8 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kiero.child.application.port.in.ChildByIdUseCase;
-import com.kiero.child.application.port.in.ChildQueryUseCase;
+import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.coupon.application.dto.CouponPurchaseEvent;
 import com.kiero.coupon.application.dto.CouponResponse;
@@ -26,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CouponService implements GetCouponsUseCase, PurchaseCouponUseCase {
 
-	private final ChildByIdUseCase childByIdUseCase;
+	private final ChildLoadPort childLoadPort;
 
 	private final CouponLoadPort couponLoadPort;
 	private final CouponPurchaseEventPort eventPort;
@@ -44,7 +43,7 @@ public class CouponService implements GetCouponsUseCase, PurchaseCouponUseCase {
 	@Transactional
 	public CouponResponse purchase(PurchaseCouponCommand command) {
 
-		Child child = childByIdUseCase.findByIdWithLock(command.childId())
+		Child child = childLoadPort.findByIdWithLock(command.childId())
 			.orElseThrow(() -> new KieroException(CouponErrorCode.CHILD_NOT_FOUND));
 
 		Coupon coupon = couponLoadPort.findById(command.couponId())

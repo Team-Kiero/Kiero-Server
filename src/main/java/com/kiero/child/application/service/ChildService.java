@@ -12,21 +12,20 @@ import com.kiero.child.application.dto.ChildLoginResponse;
 import com.kiero.child.application.dto.ChildMeResponse;
 import com.kiero.child.application.dto.ChildSignupRequest;
 import com.kiero.child.application.exception.ChildErrorCode;
-import com.kiero.child.application.port.in.ChildByIdUseCase;
 import com.kiero.child.application.port.in.ChildQueryUseCase;
 import com.kiero.child.application.port.in.ChildSignupUseCase;
 import com.kiero.child.application.port.out.AuthGeneratePort;
 import com.kiero.child.application.port.out.ChildJoinedEventPort;
 import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.application.port.out.ChildSavePort;
-import com.kiero.child.application.port.out.InviteCodeValidatePort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.auth.enums.Role;
 import com.kiero.global.exception.KieroException;
 import com.kiero.invitation.application.exception.InvitationErrorCode;
+import com.kiero.invitation.application.port.in.InviteCodeUseCase;
 import com.kiero.invitation.domain.InviteCode;
-import com.kiero.parent.application.port.in.ParentByIdUseCase;
 import com.kiero.parent.application.port.in.ParentChildSaveUseCase;
+import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 import com.kiero.parent.domain.ParentChild;
 
@@ -36,12 +35,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ChildService implements ChildSignupUseCase, ChildQueryUseCase, ChildByIdUseCase {
+public class ChildService implements ChildSignupUseCase, ChildQueryUseCase {
 
-	private final InviteCodeValidatePort inviteCodeValidatePort;
-
-	private final ParentByIdUseCase parentByIdUseCase;
+	private final InviteCodeUseCase inviteCodeUseCase;
 	private final ParentChildSaveUseCase parentChildSaveUseCase;
+
+	private final ParentLoadPort parentLoadPort;
 
 	private final ChildSavePort childSavePort;
 	private final ChildLoadPort childLoadPort;
@@ -55,7 +54,7 @@ public class ChildService implements ChildSignupUseCase, ChildQueryUseCase, Chil
 			request.inviteCode(), request.lastName(), request.firstName());
 
 		// 1. 초대 코드 검증 및 삭제 (분산 락으로 원자적 처리)
-		InviteCode inviteCode = inviteCodeValidatePort.validateAndDeleteWithLock(
+		InviteCode inviteCode = inviteCodeUseCase.validateAndConsume(
 			request.inviteCode(),
 			request.lastName(),
 			request.firstName()
@@ -64,7 +63,7 @@ public class ChildService implements ChildSignupUseCase, ChildQueryUseCase, Chil
 		log.info("Invite code validated. Searching for parent with ID: {}", inviteCode.getParentId());
 
 		// 2. 부모 엔티티 조회
-		Parent parent = parentByIdUseCase.findById(inviteCode.getParentId())
+		Parent parent = parentLoadPort.findById(inviteCode.getParentId())
 			.orElseThrow(() -> {
 				log.error("Parent not found in DB with ID: {}", inviteCode.getParentId());
 				return new KieroException(InvitationErrorCode.PARENT_NOT_FOUND);
