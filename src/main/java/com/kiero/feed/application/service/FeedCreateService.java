@@ -12,7 +12,6 @@ import com.kiero.feed.application.port.out.FeedItemCommandPort;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent.FeedItemInfo;
-import com.kiero.parent.application.port.in.ParentChildQueryUseCase;
 import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.domain.Parent;
 

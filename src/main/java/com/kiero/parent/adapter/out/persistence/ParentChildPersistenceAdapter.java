@@ -1,11 +1,9 @@
 package com.kiero.parent.adapter.out.persistence;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
-import com.kiero.child.domain.Child;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.application.port.out.ParentChildSavePort;
