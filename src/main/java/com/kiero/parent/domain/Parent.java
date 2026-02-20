@@ -71,4 +71,10 @@ public class Parent extends BaseTimeEntity {
 			.build();
 	}
 
+	public void updateKakaoProfile(final String name, final String email, final String image) {
+		this.name = name;
+		this.email = email;
+		this.image = image;
+	}
+
 }
