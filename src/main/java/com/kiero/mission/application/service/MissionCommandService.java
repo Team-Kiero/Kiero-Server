@@ -160,6 +160,19 @@ public class MissionCommandService implements MissionCommandUseCase {
 		return MissionResponse.from(mission);
 	}
 
+	@Override
+	@Transactional
+	public void deleteMission(Long parentId, Long missionId) {
+		Mission mission = missionPort.findById(missionId)
+			.orElseThrow(() -> new KieroException(MissionErrorCode.MISSION_NOT_FOUND));
+
+		if (!mission.getParent().getId().equals(parentId)) {
+			throw new KieroException(MissionErrorCode.NOT_YOUR_MISSION);
+		}
+
+		missionPort.delete(mission);
+	}
+
 	private void validateParentChildRelation(Long parentId, Long childId) {
 		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
 			throw new KieroException(MissionErrorCode.NOT_YOUR_CHILD);

@@ -16,4 +16,6 @@ public interface MissionCommandUseCase {
 
 	MissionResponse updateMission(Long parentId, Long missionId, MissionUpdateRequest request);
 
+	void deleteMission(Long parentId, Long missionId);
+
 }

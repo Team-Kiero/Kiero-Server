@@ -19,4 +19,6 @@ public interface MissionPersistencePort {
 
 	Optional<Mission> findByIdWithLock(Long missionId);
 
+	void delete(Mission mission);
+
 }

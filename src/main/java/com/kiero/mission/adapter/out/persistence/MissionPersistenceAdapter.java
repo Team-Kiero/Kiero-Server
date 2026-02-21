@@ -47,4 +47,9 @@ public class MissionPersistenceAdapter implements MissionPersistencePort {
 		return missionRepository.findByIdWithLock(missionId);
 	}
 
+	@Override
+	public void delete(Mission mission) {
+		missionRepository.delete(mission);
+	}
+
 }

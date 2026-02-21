@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -90,6 +91,18 @@ public class MissionController {
 
         return ResponseEntity.ok()
                 .body(SuccessResponse.of(MissionSuccessCode.MISSIONS_RETRIEVED, response));
+    }
+
+    @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+    @DeleteMapping("/missions/{missionId}")
+    public ResponseEntity<SuccessResponse<?>> deleteMission(
+            @CurrentMember CurrentAuth currentAuth,
+            @PathVariable Long missionId
+    ) {
+        missionCommandUseCase.deleteMission(currentAuth.memberId(), missionId);
+
+        return ResponseEntity.ok()
+                .body(SuccessResponse.of(MissionSuccessCode.MISSION_DELETED));
     }
 
     @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
