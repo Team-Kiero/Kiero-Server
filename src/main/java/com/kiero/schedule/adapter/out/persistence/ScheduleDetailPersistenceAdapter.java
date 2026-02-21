@@ -43,11 +43,6 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	}
 
 	@Override
-	public boolean existsByScheduleIdAndDate(Long scheduleId, LocalDate date) {
-		return scheduleDetailRepository.existsByScheduleIdAndDate(scheduleId, date);
-	}
-
-	@Override
 	public List<ScheduleDetail> findAllByScheduleChildIdAndDateGreaterThanEqual(Long childId, LocalDate date) {
 		return scheduleDetailRepository.findAllByScheduleChildIdAndDateGreaterThanEqual(childId, date);
 	}

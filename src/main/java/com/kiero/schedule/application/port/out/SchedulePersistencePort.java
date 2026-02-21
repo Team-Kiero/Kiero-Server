@@ -18,8 +18,6 @@ public interface SchedulePersistencePort {
 
 	Optional<Schedule> findFirstByChildIdOrderByCreatedAtDesc(Long childId);
 
-	List<Schedule> findAllByChildIdIn(List<Long> childIds);
-
 	List<Schedule> findRecurringSchedulesToGenerateTodayDetail(
 		LocalDateTime startOfToday,
 		DayOfWeek todayDayOfWeek,

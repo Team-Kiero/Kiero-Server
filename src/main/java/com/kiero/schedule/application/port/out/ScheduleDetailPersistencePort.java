@@ -18,8 +18,6 @@ public interface ScheduleDetailPersistencePort {
 
 	boolean existsStoneUsedToday(List<Long> scheduleIds, LocalDate date);
 
-	boolean existsByScheduleIdAndDate(Long scheduleId, LocalDate date);
-
 	List<ScheduleDetail> findAllByScheduleChildIdAndDateGreaterThanEqual(Long childId, LocalDate date);
 
 	void saveAll(List<ScheduleDetail> details);

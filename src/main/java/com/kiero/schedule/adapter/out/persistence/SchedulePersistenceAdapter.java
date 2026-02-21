@@ -40,11 +40,6 @@ public class SchedulePersistenceAdapter implements SchedulePersistencePort {
 	}
 
 	@Override
-	public List<Schedule> findAllByChildIdIn(List<Long> childIds) {
-		return scheduleRepository.findAllByChildIdIn(childIds);
-	}
-
-	@Override
 	public List<Schedule> findRecurringSchedulesToGenerateTodayDetail(LocalDateTime startOfToday, DayOfWeek todayDayOfWeek, LocalDate today) {
 		return scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(startOfToday, todayDayOfWeek, today);
 	}
