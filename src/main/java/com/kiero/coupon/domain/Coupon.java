@@ -26,8 +26,8 @@ import lombok.NoArgsConstructor;
 @Table(name = CouponTableConstants.TABLE_COUPON)
 public class Coupon {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = CouponTableConstants.COLUMN_ID)
 	private Long id;
 

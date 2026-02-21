@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,7 @@ import com.kiero.coupon.application.dto.CouponCreateRequest;
 import com.kiero.coupon.application.dto.CouponResponse;
 import com.kiero.coupon.application.dto.CouponUpdateRequest;
 import com.kiero.coupon.application.dto.CreateCouponCommand;
+import com.kiero.coupon.application.dto.DeleteCouponCommand;
 import com.kiero.coupon.application.dto.PurchaseCouponCommand;
 import com.kiero.coupon.application.dto.UpdateCouponCommand;
 import com.kiero.coupon.application.exception.CouponSuccessCode;
@@ -69,7 +71,7 @@ public class CouponController {
 	}
 
 	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
-	@PutMapping("/{couponId}")
+	@PatchMapping("/{couponId}")
 	public ResponseEntity<SuccessResponse<CouponResponse>> updateCoupon(
 		@CurrentMember CurrentAuth currentAuth,
 		@PathVariable Long couponId,
@@ -80,6 +82,17 @@ public class CouponController {
 		);
 
 		return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPON_UPDATED, response));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@DeleteMapping("/{couponId}")
+	public ResponseEntity<SuccessResponse<?>> deleteCoupon(
+		@CurrentMember CurrentAuth currentAuth,
+		@PathVariable Long couponId
+	) {
+		couponCommandUseCase.delete(new DeleteCouponCommand(currentAuth.memberId(), couponId));
+
+		return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPON_DELETED));
 	}
 
 	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")

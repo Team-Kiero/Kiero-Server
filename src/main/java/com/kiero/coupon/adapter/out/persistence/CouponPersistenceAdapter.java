@@ -30,4 +30,9 @@ public class CouponPersistenceAdapter implements CouponLoadPort {
 	public Coupon save(Coupon coupon) {
 		return couponRepository.save(coupon);
 	}
+
+	@Override
+	public void delete(Coupon coupon) {
+		couponRepository.delete(coupon);
+	}
 }
