@@ -8,6 +8,7 @@ import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.coupon.application.dto.CouponResponse;
 import com.kiero.coupon.application.dto.CreateCouponCommand;
+import com.kiero.coupon.application.dto.UpdateCouponCommand;
 import com.kiero.coupon.application.exception.CouponErrorCode;
 import com.kiero.coupon.application.port.in.CouponCommandUseCase;
 import com.kiero.coupon.application.port.out.CouponLoadPort;
@@ -45,5 +46,20 @@ public class CouponCommandService implements CouponCommandUseCase {
 		Coupon coupon = Coupon.create(command.name(), command.price(), parent, child);
 
 		return CouponResponse.from(couponLoadPort.save(coupon));
+	}
+
+	@Override
+	@Transactional
+	public CouponResponse update(UpdateCouponCommand command) {
+		Coupon coupon = couponLoadPort.findById(command.couponId())
+			.orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
+
+		if (!coupon.getParent().getId().equals(command.parentId())) {
+			throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
+		}
+
+		coupon.update(command.name(), command.price());
+
+		return CouponResponse.from(coupon);
 	}
 }
