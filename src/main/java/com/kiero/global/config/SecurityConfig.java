@@ -9,7 +9,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.kiero.global.auth.jwt.service.JwtAuthenticationFilter;
+import com.kiero.global.auth.security.JwtAuthenticationFilter;
 
 import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;

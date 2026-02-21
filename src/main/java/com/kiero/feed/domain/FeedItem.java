@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.kiero.child.domain.Child;
 import com.kiero.feed.domain.enums.EventType;
-import com.kiero.feed.infrastructure.converter.JsonNodeConverter;
+import com.kiero.feed.infrastructure.JsonNodeConverter;
 import com.kiero.global.entity.BaseTimeEntity;
 import com.kiero.parent.domain.Parent;
 

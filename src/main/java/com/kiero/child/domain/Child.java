@@ -44,14 +44,14 @@ public class Child extends BaseTimeEntity {
 	private int coinAmount;
 
 	public static Child create(
-            final String lastName,
-            final String firstName,
-            final Role role
-    ) {
+		final String lastName,
+		final String firstName,
+		final Role role
+	) {
 		return Child.builder()
 			.lastName(lastName)
 			.firstName(firstName)
-            .role(role)
+			.role(role)
 			.coinAmount(0)
 			.build();
 	}
@@ -60,15 +60,15 @@ public class Child extends BaseTimeEntity {
 		return lastName + firstName;
 	}
 
-    public void addCoin(int amount) {
-        this.coinAmount += amount;
-    }
+	public void addCoin(int amount) {
+		this.coinAmount += amount;
+	}
 
-    public void deductCoin(int amount) {
-        this.coinAmount -= amount;
-    }
+	public void deductCoin(int amount) {
+		this.coinAmount -= amount;
+	}
 
-    public boolean hasEnoughCoin(int amount) {
-        return this.coinAmount >= amount;
-    }
+	public boolean hasEnoughCoin(int amount) {
+		return this.coinAmount >= amount;
+	}
 }

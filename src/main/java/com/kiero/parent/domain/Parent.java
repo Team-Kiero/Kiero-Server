@@ -1,7 +1,5 @@
 package com.kiero.parent.domain;
 
-import java.time.LocalDateTime;
-
 import com.kiero.global.auth.client.enums.Provider;
 import com.kiero.global.auth.enums.Role;
 import com.kiero.global.entity.BaseTimeEntity;
@@ -25,7 +23,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Table(name = ParentTableConstants.TABLE_PARENT)
+@Table(name = com.kiero.parent.domain.ParentTableConstants.TABLE_PARENT)
 public class Parent extends BaseTimeEntity {
 
 	@Id

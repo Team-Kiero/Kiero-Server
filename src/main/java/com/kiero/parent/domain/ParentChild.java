@@ -28,7 +28,8 @@ import lombok.NoArgsConstructor;
 	name = ParentChildTableConstants.TABLE_PARENT_CHILD,
 	uniqueConstraints = @UniqueConstraint(
 		name = "uk_parent_child",
-		columnNames = {ParentChildTableConstants.COLUMN_PARENT_ID, ParentChildTableConstants.COLUMN_CHILD_ID}
+		columnNames = {
+			ParentChildTableConstants.COLUMN_PARENT_ID, ParentChildTableConstants.COLUMN_CHILD_ID}
 	)
 )
 public class ParentChild extends BaseTimeEntity {

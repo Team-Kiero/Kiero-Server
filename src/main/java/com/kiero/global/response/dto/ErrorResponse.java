@@ -1,8 +1,8 @@
 package com.kiero.global.response.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.http.HttpStatus;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.kiero.global.response.base.BaseCode;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
