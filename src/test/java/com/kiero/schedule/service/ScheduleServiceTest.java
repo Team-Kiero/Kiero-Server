@@ -22,20 +22,16 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.kiero.child.adapter.out.persistence.ChildRepository;
 import com.kiero.child.application.exception.ChildErrorCode;
+import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
-import com.kiero.parent.adapter.out.persistence.ParentChildRepository;
-import com.kiero.parent.adapter.out.persistence.ParentRepository;
 import com.kiero.parent.application.exception.ParentErrorCode;
+import com.kiero.parent.application.port.out.ParentChildAccessPort;
+import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
-import com.kiero.schedule.adapter.out.persistence.ScheduleDetailRepository;
-import com.kiero.schedule.adapter.out.persistence.ScheduleRepeatDaysRepository;
-import com.kiero.schedule.adapter.out.persistence.ScheduleRepository;
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.FireLitEvent;
 import com.kiero.schedule.application.dto.FireLitResponse;
@@ -47,6 +43,10 @@ import com.kiero.schedule.application.dto.ScheduleAddRequest;
 import com.kiero.schedule.application.dto.ScheduleTabResponse;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
+import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
+import com.kiero.schedule.application.port.out.ScheduleEventPort;
+import com.kiero.schedule.application.port.out.SchedulePersistencePort;
+import com.kiero.schedule.application.port.out.ScheduleRepeatDaysPersistencePort;
 import com.kiero.schedule.application.service.ScheduleCommandService;
 import com.kiero.schedule.application.service.ScheduleQueryService;
 import com.kiero.schedule.domain.Schedule;
@@ -62,22 +62,24 @@ import com.kiero.schedule.domain.enums.TodayScheduleStatus;
 public class ScheduleServiceTest {
 
 	@Mock
-	ParentRepository parentRepository;
+	ParentLoadPort parentLoadPort;
 	@Mock
-	ChildRepository childRepository;
+	ChildLoadPort childLoadPort;
 	@Mock
-	ParentChildRepository parentChildRepository;
+	ParentChildAccessPort parentChildAccessPort;
 	@Mock
-	ScheduleRepository scheduleRepository;
+	SchedulePersistencePort schedulePersistencePort;
 	@Mock
-	ScheduleRepeatDaysRepository scheduleRepeatDaysRepository;
+	ScheduleRepeatDaysPersistencePort scheduleRepeatDaysPersistencePort;
 	@Mock
-	ScheduleDetailRepository scheduleDetailRepository;
+	ScheduleDetailPersistencePort scheduleDetailPersistencePort;
 	@Mock
-	ApplicationEventPublisher eventPublisher;
+	ScheduleEventPort scheduleEventPort;
 
 	@InjectMocks
 	ScheduleQueryService scheduleQueryService;
+
+	@InjectMocks
 	ScheduleCommandService scheduleCommandService;
 
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
@@ -113,32 +115,32 @@ public class ScheduleServiceTest {
 				ScheduleColor.SCHEDULE1,
 				"MON, TUE", null);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
 
 			given(child.getId()).willReturn(childId);
-			given(scheduleRepeatDaysRepository
+			given(scheduleRepeatDaysPersistencePort
 				.findSchedulesByChildIdAndDayOfWeeks(anyLong(), anyList()))
 				.willReturn(List.of());
 
-			given(scheduleDetailRepository
+			given(scheduleDetailPersistencePort
 				.findAllByScheduleChildIdAndDateGreaterThanEqual(anyLong(), any(LocalDate.class)))
 				.willReturn(List.of());
 
-			given(scheduleRepository.save(any(Schedule.class))).willReturn(savedSchedule);
+			given(schedulePersistencePort.save(any(Schedule.class))).willReturn(savedSchedule);
 
 			// when
 			scheduleCommandService.addSchedule(req, parentId, childId);
 
 			// then 1: 일정 저장이 호출됨
-			verify(scheduleRepository, times(1)).save(any(Schedule.class));
+			verify(schedulePersistencePort, times(1)).save(any(Schedule.class));
 
 			// then 2: 반복 일정이면 repeatDays 저장이 호출됨
-			verify(scheduleRepeatDaysRepository, times(1)).saveAll(anyList());
+			verify(scheduleRepeatDaysPersistencePort, times(1)).saveAll(anyList());
 
 			// then 3: 일정 디테일 저장은 호출되지 않음
-			verify(scheduleDetailRepository, never()).save(any(ScheduleDetail.class));
+			verify(scheduleDetailPersistencePort, never()).saveAll(anyList());
 		}
 
 		@Test
@@ -156,18 +158,18 @@ public class ScheduleServiceTest {
 				ScheduleColor.SCHEDULE1,
 				null, "2026-01-16");
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
 
-			given(scheduleRepository.save(any(Schedule.class))).willReturn(savedSchedule);
+			given(schedulePersistencePort.save(any(Schedule.class))).willReturn(savedSchedule);
 
 			given(child.getId()).willReturn(childId);
-			given(scheduleDetailRepository
+			given(scheduleDetailPersistencePort
 				.findByDateInAndChildId(anyList(), eq(childId)))
 				.willReturn(List.of());
 
-			given(scheduleRepeatDaysRepository
+			given(scheduleRepeatDaysPersistencePort
 				.findSchedulesByChildIdAndDayOfWeekIn(anyLong(), anyList()))
 				.willReturn(List.of());
 
@@ -175,9 +177,9 @@ public class ScheduleServiceTest {
 			scheduleCommandService.addSchedule(req, parentId, childId);
 
 			// then
-			verify(scheduleRepository).save(any(Schedule.class));
-			verify(scheduleDetailRepository).saveAll(anyList());
-			verify(scheduleRepeatDaysRepository, never()).saveAll(any());
+			verify(schedulePersistencePort).save(any(Schedule.class));
+			verify(scheduleDetailPersistencePort).saveAll(anyList());
+			verify(scheduleRepeatDaysPersistencePort, never()).saveAll(any());
 		}
 
 		@Test
@@ -187,7 +189,7 @@ public class ScheduleServiceTest {
 
 			ScheduleAddRequest req = new ScheduleAddRequest(null, null, null, null, null, null, null);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.empty());
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.empty());
 
 			// when & then
 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, null))
@@ -206,8 +208,8 @@ public class ScheduleServiceTest {
 
 			ScheduleAddRequest req = new ScheduleAddRequest(null, null, null, null, null, null, null);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.empty());
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
 
 			// when & then
 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
@@ -227,9 +229,9 @@ public class ScheduleServiceTest {
 
 			ScheduleAddRequest req = new ScheduleAddRequest(null, null, null, null, null, null, null);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(otherChildId)).willReturn(Optional.of(otherChild));
-			given(parentChildRepository.existsByParentAndChild(parent, otherChild)).willReturn(false);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(otherChild));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, otherChildId)).willReturn(false);
 
 			// when & then
 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, otherChildId))
@@ -250,9 +252,9 @@ public class ScheduleServiceTest {
 			ScheduleAddRequest req = new ScheduleAddRequest(null, true, null, null, null,
 				"MON, TUE", "2026-01-01, 2026-01-02");
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
 
 			// when & then
 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
@@ -272,9 +274,9 @@ public class ScheduleServiceTest {
 
 			ScheduleAddRequest req = new ScheduleAddRequest(null, true, null, null, null, null, null);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
 
 			// when & then
 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
@@ -294,9 +296,9 @@ public class ScheduleServiceTest {
 
 			ScheduleAddRequest req = new ScheduleAddRequest(null, false, null, null, null, null, null);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
 
 			// when & then
 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
@@ -316,9 +318,9 @@ public class ScheduleServiceTest {
 
 			ScheduleAddRequest req = new ScheduleAddRequest(null, true, null, null, null, "월요일, TUE/ 수", null);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
 
 			// when & then
 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
@@ -346,7 +348,7 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			Child child = mock(Child.class);
 
-			given(scheduleDetailRepository.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(schedule.getChild()).willReturn(child);
 			given(child.getId()).willReturn(childId);
@@ -361,7 +363,7 @@ public class ScheduleServiceTest {
 			verify(sd).changeScheduleStatus(ScheduleStatus.VERIFIED);
 			verify(sd).changeImageUrl("http://test-img.jpeg");
 
-			verify(eventPublisher, times(1)).publishEvent(any(NowScheduleCompleteEvent.class));
+			verify(scheduleEventPort, times(1)).publish(any(NowScheduleCompleteEvent.class));
 		}
 
 		@Test
@@ -377,7 +379,7 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			Child child = mock(Child.class);
 
-			given(scheduleDetailRepository.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(schedule.getChild()).willReturn(child);
 			given(child.getId()).willReturn(childId);
@@ -390,7 +392,7 @@ public class ScheduleServiceTest {
 
 			verify(sd, never()).changeScheduleStatus(ScheduleStatus.VERIFIED);
 			verify(sd, never()).changeImageUrl(req.imageUrl());
-			verify(eventPublisher, never()).publishEvent(any(NowScheduleCompleteEvent.class));
+			verify(scheduleEventPort, never()).publish(any(NowScheduleCompleteEvent.class));
 		}
 
 		@Test
@@ -405,7 +407,7 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			Child child = mock(Child.class);
 
-			given(scheduleDetailRepository.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(schedule.getChild()).willReturn(child);
 			given(child.getId()).willReturn(childId);
@@ -419,7 +421,7 @@ public class ScheduleServiceTest {
 
 			verify(sd, never()).changeScheduleStatus(ScheduleStatus.VERIFIED);
 			verify(sd, never()).changeImageUrl(req.imageUrl());
-			verify(eventPublisher, never()).publishEvent(any(NowScheduleCompleteEvent.class));
+			verify(scheduleEventPort, never()).publish(any(NowScheduleCompleteEvent.class));
 		}
 
 		@Test
@@ -434,7 +436,7 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			Child child = mock(Child.class);
 
-			given(scheduleDetailRepository.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(schedule.getChild()).willReturn(child);
 			given(child.getId()).willReturn(childId);
@@ -448,7 +450,7 @@ public class ScheduleServiceTest {
 
 			verify(sd, never()).changeScheduleStatus(ScheduleStatus.VERIFIED);
 			verify(sd, never()).changeImageUrl(req.imageUrl());
-			verify(eventPublisher, never()).publishEvent(any(NowScheduleCompleteEvent.class));
+			verify(scheduleEventPort, never()).publish(any(NowScheduleCompleteEvent.class));
 		}
 	}
 
@@ -505,14 +507,14 @@ public class ScheduleServiceTest {
 			Long childId = 1L;
 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
 			Child child = mock(Child.class);
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
 
 			// PENDING은 stoneType 호출 안 될 수 있으니 null
 			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.PENDING, null, null);
 			// COMPLETED는 gotStones에 들어가므로 stoneType 필요
 			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.COMPLETED, StoneType.GRIT, null);
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2));
 
 			// when
 			FireLitResponse response = scheduleCommandService.fireLit(childId);
@@ -522,7 +524,7 @@ public class ScheduleServiceTest {
 			verify(sd2).changeStoneUsedAt(any(LocalDateTime.class));
 
 			// then 2: 이벤트 발행
-			verify(eventPublisher, times(1)).publishEvent(any(FireLitEvent.class));
+			verify(scheduleEventPort, times(1)).publish(any(FireLitEvent.class));
 
 			// then 3: VERIFIED or COMPLETED 일정에 대한 stone만 획득
 			assertThat(response.gotStones()).containsExactly(StoneType.GRIT);
@@ -534,14 +536,14 @@ public class ScheduleServiceTest {
 			Long childId = 1L;
 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
 			Child child = mock(Child.class);
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
 
 			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.VERIFIED, StoneType.GRIT, null);
 			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.COMPLETED, StoneType.COURAGE, null);
 			// SKIPPED는 stoneType 호출 안 될 수 있으니 null
 			ScheduleDetail skippedSd = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(
 				List.of(sd1, sd2, skippedSd));
 
 			// when
@@ -553,7 +555,7 @@ public class ScheduleServiceTest {
 
 			// then 2: 이벤트 발행 amount 검증
 			ArgumentCaptor<FireLitEvent> captor = ArgumentCaptor.forClass(FireLitEvent.class);
-			verify(eventPublisher).publishEvent(captor.capture());
+			verify(scheduleEventPort).publish(captor.capture());
 			assertThat(captor.getValue().amount()).isEqualTo(10);
 		}
 
@@ -563,13 +565,13 @@ public class ScheduleServiceTest {
 			Long childId = 1L;
 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
 			Child child = mock(Child.class);
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
 
 			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.PENDING, null, null);
 			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.COMPLETED, StoneType.COURAGE, null);
 			ScheduleDetail sd3 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2, sd3));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2, sd3));
 
 			// when
 			FireLitResponse response = scheduleCommandService.fireLit(childId);
@@ -580,7 +582,7 @@ public class ScheduleServiceTest {
 
 			// then 2: 이벤트 발행 amount=0
 			ArgumentCaptor<FireLitEvent> captor = ArgumentCaptor.forClass(FireLitEvent.class);
-			verify(eventPublisher).publishEvent(captor.capture());
+			verify(scheduleEventPort).publish(captor.capture());
 			assertThat(captor.getValue().amount()).isEqualTo(0);
 		}
 
@@ -590,13 +592,13 @@ public class ScheduleServiceTest {
 			Long childId = 1L;
 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
 			Child child = mock(Child.class);
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
 
 			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
 			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
 			ScheduleDetail sd3 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2, sd3));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2, sd3));
 
 			// when
 			FireLitResponse response = scheduleCommandService.fireLit(childId);
@@ -607,7 +609,7 @@ public class ScheduleServiceTest {
 
 			// then 2: 이벤트 발행 amount=0
 			ArgumentCaptor<FireLitEvent> captor = ArgumentCaptor.forClass(FireLitEvent.class);
-			verify(eventPublisher).publishEvent(captor.capture());
+			verify(scheduleEventPort).publish(captor.capture());
 			assertThat(captor.getValue().amount()).isEqualTo(0);
 		}
 
@@ -616,7 +618,7 @@ public class ScheduleServiceTest {
 			// given
 			Long childId = 1L;
 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-			given(childRepository.findById(childId)).willReturn(Optional.empty());
+			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
 
 			// when & then
 			assertThatThrownBy(() -> scheduleCommandService.fireLit(childId))
@@ -624,7 +626,7 @@ public class ScheduleServiceTest {
 				.extracting(e -> ((KieroException)e).getBaseCode())
 				.isEqualTo(ChildErrorCode.CHILD_NOT_FOUND);
 
-			verify(eventPublisher, never()).publishEvent(any());
+			verify(scheduleEventPort, never()).publish(any());
 		}
 
 		@Test
@@ -635,12 +637,12 @@ public class ScheduleServiceTest {
 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
 
 			Child child = mock(Child.class);
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
 
 			// stoneUsedAt만 있으면 earliestStoneUsedAt != null 로 예외 발생
 			ScheduleDetail alreadyUsed = mockDetailOnlyStoneUsedAt(LocalDateTime.of(2026, 1, 14, 9, 0));
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(alreadyUsed));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(alreadyUsed));
 
 			// when & then
 			assertThatThrownBy(() -> scheduleCommandService.fireLit(childId))
@@ -648,7 +650,7 @@ public class ScheduleServiceTest {
 				.extracting(e -> ((KieroException)e).getBaseCode())
 				.isEqualTo(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETE);
 
-			verify(eventPublisher, never()).publishEvent(any());
+			verify(scheduleEventPort, never()).publish(any());
 			verify(alreadyUsed, never()).changeStoneUsedAt(any());
 		}
 	}
@@ -669,11 +671,11 @@ public class ScheduleServiceTest {
 			Child child = mock(Child.class);
 			Schedule schedule = mock(Schedule.class);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
 
-			given(scheduleRepository.findFirstByChildIdOrderByCreatedAtDesc(childId)).willReturn(Optional.of(schedule));
+			given(schedulePersistencePort.findFirstByChildIdOrderByCreatedAtDesc(childId)).willReturn(Optional.of(schedule));
 			given(schedule.getScheduleColor()).willReturn(ScheduleColor.SCHEDULE1);
 
 			// when
@@ -690,7 +692,7 @@ public class ScheduleServiceTest {
 			Long parentId = 1L;
 			Long childId = 1L;
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.empty());
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.empty());
 
 			// when & then
 			assertThatThrownBy(() -> scheduleQueryService.getDefaultSchedule(parentId, childId))
@@ -707,8 +709,8 @@ public class ScheduleServiceTest {
 
 			Parent parent = mock(Parent.class);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.empty());
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
 
 			// when & then
 			assertThatThrownBy(() -> scheduleQueryService.getDefaultSchedule(parentId, childId))
@@ -726,9 +728,9 @@ public class ScheduleServiceTest {
 			Parent parent = mock(Parent.class);
 			Child otherChild = mock(Child.class);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(otherChildId)).willReturn(Optional.of(otherChild));
-			given(parentChildRepository.existsByParentAndChild(parent, otherChild)).willReturn(false);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(otherChild));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, otherChildId)).willReturn(false);
 
 			// when & then
 			assertThatThrownBy(() -> scheduleQueryService.getDefaultSchedule(parentId, otherChildId))
@@ -754,8 +756,8 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			Child child = mock(Child.class);
 
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(scheduleDetailRepository.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(schedule.getChild()).willReturn(child);
 			given(child.getId()).willReturn(childId);
@@ -779,8 +781,8 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			Child child = mock(Child.class);
 
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(scheduleDetailRepository.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(schedule.getChild()).willReturn(child);
 			given(child.getId()).willReturn(childId);
@@ -800,7 +802,7 @@ public class ScheduleServiceTest {
 			Long childId = 1L;
 			Long scheduleDetailId = 10L;
 
-			given(childRepository.findById(childId)).willReturn(Optional.empty());
+			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
 
 			// when & then
 			assertThatThrownBy(() -> scheduleCommandService.skipNowSchedule(childId, scheduleDetailId))
@@ -816,8 +818,8 @@ public class ScheduleServiceTest {
 			Long sdId = 10L;
 
 			Child child = mock(Child.class);
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(scheduleDetailRepository.findById(sdId)).willReturn(Optional.empty());
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(scheduleDetailPersistencePort.findById(sdId)).willReturn(Optional.empty());
 
 			// when & then
 			assertThatThrownBy(() -> scheduleCommandService.skipNowSchedule(childId, sdId))
@@ -837,8 +839,8 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			Child child = mock(Child.class);
 
-			given(childRepository.findById(otherChildId)).willReturn(Optional.of(child));
-			given(scheduleDetailRepository.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(child));
+			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(schedule.getChild()).willReturn(child);
 			given(child.getId()).willReturn(childId);
@@ -862,8 +864,8 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			Child child = mock(Child.class);
 
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(scheduleDetailRepository.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(schedule.getChild()).willReturn(child);
 			given(child.getId()).willReturn(childId);
@@ -887,7 +889,7 @@ public class ScheduleServiceTest {
 			Long parentId = 1L;
 			Long childId = 1L;
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.empty());
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.empty());
 
 			// when & then
 			assertThatThrownBy(() -> scheduleQueryService.getSchedules(null, null, parentId, childId))
@@ -904,8 +906,8 @@ public class ScheduleServiceTest {
 
 			Parent parent = mock(Parent.class);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.empty());
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
 
 			// when & then
 			assertThatThrownBy(() -> scheduleQueryService.getSchedules(null, null, parentId, childId))
@@ -923,9 +925,9 @@ public class ScheduleServiceTest {
 			Parent parent = mock(Parent.class);
 			Child otherChild = mock(Child.class);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(otherChildId)).willReturn(Optional.of(otherChild));
-			given(parentChildRepository.existsByParentAndChild(parent, otherChild)).willReturn(false);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(otherChild));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, otherChildId)).willReturn(false);
 
 			// when & then
 			assertThatThrownBy(() -> scheduleQueryService.getSchedules(null, null, parentId, otherChildId))
@@ -946,9 +948,9 @@ public class ScheduleServiceTest {
 			Parent parent = mock(Parent.class);
 			Child child = mock(Child.class);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
 
 			// when & then
 			assertThatThrownBy(
@@ -970,10 +972,10 @@ public class ScheduleServiceTest {
 			Parent parent = mock(Parent.class);
 			Child child = mock(Child.class);
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
-			given(scheduleRepository.findAllByChildId(childId)).willReturn(List.of());
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+			given(schedulePersistencePort.findAllByChildId(childId)).willReturn(List.of());
 
 			// when
 			ScheduleTabResponse response = scheduleQueryService.getSchedules(startDate, endDate, parentId, childId);
@@ -1004,11 +1006,11 @@ public class ScheduleServiceTest {
 
 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(2025, 12, 29, 10, 0));
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
 
-			given(scheduleRepository.findAllByChildId(childId)).willReturn(List.of(schedule));
+			given(schedulePersistencePort.findAllByChildId(childId)).willReturn(List.of(schedule));
 
 			given(schedule.getId()).willReturn(scheduleId);
 			given(schedule.isRecurring()).willReturn(true);
@@ -1019,7 +1021,7 @@ public class ScheduleServiceTest {
 			given(schedule.getScheduleColor()).willReturn(ScheduleColor.SCHEDULE1);
 
 			// 불피우기 여부
-			given(scheduleDetailRepository.existsStoneUsedToday(eq(List.of(scheduleId)), any(LocalDate.class)))
+			given(scheduleDetailPersistencePort.existsStoneUsedToday(eq(List.of(scheduleId)), any(LocalDate.class)))
 				.willReturn(false);
 
 			// repeatDays -> scheduleId 매핑되도록 세팅
@@ -1028,7 +1030,7 @@ public class ScheduleServiceTest {
 			given(rdMon.getDayOfWeek()).willReturn(DayOfWeek.MON);
 			given(rdWed.getDayOfWeek()).willReturn(DayOfWeek.WED);
 
-			given(scheduleRepeatDaysRepository.findAllByScheduleIdsIn(eq(List.of(scheduleId))))
+			given(scheduleRepeatDaysPersistencePort.findAllByScheduleIdsIn(eq(List.of(scheduleId))))
 				.willReturn(List.of(rdMon, rdWed));
 
 			// when
@@ -1046,7 +1048,7 @@ public class ScheduleServiceTest {
 			assertThat(dto.colorCode()).isEqualTo(ScheduleColor.SCHEDULE1.getColorCode());
 			assertThat(dto.dayOfWeek()).isEqualTo("MON, WED");
 
-			verify(scheduleDetailRepository, never())
+			verify(scheduleDetailPersistencePort, never())
 				.findAllByScheduleIdInAndDateBetween(anyList(), any(LocalDate.class), any(LocalDate.class));
 		}
 
@@ -1068,11 +1070,11 @@ public class ScheduleServiceTest {
 			ScheduleDetail scheduleDetail = mock(ScheduleDetail.class);
 			Long scheduleId = 100L;
 
-			given(parentRepository.findById(parentId)).willReturn(Optional.of(parent));
-			given(childRepository.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildRepository.existsByParentAndChild(parent, child)).willReturn(true);
+			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
 
-			given(scheduleRepository.findAllByChildId(childId)).willReturn(List.of(schedule));
+			given(schedulePersistencePort.findAllByChildId(childId)).willReturn(List.of(schedule));
 
 			given(schedule.getId()).willReturn(scheduleId);
 			given(schedule.isRecurring()).willReturn(false);
@@ -1083,13 +1085,13 @@ public class ScheduleServiceTest {
 			given(schedule.getScheduleColor()).willReturn(ScheduleColor.SCHEDULE1);
 
 			// 불피우기 여부
-			given(scheduleDetailRepository.existsStoneUsedToday(eq(List.of(scheduleId)), any(LocalDate.class)))
+			given(scheduleDetailPersistencePort.existsStoneUsedToday(eq(List.of(scheduleId)), any(LocalDate.class)))
 				.willReturn(false);
 
 			given(scheduleDetail.getSchedule()).willReturn(schedule);
 			given(scheduleDetail.getDate()).willReturn(scheduleDate);
 
-			given(scheduleDetailRepository.findAllByScheduleIdInAndDateBetween(List.of(scheduleId), startDate,
+			given(scheduleDetailPersistencePort.findAllByScheduleIdInAndDateBetween(List.of(scheduleId), startDate,
 				endDate)).willReturn(List.of(scheduleDetail));
 
 			// when
@@ -1107,7 +1109,7 @@ public class ScheduleServiceTest {
 			assertThat(dto.colorCode()).isEqualTo(ScheduleColor.SCHEDULE1.getColorCode());
 			assertThat(dto.date()).isEqualTo(LocalDate.of(2026, 1, 17));
 
-			verify(scheduleRepeatDaysRepository, never())
+			verify(scheduleRepeatDaysPersistencePort, never())
 				.findAllByScheduleIdsIn(anyList());
 		}
 	}
@@ -1125,7 +1127,7 @@ public class ScheduleServiceTest {
 			);
 			ReflectionTestUtils.setField(scheduleCommandService, "clock", clockFri);
 
-			given(scheduleRepeatDaysRepository.findSchedulesToCreateTodayDetail(DayOfWeek.FRI, fixedDate))
+			given(scheduleRepeatDaysPersistencePort.findSchedulesToCreateTodayDetail(DayOfWeek.FRI, fixedDate))
 				.willReturn(List.of(mock(Schedule.class)));
 
 			// when
@@ -1133,7 +1135,7 @@ public class ScheduleServiceTest {
 
 			// then
 			ArgumentCaptor<List<ScheduleDetail>> captor = ArgumentCaptor.forClass(List.class);
-			verify(scheduleDetailRepository).saveAll(captor.capture());
+			verify(scheduleDetailPersistencePort).saveAll(captor.capture());
 			assertThat(captor.getValue()).hasSize(1);
 		}
 	}
@@ -1147,7 +1149,7 @@ public class ScheduleServiceTest {
 			// given
 			Long childId = 1L;
 			ReflectionTestUtils.setField(scheduleQueryService, "clock", fixedClock);
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of());
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of());
 
 			// when
 			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
@@ -1179,7 +1181,7 @@ public class ScheduleServiceTest {
 			given(sd1.getSchedule()).willReturn(schedule);
 			given(sd2.getSchedule()).willReturn(schedule);
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId))
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
 				.willReturn(List.of(sd1, sd2));
 
 			// when
@@ -1202,16 +1204,16 @@ public class ScheduleServiceTest {
 			ReflectionTestUtils.setField(scheduleQueryService, "clock", fixedClock);
 			Schedule schedule = mock(Schedule.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
 				List.of(schedule));
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of());
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of());
 
 			// when
 			scheduleQueryService.getTodaySchedule(childId);
 
 			// then
 			ArgumentCaptor<List<ScheduleDetail>> captor = ArgumentCaptor.forClass(List.class);
-			verify(scheduleDetailRepository).saveAll(captor.capture());
+			verify(scheduleDetailPersistencePort).saveAll(captor.capture());
 
 			List<ScheduleDetail> saved = captor.getValue();
 			assertThat(saved).hasSize(1);
@@ -1228,15 +1230,15 @@ public class ScheduleServiceTest {
 			Long childId = 1L;
 			ReflectionTestUtils.setField(scheduleQueryService, "clock", fixedClock);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
 				List.of());
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of());
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of());
 
 			// when
 			scheduleQueryService.getTodaySchedule(childId);
 
 			// then
-			verify(scheduleDetailRepository, never()).saveAll(anyList());
+			verify(scheduleDetailPersistencePort, never()).saveAll(anyList());
 		}
 
 		@Test
@@ -1256,9 +1258,9 @@ public class ScheduleServiceTest {
 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
 			given(sd.getStoneUsedAt()).willReturn(null);
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
 				List.of());
 
 			// when
@@ -1276,10 +1278,10 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			ScheduleDetail sd = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
 				List.of());
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(23, 59)));
@@ -1300,10 +1302,10 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			ScheduleDetail sd = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
 				List.of());
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.COMPLETED);
 			given(schedule.getStartTime()).willReturn(LocalTime.of(23, 59));
@@ -1330,9 +1332,9 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			ScheduleDetail sd = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
 				List.of());
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
 			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
@@ -1359,9 +1361,9 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			ScheduleDetail sd = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
 				List.of());
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
 			given(sd.getSchedule()).willReturn(schedule);
 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
 			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
@@ -1386,9 +1388,9 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			ScheduleDetail sd = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any())).willReturn(
 				List.of());
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
 
 			given(sd.getSchedule()).willReturn(schedule);
 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
@@ -1417,9 +1419,9 @@ public class ScheduleServiceTest {
 			Schedule schedule = mock(Schedule.class);
 			ScheduleDetail sd = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId))
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
 				.willReturn(List.of(sd));
 
 			given(sd.getSchedule()).willReturn(schedule);
@@ -1446,9 +1448,9 @@ public class ScheduleServiceTest {
 
 			ReflectionTestUtils.setField(scheduleQueryService, "clock", fixedClock);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId))
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
 				.willReturn(List.of());
 
 			// when
@@ -1471,9 +1473,9 @@ public class ScheduleServiceTest {
 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
 			ScheduleDetail sd2 = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2));
 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
 			given(sd2.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
 			given(sd1.getSchedule()).willReturn(s1);
@@ -1505,9 +1507,9 @@ public class ScheduleServiceTest {
 
 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd1));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1));
 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
 			given(sd1.getSchedule()).willReturn(s1);
 
@@ -1533,9 +1535,9 @@ public class ScheduleServiceTest {
 
 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd1));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1));
 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
 			given(sd1.getSchedule()).willReturn(s1);
 
@@ -1571,10 +1573,10 @@ public class ScheduleServiceTest {
 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
 			ScheduleDetail sd2 = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId))
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
 				.willReturn(List.of(sd1, sd2));
 
 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
@@ -1627,10 +1629,10 @@ public class ScheduleServiceTest {
 			ScheduleDetail sd2 = mock(ScheduleDetail.class);
 			ScheduleDetail sd3 = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId))
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
 				.willReturn(List.of(sd1, sd2, sd3));
 
 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
@@ -1688,10 +1690,10 @@ public class ScheduleServiceTest {
 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
 			ScheduleDetail sd2 = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId))
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
 				.willReturn(List.of(sd1, sd2));
 
 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
@@ -1733,10 +1735,10 @@ public class ScheduleServiceTest {
 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
 			ScheduleDetail sd2 = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId))
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
 				.willReturn(List.of(sd1, sd2));
 
 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
@@ -1778,10 +1780,10 @@ public class ScheduleServiceTest {
 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
 			ScheduleDetail sd2 = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
 
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId))
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
 				.willReturn(List.of(sd1, sd2));
 
 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
@@ -1821,9 +1823,9 @@ public class ScheduleServiceTest {
 
 			ScheduleDetail sd = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
 			given(sd.getSchedule()).willReturn(schedule);
 
@@ -1849,9 +1851,9 @@ public class ScheduleServiceTest {
 
 			ScheduleDetail sd = mock(ScheduleDetail.class);
 
-			given(scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
+			given(schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(any(), any(), any()))
 				.willReturn(List.of());
-			given(scheduleDetailRepository.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
 			given(sd.getSchedule()).willReturn(schedule);
 

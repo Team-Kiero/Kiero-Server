@@ -17,39 +17,39 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.kiero.child.adapter.out.persistence.ChildRepository;
 import com.kiero.child.application.exception.ChildErrorCode;
+import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
-import com.kiero.mission.adapter.out.persistence.MissionRepository;
 import com.kiero.mission.application.dto.MissionBulkCreateRequest;
 import com.kiero.mission.application.dto.MissionCompleteEvent;
 import com.kiero.mission.application.dto.MissionCreateRequest;
 import com.kiero.mission.application.dto.MissionResponse;
 import com.kiero.mission.application.exception.MissionErrorCode;
+import com.kiero.mission.application.port.out.MissionEventPort;
+import com.kiero.mission.application.port.out.MissionPersistencePort;
 import com.kiero.mission.application.service.MissionCommandService;
 import com.kiero.mission.domain.Mission;
-import com.kiero.parent.adapter.out.persistence.ParentChildRepository;
-import com.kiero.parent.adapter.out.persistence.ParentRepository;
 import com.kiero.parent.application.exception.ParentErrorCode;
+import com.kiero.parent.application.port.out.ParentChildAccessPort;
+import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 
 @ExtendWith(SpringExtension.class)
 public class MissionServiceTest {
 
 	@Mock
-	MissionRepository missionRepository;
+	MissionPersistencePort missionPersistencePort;
 	@Mock
-	ParentRepository parentRepository;
+	ParentLoadPort parentLoadPort;
 	@Mock
-	ChildRepository childRepository;
+	ChildLoadPort childLoadPort;
 	@Mock
-	ParentChildRepository parentChildRepository;
+	ParentChildAccessPort ParentChildAccessPort;
 	@Mock
-	ApplicationEventPublisher eventPublisher;
+	MissionEventPort missionEventPort;
 
 	@InjectMocks
 	MissionCommandService missionCommandService;
@@ -100,9 +100,9 @@ public class MissionServiceTest {
 			int initialCoin = child.getCoinAmount();
 			int reward = mission.getReward();
 
-			given(missionRepository.findByIdWithLock(missionId))
+			given(missionPersistencePort.findByIdWithLock(missionId))
 				.willReturn(Optional.of(mission));
-			given(childRepository.findByIdWithLock(childId))
+			given(childLoadPort.findByIdWithLock(childId))
 				.willReturn(Optional.of(child));
 
 			// When
@@ -122,7 +122,7 @@ public class MissionServiceTest {
 			// Then 4: 이벤트 발행 확인
 			ArgumentCaptor<MissionCompleteEvent> eventCaptor =
 				ArgumentCaptor.forClass(MissionCompleteEvent.class);
-			verify(eventPublisher).publishEvent(eventCaptor.capture());
+			verify(missionEventPort).publish(eventCaptor.capture());
 
 			MissionCompleteEvent publishedEvent = eventCaptor.getValue();
 			assertThat(publishedEvent.childId()).isEqualTo(childId);
@@ -130,8 +130,8 @@ public class MissionServiceTest {
 			assertThat(publishedEvent.name()).isEqualTo("수학 숙제하기");
 
 			// Then 5: Repository 호출 검증
-			verify(missionRepository, times(1)).findByIdWithLock(missionId);
-			verify(childRepository, times(1)).findByIdWithLock(childId);
+			verify(missionPersistencePort, times(1)).findByIdWithLock(missionId);
+			verify(childLoadPort, times(1)).findByIdWithLock(childId);
 		}
 
 		@Test
@@ -140,7 +140,7 @@ public class MissionServiceTest {
 			Long childId = 1L;
 			Long invalidMissionId = 999L;
 
-			given(missionRepository.findByIdWithLock(invalidMissionId))
+			given(missionPersistencePort.findByIdWithLock(invalidMissionId))
 				.willReturn(Optional.empty());
 
 			// When & Then 1
@@ -149,7 +149,7 @@ public class MissionServiceTest {
 				.hasFieldOrPropertyWithValue("baseCode", MissionErrorCode.MISSION_NOT_FOUND);
 
 			// Then 2: 이벤트가 발행되지 않아야 함
-			verify(eventPublisher, never()).publishEvent(any());
+			verify(missionEventPort, never()).publish(any());
 		}
 
 		@Test
@@ -158,7 +158,7 @@ public class MissionServiceTest {
 			Long otherChildId = 2L;
 			Long missionId = 1L;
 
-			given(missionRepository.findByIdWithLock(missionId))
+			given(missionPersistencePort.findByIdWithLock(missionId))
 				.willReturn(Optional.of(mission));
 
 			// When & Then 1
@@ -170,7 +170,7 @@ public class MissionServiceTest {
 			assertThat(mission.isCompleted()).isFalse();
 
 			// Then 3: 이벤트가 발행되지 않아야 함
-			verify(eventPublisher, never()).publishEvent(any());
+			verify(missionEventPort, never()).publish(any());
 		}
 
 		@Test
@@ -180,7 +180,7 @@ public class MissionServiceTest {
 			Long childId = 1L;
 			Long missionId = 1L;
 
-			given(missionRepository.findByIdWithLock(missionId))
+			given(missionPersistencePort.findByIdWithLock(missionId))
 				.willReturn(Optional.of(mission));
 
 			// When & Then 1
@@ -189,7 +189,7 @@ public class MissionServiceTest {
 				.hasFieldOrPropertyWithValue("baseCode", MissionErrorCode.MISSION_ALREADY_COMPLETED);
 
 			// Then 2: 이벤트가 발행되지 않아야 함
-			verify(eventPublisher, never()).publishEvent(any());
+			verify(missionEventPort, never()).publish(any());
 		}
 
 		@Test
@@ -208,7 +208,7 @@ public class MissionServiceTest {
 			Long childId = 1L;
 			Long missionId = 1L;
 
-			given(missionRepository.findByIdWithLock(missionId))
+			given(missionPersistencePort.findByIdWithLock(missionId))
 				.willReturn(Optional.of(expiredMission));
 
 			// When & Then 1
@@ -223,7 +223,7 @@ public class MissionServiceTest {
 			assertThat(child.getCoinAmount()).isEqualTo(100);
 
 			// Then 4: 이벤트가 발행되지 않아야 함
-			verify(eventPublisher, never()).publishEvent(any());
+			verify(missionEventPort, never()).publish(any());
 		}
 	}
 
@@ -252,13 +252,13 @@ public class MissionServiceTest {
 				.child(child)
 				.build();
 
-			given(parentChildRepository.existsByParentIdAndChildId(parentId, childId))
+			given(ParentChildAccessPort.existsByParentIdAndChildId(parentId, childId))
 				.willReturn(true);
-			given(parentRepository.findById(parentId))
+			given(parentLoadPort.findById(parentId))
 				.willReturn(Optional.of(parent));
-			given(childRepository.findById(childId))
+			given(childLoadPort.findById(childId))
 				.willReturn(Optional.of(child));
-			given(missionRepository.save(any(Mission.class)))
+			given(missionPersistencePort.save(any(Mission.class)))
 				.willReturn(savedMission);
 
 			// When
@@ -273,10 +273,10 @@ public class MissionServiceTest {
 			assertThat(response.isCompleted()).isFalse();
 
 			// Then 2: 호출 검증
-			verify(parentChildRepository).existsByParentIdAndChildId(parentId, childId);
-			verify(parentRepository).findById(parentId);
-			verify(childRepository).findById(childId);
-			verify(missionRepository).save(any(Mission.class));
+			verify(ParentChildAccessPort).existsByParentIdAndChildId(parentId, childId);
+			verify(parentLoadPort).findById(parentId);
+			verify(childLoadPort).findById(childId);
+			verify(missionPersistencePort).save(any(Mission.class));
 		}
 
 		@Test
@@ -288,7 +288,7 @@ public class MissionServiceTest {
 				"미션", 20, LocalDate.of(2026, 1, 25)
 			);
 
-			given(parentChildRepository.existsByParentIdAndChildId(parentId, otherChildId))
+			given(ParentChildAccessPort.existsByParentIdAndChildId(parentId, otherChildId))
 				.willReturn(false);
 
 			// When & Then 1
@@ -297,7 +297,7 @@ public class MissionServiceTest {
 				.hasFieldOrPropertyWithValue("baseCode", MissionErrorCode.NOT_YOUR_CHILD);
 
 			// Then 2: save가 호출되지 않아야 함
-			verify(missionRepository, never()).save(any());
+			verify(missionPersistencePort, never()).save(any());
 		}
 
 		@Test
@@ -309,9 +309,9 @@ public class MissionServiceTest {
 				"미션", 20, LocalDate.of(2026, 1, 25)
 			);
 
-			given(parentChildRepository.existsByParentIdAndChildId(invalidParentId, childId))
+			given(ParentChildAccessPort.existsByParentIdAndChildId(invalidParentId, childId))
 				.willReturn(true);
-			given(parentRepository.findById(invalidParentId))
+			given(parentLoadPort.findById(invalidParentId))
 				.willReturn(Optional.empty());
 
 			// When & Then 1
@@ -320,7 +320,7 @@ public class MissionServiceTest {
 				.hasFieldOrPropertyWithValue("baseCode", ParentErrorCode.PARENT_NOT_FOUND);
 
 			// Then 2: save가 호출되지 않아야 함
-			verify(missionRepository, never()).save(any());
+			verify(missionPersistencePort, never()).save(any());
 		}
 
 		@Test
@@ -332,11 +332,11 @@ public class MissionServiceTest {
 				"미션", 20, LocalDate.of(2026, 1, 25)
 			);
 
-			given(parentChildRepository.existsByParentIdAndChildId(parentId, invalidChildId))
+			given(ParentChildAccessPort.existsByParentIdAndChildId(parentId, invalidChildId))
 				.willReturn(true);
-			given(parentRepository.findById(parentId))
+			given(parentLoadPort.findById(parentId))
 				.willReturn(Optional.of(parent));
-			given(childRepository.findById(invalidChildId))
+			given(childLoadPort.findById(invalidChildId))
 				.willReturn(Optional.empty());
 
 			// When & Then
@@ -344,7 +344,7 @@ public class MissionServiceTest {
 				.isInstanceOf(KieroException.class)
 				.hasFieldOrPropertyWithValue("baseCode", ChildErrorCode.CHILD_NOT_FOUND);
 
-			verify(missionRepository, never()).save(any());
+			verify(missionPersistencePort, never()).save(any());
 		}
 	}
 
@@ -374,13 +374,13 @@ public class MissionServiceTest {
 					.isCompleted(false).parent(parent).child(child).build()
 			);
 
-			given(parentChildRepository.existsByParentIdAndChildId(parentId, childId))
+			given(ParentChildAccessPort.existsByParentIdAndChildId(parentId, childId))
 				.willReturn(true);
-			given(parentRepository.findById(parentId))
+			given(parentLoadPort.findById(parentId))
 				.willReturn(Optional.of(parent));
-			given(childRepository.findById(childId))
+			given(childLoadPort.findById(childId))
 				.willReturn(Optional.of(child));
-			given(missionRepository.saveAll(anyList()))
+			given(missionPersistencePort.saveAll(anyList()))
 				.willReturn(savedMissions);
 
 			// When
@@ -395,7 +395,7 @@ public class MissionServiceTest {
 			assertThat(responses.get(2).name()).isEqualTo("일기 쓰기");
 
 			// Then 3: 호출 검증
-			verify(missionRepository).saveAll(anyList());
+			verify(missionPersistencePort).saveAll(anyList());
 		}
 
 		@Test
@@ -405,13 +405,13 @@ public class MissionServiceTest {
 			Long childId = 1L;
 			MissionBulkCreateRequest request = new MissionBulkCreateRequest(List.of());
 
-			given(parentChildRepository.existsByParentIdAndChildId(parentId, childId))
+			given(ParentChildAccessPort.existsByParentIdAndChildId(parentId, childId))
 				.willReturn(true);
-			given(parentRepository.findById(parentId))
+			given(parentLoadPort.findById(parentId))
 				.willReturn(Optional.of(parent));
-			given(childRepository.findById(childId))
+			given(childLoadPort.findById(childId))
 				.willReturn(Optional.of(child));
-			given(missionRepository.saveAll(anyList()))
+			given(missionPersistencePort.saveAll(anyList()))
 				.willReturn(List.of());
 
 			// When
@@ -432,7 +432,7 @@ public class MissionServiceTest {
 			);
 			MissionBulkCreateRequest request = new MissionBulkCreateRequest(items);
 
-			given(parentChildRepository.existsByParentIdAndChildId(parentId, otherChildId))
+			given(ParentChildAccessPort.existsByParentIdAndChildId(parentId, otherChildId))
 				.willReturn(false);
 
 			// When & Then 1
@@ -441,7 +441,7 @@ public class MissionServiceTest {
 				.hasFieldOrPropertyWithValue("baseCode", MissionErrorCode.NOT_YOUR_CHILD);
 
 			// Then 2: saveAll이 호출되지 않아야 함
-			verify(missionRepository, never()).saveAll(anyList());
+			verify(missionPersistencePort, never()).saveAll(anyList());
 		}
 	}
 }
