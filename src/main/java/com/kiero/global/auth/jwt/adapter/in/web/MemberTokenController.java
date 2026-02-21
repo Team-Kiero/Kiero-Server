@@ -1,7 +1,5 @@
 package com.kiero.global.auth.jwt.adapter.in.web;
 
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -44,29 +42,6 @@ public class MemberTokenController {
 		AccessTokenGenerateResponse response = memberTokenUseCase.reissueAccessToken(refreshToken);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(TokenSuccessCode.ACCESS_TOKEN_REISSUE_SUCCESS, response));
-	}
-
-	@PostMapping("/reissue/tokens")
-	public ResponseEntity<SuccessResponse<AccessTokenGenerateResponse>> reissueTokens(
-		@CookieValue("refreshToken") String refreshToken
-	) {
-
-		MemberTokenUseCase.ReissueTokensResult result = memberTokenUseCase.reissueTokens(refreshToken);
-
-		ResponseCookie cookie = ResponseCookie.from("refreshToken", result.newRefreshToken())
-			.httpOnly(true)
-			.secure(true)
-			.sameSite("None")
-			.path("/")
-			.maxAge(7 * 24 * 60 * 60)
-			.build();
-
-		return ResponseEntity.ok()
-			.header(HttpHeaders.SET_COOKIE, cookie.toString())
-			.body(SuccessResponse.of(
-				TokenSuccessCode.TOKENS_REISSUE_SUCCESS,
-				result.accessTokenResponse()
-			));
 	}
 
 	@PostMapping("/subscribe-token")

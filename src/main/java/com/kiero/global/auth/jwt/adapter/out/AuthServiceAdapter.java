@@ -20,11 +20,6 @@ public class AuthServiceAdapter implements AuthTokenPort {
 	}
 
 	@Override
-	public String reissueRefreshToken(String refreshToken) {
-		return authService.reissueRefreshToken(refreshToken);
-	}
-
-	@Override
 	public AccessTokenGenerateResponse generateSubscribeToken(String refreshToken) {
 		return authService.generateSubscribeToken(refreshToken);
 	}

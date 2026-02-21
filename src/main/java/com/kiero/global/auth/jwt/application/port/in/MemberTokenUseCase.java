@@ -9,12 +9,5 @@ public interface MemberTokenUseCase {
 
 	AccessTokenGenerateResponse reissueAccessToken(String refreshToken);
 
-	ReissueTokensResult reissueTokens(String refreshToken);
-
 	AccessTokenGenerateResponse issueSubscribeToken(String refreshToken);
-
-	record ReissueTokensResult(
-		String newRefreshToken,
-		AccessTokenGenerateResponse accessTokenResponse
-	) {}
 }
