@@ -59,6 +59,10 @@ public class ParentLoginService implements ParentLoginUseCase {
 
 	private Parent findParentOrCreateParentWithSocialLoginResponse(SocialLoginResponse response) {
 		return parentLoadPort.findParentBySocialIdAndProvider(response.socialId(), response.provider())
+			.map(parent -> {
+				parent.updateKakaoProfile(response.name(), response.email(), response.image());
+				return parent;
+			})
 			.orElseGet(() -> saveSocialInfoToParent(response));
 	}
 
