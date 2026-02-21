@@ -6,13 +6,14 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 import com.kiero.coupon.application.port.out.CouponLoadPort;
+import com.kiero.coupon.application.port.out.CouponPersistencePort;
 import com.kiero.coupon.domain.Coupon;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class CouponPersistenceAdapter implements CouponLoadPort {
+public class CouponPersistenceAdapter implements CouponLoadPort, CouponPersistencePort {
 
 	private final CouponRepository couponRepository;
 

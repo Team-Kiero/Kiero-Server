@@ -8,6 +8,4 @@ import com.kiero.coupon.domain.Coupon;
 public interface CouponLoadPort {
 	List<Coupon> findAllOrderByPriceAsc();
 	Optional<Coupon> findById(Long couponId);
-	Coupon save(Coupon coupon);
-	void delete(Coupon coupon);
 }

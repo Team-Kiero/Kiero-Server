@@ -13,6 +13,7 @@ import com.kiero.coupon.application.dto.UpdateCouponCommand;
 import com.kiero.coupon.application.exception.CouponErrorCode;
 import com.kiero.coupon.application.port.in.CouponCommandUseCase;
 import com.kiero.coupon.application.port.out.CouponLoadPort;
+import com.kiero.coupon.application.port.out.CouponPersistencePort;
 import com.kiero.coupon.domain.Coupon;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.exception.ParentErrorCode;
@@ -30,6 +31,7 @@ public class CouponCommandService implements CouponCommandUseCase {
 	private final ParentLoadPort parentLoadPort;
 	private final ChildLoadPort childLoadPort;
 	private final CouponLoadPort couponLoadPort;
+	private final CouponPersistencePort couponPersistencePort;
 
 	@Override
 	@Transactional
@@ -46,7 +48,7 @@ public class CouponCommandService implements CouponCommandUseCase {
 
 		Coupon coupon = Coupon.create(command.name(), command.price(), parent, child);
 
-		return CouponResponse.from(couponLoadPort.save(coupon));
+		return CouponResponse.from(couponPersistencePort.save(coupon));
 	}
 
 	@Override
@@ -74,6 +76,6 @@ public class CouponCommandService implements CouponCommandUseCase {
 			throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
 		}
 
-		couponLoadPort.delete(coupon);
+		couponPersistencePort.delete(coupon);
 	}
 }
