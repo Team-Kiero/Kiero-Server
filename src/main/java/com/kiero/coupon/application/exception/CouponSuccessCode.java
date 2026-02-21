@@ -15,6 +15,7 @@ public enum CouponSuccessCode implements BaseCode {
     */
     COUPONS_RETRIEVED(HttpStatus.OK, "쿠폰 목록을 조회했습니다."),
     COUPON_PURCHASED(HttpStatus.OK, "쿠폰 구매에 성공하였습니다."),
+    COUPON_CREATED(HttpStatus.CREATED, "쿠폰이 생성되었습니다."),
     ;
 
     private final HttpStatus httpStatus;

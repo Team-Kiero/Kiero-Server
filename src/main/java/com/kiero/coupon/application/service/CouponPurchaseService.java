@@ -1,7 +1,6 @@
 package com.kiero.coupon.application.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +11,6 @@ import com.kiero.coupon.application.dto.CouponPurchaseEvent;
 import com.kiero.coupon.application.dto.CouponResponse;
 import com.kiero.coupon.application.dto.PurchaseCouponCommand;
 import com.kiero.coupon.application.exception.CouponErrorCode;
-import com.kiero.coupon.application.port.in.GetCouponsUseCase;
 import com.kiero.coupon.application.port.in.PurchaseCouponUseCase;
 import com.kiero.coupon.application.port.out.CouponLoadPort;
 import com.kiero.coupon.application.port.out.CouponPurchaseEventPort;
@@ -23,21 +21,11 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class CouponService implements GetCouponsUseCase, PurchaseCouponUseCase {
+public class CouponPurchaseService implements PurchaseCouponUseCase {
 
 	private final ChildLoadPort childLoadPort;
-
 	private final CouponLoadPort couponLoadPort;
 	private final CouponPurchaseEventPort eventPort;
-
-	@Override
-	@Transactional(readOnly = true)
-	public List<CouponResponse> getAll() {
-		return couponLoadPort.findAllOrderByPriceAsc()
-			.stream()
-			.map(c -> new CouponResponse(c.getId(), c.getName(), c.getPrice()))
-			.toList();
-	}
 
 	@Override
 	@Transactional

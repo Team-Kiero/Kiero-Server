@@ -25,4 +25,9 @@ public class CouponPersistenceAdapter implements CouponLoadPort {
 	public Optional<Coupon> findById(Long couponId) {
 		return couponRepository.findById(couponId);
 	}
+
+	@Override
+	public Coupon save(Coupon coupon) {
+		return couponRepository.save(coupon);
+	}
 }
