@@ -58,16 +58,6 @@ public class MemberTokenService implements MemberTokenUseCase {
 
 	@Override
 	@Transactional
-	public ReissueTokensResult reissueTokens(String refreshToken) {
-		String newRefreshToken = authTokenPort.reissueRefreshToken(refreshToken);
-		AccessTokenGenerateResponse accessTokenResponse =
-			authTokenPort.generateAccessTokenFromRefreshToken(newRefreshToken);
-
-		return new ReissueTokensResult(newRefreshToken, accessTokenResponse);
-	}
-
-	@Override
-	@Transactional
 	public AccessTokenGenerateResponse issueSubscribeToken(String refreshToken) {
 		return authTokenPort.generateSubscribeToken(refreshToken);
 	}
