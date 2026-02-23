@@ -65,7 +65,13 @@ public class Mission extends BaseTimeEntity {
 			.build();
 	}
 
-    public void complete() {
-        this.isCompleted = true;
-    }
+	public void complete() {
+		this.isCompleted = true;
+	}
+
+	public void update(String name, int reward, LocalDate dueAt) {
+		this.name = name;
+		this.reward = reward;
+		this.dueAt = dueAt;
+	}
 }

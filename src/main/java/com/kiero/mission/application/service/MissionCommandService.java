@@ -17,6 +17,7 @@ import com.kiero.mission.application.dto.MissionCompleteEvent;
 import com.kiero.mission.application.dto.MissionCreateRequest;
 import com.kiero.mission.application.dto.MissionCreatedEvent;
 import com.kiero.mission.application.dto.MissionResponse;
+import com.kiero.mission.application.dto.MissionUpdateRequest;
 import com.kiero.mission.application.exception.MissionErrorCode;
 import com.kiero.mission.application.port.in.MissionCommandUseCase;
 import com.kiero.mission.application.port.out.MissionEventPort;
@@ -138,6 +139,38 @@ public class MissionCommandService implements MissionCommandUseCase {
 			missionId, childId, mission.getReward(), child.getCoinAmount());
 
 		return MissionResponse.from(mission);
+	}
+
+	@Override
+	@Transactional
+	public MissionResponse updateMission(Long parentId, Long missionId, MissionUpdateRequest request) {
+		Mission mission = missionPort.findById(missionId)
+			.orElseThrow(() -> new KieroException(MissionErrorCode.MISSION_NOT_FOUND));
+
+		if (!mission.getParent().getId().equals(parentId)) {
+			throw new KieroException(MissionErrorCode.NOT_YOUR_MISSION);
+		}
+
+		if (mission.isCompleted()) {
+			throw new KieroException(MissionErrorCode.MISSION_ALREADY_COMPLETED);
+		}
+
+		mission.update(request.name(), request.reward(), request.dueAt());
+
+		return MissionResponse.from(mission);
+	}
+
+	@Override
+	@Transactional
+	public void deleteMission(Long parentId, Long missionId) {
+		Mission mission = missionPort.findById(missionId)
+			.orElseThrow(() -> new KieroException(MissionErrorCode.MISSION_NOT_FOUND));
+
+		if (!mission.getParent().getId().equals(parentId)) {
+			throw new KieroException(MissionErrorCode.NOT_YOUR_MISSION);
+		}
+
+		missionPort.delete(mission);
 	}
 
 	private void validateParentChildRelation(Long parentId, Long childId) {

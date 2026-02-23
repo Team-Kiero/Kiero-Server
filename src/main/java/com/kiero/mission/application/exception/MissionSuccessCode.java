@@ -14,6 +14,8 @@ public enum MissionSuccessCode implements BaseCode {
     200 OK
     */
     MISSIONS_RETRIEVED(HttpStatus.OK, "미션 목록 조회에 성공하였습니다."),
+    MISSION_UPDATED(HttpStatus.OK, "미션이 성공적으로 수정되었습니다."),
+    MISSION_DELETED(HttpStatus.OK, "미션이 성공적으로 삭제되었습니다."),
     MISSION_COMPLETED(HttpStatus.OK, "미션을 성공적으로 완료했습니다."),
     MISSION_SUGGESTIONS_GENERATED(HttpStatus.OK, "미션 추천이 생성되었습니다."),
 

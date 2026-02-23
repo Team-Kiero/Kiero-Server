@@ -15,6 +15,10 @@ public interface MissionPersistencePort {
 
 	List<Mission> findAllByParentIdAndDueAtGreaterThanEqual(Long parentId, LocalDate date);
 
+	Optional<Mission> findById(Long missionId);
+
 	Optional<Mission> findByIdWithLock(Long missionId);
+
+	void delete(Mission mission);
 
 }
