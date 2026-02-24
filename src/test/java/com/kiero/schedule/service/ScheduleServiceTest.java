@@ -187,6 +187,8 @@ public class ScheduleServiceTest {
 			// given
 			Long parentId = 1L;
 
+			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+
 			ScheduleAddRequest req = new ScheduleAddRequest(null, null, null, null, null, null, null);
 
 			given(parentLoadPort.findById(parentId)).willReturn(Optional.empty());
@@ -203,6 +205,8 @@ public class ScheduleServiceTest {
 			// given
 			Long parentId = 1L;
 			Long childId = 1L;
+
+			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
 
 			Parent parent = mock(Parent.class);
 
@@ -223,6 +227,8 @@ public class ScheduleServiceTest {
 			// given
 			Long parentId = 1L;
 			Long otherChildId = 100L;
+
+			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
 
 			Parent parent = mock(Parent.class);
 			Child otherChild = mock(Child.class);
@@ -245,6 +251,8 @@ public class ScheduleServiceTest {
 			// given
 			Long parentId = 1L;
 			Long childId = 1L;
+
+			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
 
 			Parent parent = mock(Parent.class);
 			Child child = mock(Child.class);
@@ -269,6 +277,8 @@ public class ScheduleServiceTest {
 			Long parentId = 1L;
 			Long childId = 1L;
 
+			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+
 			Parent parent = mock(Parent.class);
 			Child child = mock(Child.class);
 
@@ -291,6 +301,8 @@ public class ScheduleServiceTest {
 			Long parentId = 1L;
 			Long childId = 1L;
 
+			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+
 			Parent parent = mock(Parent.class);
 			Child child = mock(Child.class);
 
@@ -312,6 +324,8 @@ public class ScheduleServiceTest {
 			// given
 			Long parentId = 1L;
 			Long childId = 1L;
+
+			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
 
 			Parent parent = mock(Parent.class);
 			Child child = mock(Child.class);
