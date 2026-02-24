@@ -105,6 +105,75 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 	@Override
 	@Transactional
+	public TodayScheduleResponse getTodaySchedule(Long childId) {
+		LocalDate today = LocalDate.now(clock);
+
+		List<ScheduleDetail> allScheduleDetails = detailPort.findByDateAndChildId(today, childId);
+
+		List<ScheduleDetail> pendingAndVerified = allScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING || sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
+			.toList();
+
+		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(allScheduleDetails);
+
+		List<ScheduleDetail> filteredPendingAndVerified = filterTodayCreatedSchedules(today, pendingAndVerified, earliestStoneUsedAt);
+		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails, earliestStoneUsedAt);
+
+		markPassedPendingSchedulesAsFailed(filteredPendingAndVerified);
+		markPassedVerifiedSchedulesAsCompleted(filteredPendingAndVerified);
+
+		List<ScheduleDetail> todo2 = findTodoScheduleAndNextTodoSchedule(filteredPendingAndVerified);
+		ScheduleDetail todo = todo2.size() > 0 ? todo2.get(0) : null;
+		ScheduleDetail nextTodo = todo2.size() > 1 ? todo2.get(1) : null;
+
+		int totalSchedule = (int) filteredAllScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.SKIPPED)
+			.count();
+
+		int earnedStones = (int) filteredAllScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.VERIFIED || sd.getScheduleStatus() == ScheduleStatus.COMPLETED)
+			.count();
+
+		boolean isSkippable = nextTodo != null;
+
+		TodayScheduleStatus todayScheduleStatus = TodayScheduleStatusResolver.resolve(
+			earnedStones,
+			todo,
+			filteredAllScheduleDetails,
+			earliestStoneUsedAt
+		);
+
+		if (todo == null) {
+			return TodayScheduleResponse.of(
+				null, 0, null, null, null, null,
+				totalSchedule, earnedStones,
+				todayScheduleStatus,
+				isSkippable,
+				false
+			);
+		}
+
+		int order = filteredAllScheduleDetails.indexOf(todo) + 1;
+		boolean isNowScheduleVerified = todo.getScheduleStatus() == ScheduleStatus.VERIFIED;
+
+		return TodayScheduleResponse.of(
+			todo.getId(),
+			order,
+			todo.getSchedule().getStartTime(),
+			todo.getSchedule().getEndTime(),
+			todo.getSchedule().getName(),
+			todo.getStoneType(),
+			totalSchedule,
+			earnedStones,
+			todayScheduleStatus,
+			isSkippable,
+			isNowScheduleVerified
+		);
+	}
+
+
+	@Override
+	@Transactional
 	public void skipNowSchedule(Long childId, Long scheduleDetailId) {
 		childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
@@ -319,5 +388,46 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.filter(Objects::nonNull)
 			.min(LocalDateTime::compareTo)
 			.orElse(null);
+	}
+
+	private void markPassedPendingSchedulesAsFailed(List<ScheduleDetail> scheduleDetails) {
+		LocalTime now = LocalTime.now(clock);
+		scheduleDetails.stream()
+			.filter(sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.PENDING)
+			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.FAILED));
+	}
+
+	private void markPassedVerifiedSchedulesAsCompleted(List<ScheduleDetail> scheduleDetails) {
+		LocalTime now = LocalTime.now(clock);
+		scheduleDetails.stream()
+			.filter(sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
+			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.COMPLETED));
+	}
+
+	private List<ScheduleDetail> findTodoScheduleAndNextTodoSchedule(List<ScheduleDetail> scheduleDetails) {
+		return scheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING || sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
+			.limit(2)
+			.toList();
+	}
+
+	// 오늘이 반복 요일에 해당하고, 오늘 생성되었으며, 아직 오늘자 ScheduleDetail이 생성되지 않은 반복일정들의 오늘자 ScheduleDetail을 생성하는 private method
+	private void createScheduleDetailOfTodayRecurringSchedules(LocalDate today) {
+		LocalDateTime startOfToday = today.atStartOfDay();
+		DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
+
+		List<Schedule> schedules = schedulePort.findRecurringSchedulesToGenerateTodayDetail(
+			startOfToday,
+			todayDayOfWeek,
+			today
+		);
+
+		if (schedules.isEmpty()) return;
+
+		List<ScheduleDetail> details = schedules.stream()
+			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
+			.toList();
+
+		detailPort.saveAll(details);
 	}
 }
