@@ -68,7 +68,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	@Transactional
 	public void addSchedule(ScheduleAddRequest request, Long parentId, Long childId) {
 
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(clock);
 
 		Parent parent = parentLoadPort.findById(parentId)
 			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
