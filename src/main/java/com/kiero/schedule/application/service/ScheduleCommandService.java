@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -26,6 +27,7 @@ import com.kiero.schedule.application.dto.NowScheduleCompleteEvent;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
 import com.kiero.schedule.application.dto.ScheduleCreatedEvent;
+import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
 import com.kiero.schedule.application.port.in.ScheduleCommandUseCase;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
@@ -38,6 +40,8 @@ import com.kiero.schedule.domain.ScheduleRepeatDays;
 import com.kiero.schedule.domain.enums.DayOfWeek;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
+import com.kiero.schedule.domain.enums.TodayScheduleStatus;
+import com.kiero.schedule.domain.policy.TodayScheduleStatusResolver;
 
 import lombok.RequiredArgsConstructor;
 
@@ -61,6 +65,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	@Override
 	@Transactional
 	public void addSchedule(ScheduleAddRequest request, Long parentId, Long childId) {
+
+		LocalDate today = LocalDate.now();
+
 		Parent parent = parentLoadPort.findById(parentId)
 			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
 		Child child = childLoadPort.findById(childId)
@@ -85,11 +92,21 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		Schedule saved = schedulePort.save(schedule);
 
 		if (request.isRecurring()) {
+
 			List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
 			List<ScheduleRepeatDays> repeatDays = dayOfWeeks.stream()
 				.map(day -> ScheduleRepeatDays.create(day, saved))
 				.toList();
 			repeatDaysPort.saveAll(repeatDays);
+
+			// 당일 생성된 반복 일정 중 오늘 요일이면 scheduleDetail 생성
+			createScheduleDetailOfTodayRecurringSchedules(today);
+
+
+			// 추가된 일정의 요일에 오늘이 포함된다면 오늘 일정들의 stoneType 재계산
+			DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
+			if (dayOfWeeks.contains(todayDayOfWeek)) recalculateTodayStoneTypes(childId);
+
 		} else {
 			List<LocalDate> dates = dateParser(request.dates());
 			List<ScheduleDetail> details = dates.stream()
@@ -98,6 +115,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.map(date -> ScheduleDetail.create(date, null, null, ScheduleStatus.PENDING, null, saved))
 				.toList();
 			detailPort.saveAll(details);
+
+			// 추가된 일정의 날짜가 오늘이라면 오늘 일정들의 stoneType 재계산
+			if (dates.contains(today)) recalculateTodayStoneTypes(childId);
 		}
 
 		eventPort.publish(new ScheduleCreatedEvent(childId, saved.getName()));
@@ -239,19 +259,19 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			throw new KieroException(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETE);
 		}
 
-		List<ScheduleDetail> filteredAll = filterTodayCreatedSchedules(today, all, null);
+		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, all, null);
 
-		int totalSchedule = (int) filteredAll.stream()
+		int totalSchedule = (int) filteredAllScheduleDetails.stream()
 			.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.SKIPPED)
 			.count();
 
-		List<StoneType> gotStones = filteredAll.stream()
+		List<StoneType> gotStones = filteredAllScheduleDetails.stream()
 			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.VERIFIED || sd.getScheduleStatus() == ScheduleStatus.COMPLETED)
 			.map(ScheduleDetail::getStoneType)
 			.toList();
 
 		LocalDateTime now = LocalDateTime.now(clock);
-		filteredAll.forEach(sd -> sd.changeStoneUsedAt(now));
+		filteredAllScheduleDetails.forEach(sd -> sd.changeStoneUsedAt(now));
 
 		int gotStonesCount = gotStones.size();
 		int earnedCoinAmount = 0;
@@ -276,7 +296,37 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
 			.toList();
 
-		detailPort.saveAll(scheduleDetails);
+		List<ScheduleDetail> savedScheduleDetails = detailPort.saveAll(scheduleDetails);
+		calculateStoneTypePerScheduleDetail(savedScheduleDetails);
+	}
+
+	private void calculateStoneTypePerScheduleDetail(List<ScheduleDetail> scheduleDetails) {
+
+		if (scheduleDetails.isEmpty()) return;
+
+		List<ScheduleDetail> orderedScheduleDetails = scheduleDetails.stream()
+			.sorted(Comparator.comparing(
+				detail -> detail.getSchedule().getStartTime()))
+			.toList();
+
+		for (ScheduleDetail sd : orderedScheduleDetails) {
+			switch (scheduleDetails.indexOf(sd) % 3) {
+				case 0 -> sd.changeStoneType(StoneType.COURAGE);
+				case 1 -> sd.changeStoneType(StoneType.GRIT);
+				case 2 -> sd.changeStoneType(StoneType.WISDOM);
+			}
+		}
+	}
+
+	private void recalculateTodayStoneTypes(Long childId) {
+		LocalDate today = LocalDate.now(clock);
+
+		List<ScheduleDetail> allScheduleDetails = detailPort.findByDateAndChildId(today, childId);
+		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(allScheduleDetails);
+
+		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails, earliestStoneUsedAt);
+
+		calculateStoneTypePerScheduleDetail(filteredAllScheduleDetails);
 	}
 
 	private void validateAddRequest(ScheduleAddRequest request) {
@@ -368,6 +418,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
+	// 당일 생성된 일정 중, startTime과 stone 사용 여부로 유효한 일정만 필터링하는 private method
 	private List<ScheduleDetail> filterTodayCreatedSchedules(LocalDate today, List<ScheduleDetail> scheduleDetails, LocalDateTime earliestStoneUsedAt) {
 		return scheduleDetails.stream()
 			.filter(sd -> {

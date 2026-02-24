@@ -14,12 +14,13 @@ public interface ScheduleDetailPersistencePort {
 
 	List<ScheduleDetail> findByDateInAndChildId(List<LocalDate> dates, Long childId);
 
-	List<ScheduleDetail> findAllByScheduleIdInAndDateBetween(List<Long> scheduleIds, LocalDate startDate, LocalDate endDate);
+	List<ScheduleDetail> findAllByScheduleIdInAndDateBetween(List<Long> scheduleIds, LocalDate startDate,
+		LocalDate endDate);
 
 	boolean existsStoneUsedToday(List<Long> scheduleIds, LocalDate date);
 
 	List<ScheduleDetail> findAllByScheduleChildIdAndDateGreaterThanEqual(Long childId, LocalDate date);
 
-	void saveAll(List<ScheduleDetail> details);
+	List<ScheduleDetail> saveAll(List<ScheduleDetail> details);
 
 }

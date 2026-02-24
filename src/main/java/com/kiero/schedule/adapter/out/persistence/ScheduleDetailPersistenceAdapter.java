@@ -33,7 +33,8 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	}
 
 	@Override
-	public List<ScheduleDetail> findAllByScheduleIdInAndDateBetween(List<Long> scheduleIds, LocalDate startDate, LocalDate endDate) {
+	public List<ScheduleDetail> findAllByScheduleIdInAndDateBetween(List<Long> scheduleIds, LocalDate startDate,
+		LocalDate endDate) {
 		return scheduleDetailRepository.findAllByScheduleIdInAndDateBetween(scheduleIds, startDate, endDate);
 	}
 
@@ -48,8 +49,8 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	}
 
 	@Override
-	public void saveAll(List<ScheduleDetail> details) {
-		scheduleDetailRepository.saveAll(details);
+	public List<ScheduleDetail> saveAll(List<ScheduleDetail> details) {
+		return scheduleDetailRepository.saveAll(details);
 	}
 
 }
