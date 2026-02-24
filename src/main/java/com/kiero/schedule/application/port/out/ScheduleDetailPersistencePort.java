@@ -12,6 +12,8 @@ public interface ScheduleDetailPersistencePort {
 
 	List<ScheduleDetail> findByDateAndChildId(LocalDate date, Long childId);
 
+	List<ScheduleDetail> findAllByDate(LocalDate date);
+
 	List<ScheduleDetail> findByDateInAndChildId(List<LocalDate> dates, Long childId);
 
 	List<ScheduleDetail> findAllByScheduleIdInAndDateBetween(List<Long> scheduleIds, LocalDate startDate,

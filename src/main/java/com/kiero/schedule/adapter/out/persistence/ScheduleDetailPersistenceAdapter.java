@@ -28,6 +28,11 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	}
 
 	@Override
+	public List<ScheduleDetail> findAllByDate(LocalDate date) {
+		return scheduleDetailRepository.findAllByDate(date);
+	}
+
+	@Override
 	public List<ScheduleDetail> findByDateInAndChildId(List<LocalDate> dates, Long childId) {
 		return scheduleDetailRepository.findByDateInAndChildId(dates, childId);
 	}

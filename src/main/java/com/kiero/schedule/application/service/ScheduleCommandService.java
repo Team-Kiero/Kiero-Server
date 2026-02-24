@@ -7,7 +7,9 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
@@ -296,24 +298,36 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
 			.toList();
 
-		List<ScheduleDetail> savedScheduleDetails = detailPort.saveAll(scheduleDetails);
-		calculateStoneTypePerScheduleDetail(savedScheduleDetails);
+		detailPort.saveAll(scheduleDetails);
+
+		List<ScheduleDetail> allScheduleDetails = detailPort.findAllByDate(today);
+
+		calculateStoneTypePerScheduleDetail(allScheduleDetails);
 	}
 
 	private void calculateStoneTypePerScheduleDetail(List<ScheduleDetail> scheduleDetails) {
 
 		if (scheduleDetails.isEmpty()) return;
 
-		List<ScheduleDetail> orderedScheduleDetails = scheduleDetails.stream()
-			.sorted(Comparator.comparing(
-				detail -> detail.getSchedule().getStartTime()))
-			.toList();
+		Map<Long, List<ScheduleDetail>> byChild = scheduleDetails.stream()
+			.collect(Collectors.groupingBy(sd -> sd.getSchedule().getChild().getId()));
 
-		for (ScheduleDetail sd : orderedScheduleDetails) {
-			switch (scheduleDetails.indexOf(sd) % 3) {
-				case 0 -> sd.changeStoneType(StoneType.COURAGE);
-				case 1 -> sd.changeStoneType(StoneType.GRIT);
-				case 2 -> sd.changeStoneType(StoneType.WISDOM);
+
+		for (List<ScheduleDetail> childDetails : byChild.values()) {
+			childDetails.sort(
+				Comparator
+					.comparing((ScheduleDetail sd) -> sd.getSchedule().getStartTime())
+					.thenComparing(sd -> sd.getSchedule().getId())
+			);
+
+			for (int i = 0; i < childDetails.size(); i++) {
+				ScheduleDetail sd = childDetails.get(i);
+
+				switch (i % 3) {
+					case 0 -> sd.changeStoneType(StoneType.COURAGE);
+					case 1 -> sd.changeStoneType(StoneType.GRIT);
+					case 2 -> sd.changeStoneType(StoneType.WISDOM);
+				}
 			}
 		}
 	}
