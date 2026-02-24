@@ -130,7 +130,11 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	public TodayScheduleResponse getTodaySchedule(Long childId) {
 		LocalDate today = LocalDate.now(clock);
 
-		List<ScheduleDetail> allScheduleDetails = detailPort.findByDateAndChildId(today, childId);
+		List<ScheduleDetail> allScheduleDetails = detailPort.findByDateAndChildId(today, childId).stream()
+			.sorted(Comparator
+					.comparing((ScheduleDetail sd) -> sd.getSchedule().getStartTime())
+					.thenComparing(sd -> sd.getSchedule().getId()))
+			.toList();
 
 		List<ScheduleDetail> pendingAndVerified = allScheduleDetails.stream()
 			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING || sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
