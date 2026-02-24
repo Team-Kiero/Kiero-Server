@@ -1152,7 +1152,7 @@ public class ScheduleServiceTest {
 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of());
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.scheduleDetailId()).isNull();
@@ -1185,7 +1185,7 @@ public class ScheduleServiceTest {
 				.willReturn(List.of(sd1, sd2));
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.scheduleDetailId()).isNull();
@@ -1209,7 +1209,7 @@ public class ScheduleServiceTest {
 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of());
 
 			// when
-			scheduleQueryService.getTodaySchedule(childId);
+			scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			ArgumentCaptor<List<ScheduleDetail>> captor = ArgumentCaptor.forClass(List.class);
@@ -1235,7 +1235,7 @@ public class ScheduleServiceTest {
 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of());
 
 			// when
-			scheduleQueryService.getTodaySchedule(childId);
+			scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			verify(scheduleDetailPersistencePort, never()).saveAll(anyList());
@@ -1264,7 +1264,7 @@ public class ScheduleServiceTest {
 				List.of());
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.totalSchedule()).isEqualTo(1);
@@ -1288,7 +1288,7 @@ public class ScheduleServiceTest {
 			given(schedule.getStartTime()).willReturn(LocalTime.of(0, 0));
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.totalSchedule()).isEqualTo(0);
@@ -1313,7 +1313,7 @@ public class ScheduleServiceTest {
 			given(sd.getStoneUsedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.totalSchedule()).isEqualTo(0);
@@ -1342,7 +1342,7 @@ public class ScheduleServiceTest {
 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
 
 			// when
-			scheduleQueryService.getTodaySchedule(childId);
+			scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			verify(sd).changeScheduleStatus(ScheduleStatus.FAILED);
@@ -1371,7 +1371,7 @@ public class ScheduleServiceTest {
 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
 
 			// when
-			scheduleQueryService.getTodaySchedule(childId);
+			scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			verify(sd).changeScheduleStatus(ScheduleStatus.COMPLETED);
@@ -1402,7 +1402,7 @@ public class ScheduleServiceTest {
 			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.scheduleDetailId()).isEqualTo(1L);
@@ -1434,7 +1434,7 @@ public class ScheduleServiceTest {
 			given(schedule.getName()).willReturn("테스트 일정");
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.scheduleDetailId()).isEqualTo(scheduleDetailId);
@@ -1454,7 +1454,7 @@ public class ScheduleServiceTest {
 				.willReturn(List.of());
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.scheduleDetailId()).isNull();
@@ -1490,7 +1490,7 @@ public class ScheduleServiceTest {
 			given(s2.getEndTime()).willReturn(LocalTime.of(11, 59));
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.isSkippable()).isTrue();
@@ -1518,7 +1518,7 @@ public class ScheduleServiceTest {
 			given(s1.getEndTime()).willReturn(LocalTime.of(11, 59));
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.isSkippable()).isFalse();
@@ -1554,7 +1554,7 @@ public class ScheduleServiceTest {
 			given(sd1.getStoneType()).willAnswer(inv -> holder[0]);
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.stoneType()).isEqualTo(StoneType.COURAGE);
@@ -1607,7 +1607,7 @@ public class ScheduleServiceTest {
 			given(sd2.getStoneType()).willAnswer(inv -> holder[0]);
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.stoneType()).isEqualTo(StoneType.GRIT);
@@ -1670,7 +1670,7 @@ public class ScheduleServiceTest {
 			given(sd3.getStoneType()).willAnswer(inv -> holder[0]);
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.stoneType()).isEqualTo(StoneType.WISDOM);
@@ -1716,7 +1716,7 @@ public class ScheduleServiceTest {
 			given(s2.getEndTime()).willReturn(endTime);
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.totalSchedule()).isEqualTo(1);
@@ -1761,7 +1761,7 @@ public class ScheduleServiceTest {
 			given(s2.getEndTime()).willReturn(endTime);
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.earnedStones()).isEqualTo(1);
@@ -1806,7 +1806,7 @@ public class ScheduleServiceTest {
 			given(s2.getEndTime()).willReturn(endTime);
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.scheduleOrder()).isEqualTo(2);
@@ -1834,7 +1834,7 @@ public class ScheduleServiceTest {
 			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.isNowScheduleVerified()).isTrue();
@@ -1862,7 +1862,7 @@ public class ScheduleServiceTest {
 			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
 
 			// when
-			TodayScheduleResponse response = scheduleQueryService.getTodaySchedule(childId);
+			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
 
 			// then
 			assertThat(response.isNowScheduleVerified()).isFalse();
