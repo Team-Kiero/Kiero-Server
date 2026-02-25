@@ -115,7 +115,9 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 						schedule.getEndTime(),
 						schedule.getName(),
 						schedule.getScheduleColor().getColorCode(),
-						dayOfWeek
+						dayOfWeek,
+						schedule.getRepeatStartDate(),
+						schedule.getRepeatEndDate()
 					);
 				})
 				.filter(Objects::nonNull)

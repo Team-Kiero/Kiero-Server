@@ -1,5 +1,6 @@
 package com.kiero.schedule.application.dto;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 public record RecurringScheduleDto(
@@ -7,6 +8,8 @@ public record RecurringScheduleDto(
 	LocalTime endTime,
 	String name,
 	String colorCode,
-	String dayOfWeek
+	String dayOfWeek,
+	LocalDate repeatStartDate,
+	LocalDate repeatEndDate
 ) {
 }
