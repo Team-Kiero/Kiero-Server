@@ -35,15 +35,18 @@ public interface ScheduleRepeatDaysRepository extends JpaRepository<ScheduleRepe
 	);
 
 	@Query("""
-		    select distinct srd.schedule
-		    from ScheduleRepeatDays srd
-		    where srd.dayOfWeek = :dayOfWeek
-		      and not exists (
-		          select 1
-		          from ScheduleDetail sd
-		          where sd.schedule = srd.schedule
-		            and sd.date = :date
-		      )
+		select distinct s
+		from ScheduleRepeatDays srd
+		join srd.schedule s
+		where srd.dayOfWeek = :dayOfWeek
+		  and s.repeatStartDate <= :date
+		  and (s.repeatEndDate is null or :date <= s.repeatEndDate)
+		  and not exists (
+			  select 1
+			  from ScheduleDetail sd
+			  where sd.schedule = s
+				and sd.date = :date
+		  )
 		""")
 	List<Schedule> findSchedulesToCreateTodayDetail(
 		@Param("dayOfWeek") DayOfWeek dayOfWeek,

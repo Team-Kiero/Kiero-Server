@@ -54,7 +54,7 @@ public class Schedule extends BaseTimeEntity {
 	@Column(name = ScheduleTableConstants.COLUMN_IS_RECURRING, nullable = false)
 	private boolean isRecurring;
 
-	@Column(name = ScheduleTableConstants.COLUMN_REPEAT_START_DATE, nullable = false)
+	@Column(name = ScheduleTableConstants.COLUMN_REPEAT_START_DATE, nullable = true)
 	private LocalDate repeatStartDate;
 
 	@Column(name = ScheduleTableConstants.COLUMN_REPEAT_END_DATE, nullable = true)
