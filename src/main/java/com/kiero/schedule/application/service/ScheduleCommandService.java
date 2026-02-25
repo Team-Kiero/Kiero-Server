@@ -68,8 +68,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			throw new KieroException(ScheduleErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
 
-		validateAddRequest(request);
-		throwExceptionWhenScheduleDuplicated(request, child.getId());
+		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
+		throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), child.getId());
 
 		Schedule schedule = Schedule.create(
 			parent, child,
@@ -89,13 +89,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.toList();
 			repeatDaysPort.saveAll(repeatDays);
 		} else {
-			List<LocalDate> dates = dateParser(request.dates());
-			List<ScheduleDetail> details = dates.stream()
-				.distinct()
-				.sorted()
-				.map(date -> ScheduleDetail.create(date, null, null, ScheduleStatus.PENDING, null, saved))
-				.toList();
-			detailPort.saveAll(details);
+			parseRequestDatesAndSaveNewScheduleDetail(request.dates(), saved);
 		}
 
 		eventPort.publish(new ScheduleCreatedEvent(childId, saved.getName()));
@@ -212,21 +206,21 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		if (request.isRecurring() && (request.dayOfWeek() == null || request.dayOfWeek().isEmpty())) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE);
 		}
-		if (!request.isRecurring() && (request.dates() == null || request.dates().isEmpty())) {
+		if (isRecurring && (dates == null || dates.isEmpty())) {
 			throw new KieroException(ScheduleErrorCode.DATE_NOT_NULLABLE_WHEN_IS_RECURRING_IS_FALSE);
 		}
-		if (request.dayOfWeek() != null && request.dates() != null) {
+		if (dayOfWeek != null && dates != null) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_XOR_DATE_REQUIRED);
 		}
 	}
 
-	private void throwExceptionWhenScheduleDuplicated(ScheduleAddRequest request, Long childId) {
-		if (request.isRecurring()) {
-			List<DayOfWeek> targetDays = dayOfWeekParser(request.dayOfWeek());
+	private void throwExceptionWhenScheduleDuplicated(boolean isRecurring, String dayOfWeek, LocalTime startTime, LocalTime endTime, String requestDates, Long childId) {
+		if (isRecurring) {
+			List<DayOfWeek> targetDays = dayOfWeekParser(dayOfWeek);
 			List<Schedule> existingRecurring = repeatDaysPort.findSchedulesByChildIdAndDayOfWeeks(childId, targetDays);
 
 			boolean conflictWithRecurring = existingRecurring.stream()
-				.anyMatch(s -> isTimeOverlapped(request.startTime(), request.endTime(), s.getStartTime(), s.getEndTime()));
+				.anyMatch(s -> isTimeOverlapped(startTime, endTime, s.getStartTime(), s.getEndTime()));
 
 			if (conflictWithRecurring) throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
 
@@ -236,7 +230,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			boolean conflictWithNormal = normalsFromToday.stream()
 				.filter(sd -> targetDays.contains(DayOfWeek.from(sd.getDate().getDayOfWeek())))
 				.anyMatch(sd -> isTimeOverlapped(
-					request.startTime(), request.endTime(),
+					startTime, endTime,
 					sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
 				));
 
@@ -244,12 +238,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			return;
 		}
 
-		List<LocalDate> dates = dateParser(request.dates());
+		List<LocalDate> dates = dateParser(requestDates);
 		List<ScheduleDetail> thatDayDetails = detailPort.findByDateInAndChildId(dates, childId);
 
 		boolean conflictWithNormal = thatDayDetails.stream()
 			.anyMatch(sd -> isTimeOverlapped(
-				request.startTime(), request.endTime(),
+				startTime, endTime,
 				sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
 			));
 
@@ -263,7 +257,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		List<Schedule> existingRecurringOnThatDay = repeatDaysPort.findSchedulesByChildIdAndDayOfWeekIn(childId, targetDays);
 
 		boolean conflictWithRecurring = existingRecurringOnThatDay.stream()
-			.anyMatch(s -> isTimeOverlapped(request.startTime(), request.endTime(), s.getStartTime(), s.getEndTime()));
+			.anyMatch(s -> isTimeOverlapped(startTime, endTime, s.getStartTime(), s.getEndTime()));
 
 		if (conflictWithRecurring) throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
 	}
