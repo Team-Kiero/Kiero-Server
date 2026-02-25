@@ -2,8 +2,6 @@ package com.kiero.schedule.application.service;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -24,7 +22,6 @@ import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.NormalScheduleDto;
 import com.kiero.schedule.application.dto.RecurringScheduleDto;
 import com.kiero.schedule.application.dto.ScheduleTabResponse;
-import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
 import com.kiero.schedule.application.port.in.ScheduleQueryUseCase;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
@@ -33,7 +30,6 @@ import com.kiero.schedule.application.port.out.ScheduleRepeatDaysPersistencePort
 import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;
-import com.kiero.schedule.domain.enums.DayOfWeek;
 import com.kiero.schedule.domain.enums.ScheduleColor;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
@@ -55,79 +51,6 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 	private final ScheduleDetailPersistencePort detailPort;
 
 	private final Clock clock;
-
-	@Override
-	@Transactional
-	public TodayScheduleResponse getTodaySchedule(Long childId) {
-		LocalDate today = LocalDate.now(clock);
-
-		// 당일 생성된 반복 일정 중 오늘 요일이면 scheduleDetail 생성(수동)
-		createScheduleDetailOfTodayRecurringSchedules(today);
-
-		List<ScheduleDetail> all = detailPort.findByDateAndChildId(today, childId);
-
-		List<ScheduleDetail> pendingAndVerified = all.stream()
-			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING || sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
-			.toList();
-
-		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(all);
-
-		List<ScheduleDetail> filteredPendingAndVerified = filterTodayCreatedSchedules(today, pendingAndVerified, earliestStoneUsedAt);
-		List<ScheduleDetail> filteredAll = filterTodayCreatedSchedules(today, all, earliestStoneUsedAt);
-
-		markPassedPendingSchedulesAsFailed(filteredPendingAndVerified);
-		markPassedVerifiedSchedulesAsCompleted(filteredPendingAndVerified);
-
-		List<ScheduleDetail> todo2 = findTodoScheduleAndNextTodoSchedule(filteredPendingAndVerified);
-		ScheduleDetail todo = todo2.size() > 0 ? todo2.get(0) : null;
-		ScheduleDetail nextTodo = todo2.size() > 1 ? todo2.get(1) : null;
-
-		stoneTypeCalculateAndSetter(filteredAll, todo);
-
-		int totalSchedule = (int) filteredAll.stream()
-			.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.SKIPPED)
-			.count();
-
-		int earnedStones = (int) filteredAll.stream()
-			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.VERIFIED || sd.getScheduleStatus() == ScheduleStatus.COMPLETED)
-			.count();
-
-		boolean isSkippable = nextTodo != null;
-
-		TodayScheduleStatus todayScheduleStatus = TodayScheduleStatusResolver.resolve(
-			earnedStones,
-			todo,
-			filteredAll,
-			earliestStoneUsedAt
-		);
-
-		if (todo == null) {
-			return TodayScheduleResponse.of(
-				null, 0, null, null, null, null,
-				totalSchedule, earnedStones,
-				todayScheduleStatus,
-				isSkippable,
-				false
-			);
-		}
-
-		int order = filteredAll.indexOf(todo) + 1;
-		boolean isNowScheduleVerified = todo.getScheduleStatus() == ScheduleStatus.VERIFIED;
-
-		return TodayScheduleResponse.of(
-			todo.getId(),
-			order,
-			todo.getSchedule().getStartTime(),
-			todo.getSchedule().getEndTime(),
-			todo.getSchedule().getName(),
-			todo.getStoneType(),
-			totalSchedule,
-			earnedStones,
-			todayScheduleStatus,
-			isSkippable,
-			isNowScheduleVerified
-		);
-	}
 
 	@Override
 	@Transactional
@@ -232,76 +155,5 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
 			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
-	}
-
-	private void markPassedPendingSchedulesAsFailed(List<ScheduleDetail> scheduleDetails) {
-		LocalTime now = LocalTime.now(clock);
-		scheduleDetails.stream()
-			.filter(sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.PENDING)
-			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.FAILED));
-	}
-
-	private void markPassedVerifiedSchedulesAsCompleted(List<ScheduleDetail> scheduleDetails) {
-		LocalTime now = LocalTime.now(clock);
-		scheduleDetails.stream()
-			.filter(sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
-			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.COMPLETED));
-	}
-
-	private List<ScheduleDetail> findTodoScheduleAndNextTodoSchedule(List<ScheduleDetail> scheduleDetails) {
-		return scheduleDetails.stream()
-			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING || sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
-			.limit(2)
-			.toList();
-	}
-
-	private void stoneTypeCalculateAndSetter(List<ScheduleDetail> scheduleDetails, ScheduleDetail todoSchedule) {
-		if (todoSchedule == null) return;
-		switch (scheduleDetails.indexOf(todoSchedule) % 3) {
-			case 0 -> todoSchedule.changeStoneType(StoneType.COURAGE);
-			case 1 -> todoSchedule.changeStoneType(StoneType.GRIT);
-			case 2 -> todoSchedule.changeStoneType(StoneType.WISDOM);
-		}
-	}
-
-	private List<ScheduleDetail> filterTodayCreatedSchedules(LocalDate today, List<ScheduleDetail> scheduleDetails, LocalDateTime earliestStoneUsedAt) {
-		return scheduleDetails.stream()
-			.filter(sd -> {
-				Schedule schedule = sd.getSchedule();
-				LocalDateTime createdAt = schedule.getCreatedAt();
-
-				if (!createdAt.toLocalDate().equals(today)) return true;
-				if (createdAt.toLocalTime().isAfter(schedule.getStartTime())) return false;
-
-				return earliestStoneUsedAt == null || !createdAt.isAfter(earliestStoneUsedAt);
-			})
-			.toList();
-	}
-
-	private LocalDateTime findEarliestStoneUsedAt(List<ScheduleDetail> scheduleDetails) {
-		return scheduleDetails.stream()
-			.map(ScheduleDetail::getStoneUsedAt)
-			.filter(Objects::nonNull)
-			.min(LocalDateTime::compareTo)
-			.orElse(null);
-	}
-
-	private void createScheduleDetailOfTodayRecurringSchedules(LocalDate today) {
-		LocalDateTime startOfToday = today.atStartOfDay();
-		DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
-
-		List<Schedule> schedules = schedulePort.findRecurringSchedulesToGenerateTodayDetail(
-			startOfToday,
-			todayDayOfWeek,
-			today
-		);
-
-		if (schedules.isEmpty()) return;
-
-		List<ScheduleDetail> details = schedules.stream()
-			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
-			.toList();
-
-		detailPort.saveAll(details);
 	}
 }
