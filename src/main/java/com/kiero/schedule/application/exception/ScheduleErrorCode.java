@@ -33,6 +33,8 @@ public enum ScheduleErrorCode implements BaseCode {
 	404 NOT FOUND
 	 */
 	SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당하는 일정 데이터를 찾을 수 없습니다."),
+	CHILD_NOT_FOUND(HttpStatus.NOT_FOUND, "아이 정보를 찾을 수 없습니다."),
+	PARENT_NOT_FOUND(HttpStatus.NOT_FOUND, "부모 정보를 찾을 수 없습니다."),
 	;
 
 	private final HttpStatus httpStatus;

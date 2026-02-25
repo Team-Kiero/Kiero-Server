@@ -12,11 +12,9 @@ import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kiero.child.application.exception.ChildErrorCode;
 import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
-import com.kiero.parent.application.exception.ParentErrorCode;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
@@ -62,12 +60,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	@Transactional
 	public void addSchedule(ScheduleAddRequest request, Long parentId, Long childId) {
 		Parent parent = parentLoadPort.findById(parentId)
-			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.PARENT_NOT_FOUND));
 		Child child = childLoadPort.findById(childId)
-			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.CHILD_NOT_FOUND));
 
 		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
-			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+			throw new KieroException(ScheduleErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
 
 		validateAddRequest(request);
@@ -107,7 +105,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	@Transactional
 	public void skipNowSchedule(Long childId, Long scheduleDetailId) {
 		childLoadPort.findById(childId)
-			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.CHILD_NOT_FOUND));
 
 		ScheduleDetail scheduleDetail = detailPort.findById(scheduleDetailId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
@@ -161,7 +159,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		LocalDate today = LocalDate.now(clock);
 
 		Child child = childLoadPort.findById(childId)
-			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.CHILD_NOT_FOUND));
 
 		List<ScheduleDetail> all = detailPort.findByDateAndChildId(today, childId);
 
