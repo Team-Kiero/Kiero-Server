@@ -92,11 +92,11 @@ public class Schedule extends BaseTimeEntity {
 			.build();
 	}
 
-	public void updateRepeatStartDate(LocalDate repeatStartDate) {
+	public void changeRepeatStartDate(LocalDate repeatStartDate) {
 		this.repeatStartDate = repeatStartDate;
 	}
 
-	public void updateRepeatEndDate(LocalDate repeatEndDate) {
+	public void changeRepeatEndDate(LocalDate repeatEndDate) {
 		this.repeatEndDate = repeatEndDate;
 	}
 }

@@ -118,7 +118,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 			java.time.DayOfWeek earliestDay = getEarliestDay(dayOfWeeks);
 			LocalDate repeatStartDate = getDateOfThisWeek(earliestDay);
-			saved.updateRepeatStartDate(repeatStartDate);
+			saved.changeRepeatStartDate(repeatStartDate);
 
 			// 당일 생성된 반복 일정 중 오늘 요일이면 scheduleDetail 생성
 			createScheduleDetailOfTodayRecurringSchedules(today);
@@ -433,7 +433,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			case RecurringToRecurring -> {
 				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(schedule.getId(), selectedDate);
 
-				schedule.updateRepeatEndDate(selectedDate.minusDays(1));
+				schedule.changeRepeatEndDate(selectedDate.minusDays(1));
 				Schedule newSchedule = Schedule.create(
 					schedule.getParent(),
 					schedule.getChild(),
