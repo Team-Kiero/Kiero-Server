@@ -3,7 +3,7 @@ package com.kiero.schedule.application.dto;
 import java.time.LocalTime;
 
 import com.kiero.schedule.domain.enums.StoneType;
-import com.kiero.schedule.domain.enums.TodayScheduleStatus;
+import com.kiero.schedule.application.service.resolver.TodayScheduleStatus;
 
 public record TodayScheduleResponse(
 	Long scheduleDetailId,

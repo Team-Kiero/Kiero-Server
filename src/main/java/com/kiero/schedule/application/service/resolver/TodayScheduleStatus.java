@@ -1,4 +1,4 @@
-package com.kiero.schedule.domain.enums;
+package com.kiero.schedule.application.service.resolver;
 
 public enum TodayScheduleStatus {
 	NO_SCHEDULE,

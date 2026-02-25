@@ -1,4 +1,4 @@
-package com.kiero.schedule.domain.policy;
+package com.kiero.schedule.application.service.resolver;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -6,7 +6,6 @@ import java.util.List;
 
 import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
-import com.kiero.schedule.domain.enums.TodayScheduleStatus;
 
 import lombok.extern.slf4j.Slf4j;
 

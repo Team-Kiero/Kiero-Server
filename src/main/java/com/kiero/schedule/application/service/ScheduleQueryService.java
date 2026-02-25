@@ -37,8 +37,8 @@ import com.kiero.schedule.domain.enums.DayOfWeek;
 import com.kiero.schedule.domain.enums.ScheduleColor;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
-import com.kiero.schedule.domain.enums.TodayScheduleStatus;
-import com.kiero.schedule.domain.policy.TodayScheduleStatusResolver;
+import com.kiero.schedule.application.service.resolver.TodayScheduleStatus;
+import com.kiero.schedule.application.service.resolver.TodayScheduleStatusResolver;
 
 import lombok.RequiredArgsConstructor;
 
