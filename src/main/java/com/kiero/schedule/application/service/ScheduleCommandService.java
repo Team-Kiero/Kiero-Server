@@ -5,7 +5,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,6 +79,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	public void addSchedule(ScheduleAddRequest request, Long parentId, Long childId) {
 
 		LocalDate today = LocalDate.now(clock);
+		LocalTime now = LocalTime.now(clock);
 
 		Parent parent = parentLoadPort.findById(parentId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.PARENT_NOT_FOUND));
@@ -85,6 +89,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
 			throw new KieroException(ScheduleErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
+
+		boolean isEffectsToChildSchedule = false;
 
 		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
 		throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), child.getId());
@@ -113,7 +119,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 			// 추가된 일정의 요일에 오늘이 포함된다면 오늘 일정들의 stoneType 재계산
 			DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
-			if (dayOfWeeks.contains(todayDayOfWeek)) recalculateTodayStoneTypes(childId);
+			if (dayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now)) {
+				recalculateTodayStoneTypes(childId);
+				isEffectsToChildSchedule = true;
+			}
 
 		} else {
 			List<LocalDate> dates = dateParser(request.dates());
@@ -124,10 +133,15 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.toList();
 			detailPort.saveAll(details);
 
-			if (dates.contains(today)) recalculateTodayStoneTypes(childId);
+			// 추가된 일정이 오늘 일정이고, 추가된 일정의 시작 시간이 현재 시간 이후라면 불조각 종류를 재계산함
+			if (dates.contains(today) && request.startTime().isAfter(now)) {
+				recalculateTodayStoneTypes(childId);
+				isEffectsToChildSchedule = true;
+			}
 		}
 
-		eventPort.publish(new ScheduleCreatedEvent(childId, saved.getName()));
+		// 아이의 오늘 일정에 영향이 있을 때만 이벤트 전송
+		if (isEffectsToChildSchedule) eventPort.publish(new ScheduleCreatedEvent(childId, saved.getName()));
 	}
 
 	@Override
@@ -329,13 +343,29 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), schedule.getChild().getId());
 
+		boolean isEffectsToChildSchedule = false;
+
 		ScheduleUpdateCase scheduleUpdateCase = scheduleUpdateCaseResolver(schedule, request);
 
 		log.info("scheduleUpdateCase: " + scheduleUpdateCase);
 
 		LocalDate today = LocalDate.now(clock);
+		LocalTime now = LocalTime.now(clock);
+
+		Long childId = schedule.getChild().getId();
 
 		switch (scheduleUpdateCase) {
+
+			/*
+			단일일정 -> 단일일정일 때,
+			1) 기존의 scheduleDetail을 삭제합니다.
+			2) 새로운 schedule을 생성합니다.
+			3) scheduleDetail을 생성합니다.
+
+			새로 생성된 일정의 날짜가 오늘이라면,
+			4) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
+			5) 오늘 일정들의 불조각 종류를 재계산합니다.
+			 */
 			case NormalToNormal -> {
 				Schedule saved = deleteOriginalScheduleDetailAndSaveNewSchedule(schedule, selectedDate, request, false);
 
@@ -347,12 +377,90 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					.toList();
 				detailPort.saveAll(details);
 
-				if (dates.contains(today)) recalculateTodayStoneTypes(saved.getChild().getId());
-
+				if (dates.contains(today) && request.startTime().isAfter(now)) {
+					recalculateTodayStoneTypes(childId);
+					isEffectsToChildSchedule = true;
+				}
 			}
 
+			/*
+			단일일정 -> 반복일정일 때,
+			1) 기존의 scheduleDetail을 삭제합니다.
+			2) 새로운 schedule을 생성합니다.
+			3) 새로운 scheduleRepeatDays를 생성합니다.
+
+			새로 생성된 일정의 요일에 오늘이 해당한다면,
+			4) scheduleDetail을 추가로 생성합니다.
+			5) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
+			6) 오늘 일정들의 불조각 종류를 재계산합니다.
+			 */
 			case NormalToRecurring -> {
 				Schedule saved = deleteOriginalScheduleDetailAndSaveNewSchedule(schedule, selectedDate, request, true);
+
+				List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
+				List<ScheduleRepeatDays> repeatDays = dayOfWeeks.stream()
+					.map(day -> ScheduleRepeatDays.create(day, saved))
+					.toList();
+				repeatDaysPort.saveAll(repeatDays);
+
+				createScheduleDetailOfTodayRecurringSchedules(today);
+
+				DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
+				if (dayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now)) {
+					recalculateTodayStoneTypes(childId);
+					isEffectsToChildSchedule = true;
+				}
+			}
+
+			/*
+			반복일정 -> 반복일정이고 요일 변화가 있을 때,
+			1) 기존의 scheduleDetail을 삭제합니다.
+			2) 기존 반복요일과 요청 반복요일을 비교해 삭제해야 할 요일, 추가해야 할 요일을 추출합니다.
+			3) 2)에 맞춰 삭제 혹은 추가 작업을 진행합니다.
+
+			새로 생성된 일정의 요일에 오늘이 해당한다면,
+			4) scheduleDetail을 추가로 생성합니다.
+			5) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
+			6) 오늘 일정들의 불조각 종류를 재계산합니다.
+			 */
+			case RecurringToRecurring -> {
+				// 수정하고자 하는 일정의 scheduleDetail 삭제
+				// 기획 답변 듣고 수정해야 할 필요 O
+				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(schedule.getId(), selectedDate);
+
+				List<DayOfWeek> originalDayOfWeeks =
+					scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(scheduleId);
+				List<DayOfWeek> requestDayOfWeeks = dayOfWeekParser(request.dayOfWeek());
+
+				EnumSet<DayOfWeek> originalSet = originalDayOfWeeks.isEmpty() ? EnumSet.noneOf(DayOfWeek.class) : EnumSet.copyOf(originalDayOfWeeks);
+				EnumSet<DayOfWeek> requestSet = requestDayOfWeeks.isEmpty() ? EnumSet.noneOf(DayOfWeek.class) : EnumSet.copyOf(requestDayOfWeeks);
+
+				EnumSet<DayOfWeek> toAddSet = EnumSet.copyOf(requestSet);
+				toAddSet.removeAll(originalSet);
+
+				EnumSet<DayOfWeek> toBeDeletedSet = EnumSet.copyOf(originalSet);
+				toBeDeletedSet.removeAll(requestSet);
+
+				List<DayOfWeek> toAdd = new ArrayList<>(toAddSet);
+				List<DayOfWeek> toBeDeleted = new ArrayList<>(toBeDeletedSet);
+
+				List<ScheduleRepeatDays> toAddSD = toAdd.stream()
+					.map(d -> ScheduleRepeatDays.create(d, schedule))
+					.toList();
+
+				scheduleRepeatDaysPersistencePort.saveAll(toAddSD);
+				scheduleRepeatDaysPersistencePort.deleteByScheduleIdAndDayOfWeekIn(scheduleId, toBeDeleted);
+
+				createScheduleDetailOfTodayRecurringSchedules(today);
+
+				DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
+				if (requestDayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now)) {
+					recalculateTodayStoneTypes(childId);
+					isEffectsToChildSchedule = true;
+				}
+			}
+
+			case RecurringToRecurringIncludeFollowing -> {
 
 			}
 

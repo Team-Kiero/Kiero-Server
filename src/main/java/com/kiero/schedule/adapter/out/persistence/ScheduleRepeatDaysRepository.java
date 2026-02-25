@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -33,18 +34,17 @@ public interface ScheduleRepeatDaysRepository extends JpaRepository<ScheduleRepe
 		@Param("scheduleId") Long scheduleId
 	);
 
-
 	@Query("""
-        select distinct srd.schedule
-        from ScheduleRepeatDays srd
-        where srd.dayOfWeek = :dayOfWeek
-          and not exists (
-              select 1
-              from ScheduleDetail sd
-              where sd.schedule = srd.schedule
-                and sd.date = :date
-          )
-    """)
+		    select distinct srd.schedule
+		    from ScheduleRepeatDays srd
+		    where srd.dayOfWeek = :dayOfWeek
+		      and not exists (
+		          select 1
+		          from ScheduleDetail sd
+		          where sd.schedule = srd.schedule
+		            and sd.date = :date
+		      )
+		""")
 	List<Schedule> findSchedulesToCreateTodayDetail(
 		@Param("dayOfWeek") DayOfWeek dayOfWeek,
 		@Param("date") LocalDate date
@@ -71,6 +71,17 @@ public interface ScheduleRepeatDaysRepository extends JpaRepository<ScheduleRepe
 		""")
 	List<Schedule> findSchedulesByChildIdAndDayOfWeekIn(
 		@Param("childId") Long childId,
+		@Param("dayOfWeeks") List<DayOfWeek> dayOfWeeks
+	);
+
+	@Modifying
+	@Query("""
+		delete from ScheduleRepeatDays srd
+		where srd.schedule.id = :scheduleId
+		and srd.dayOfWeek in :dayOfWeeks
+		""")
+	void deleteByScheduleIdAndDayOfWeekIn(
+		@Param("scheduleId") Long scheduleId,
 		@Param("dayOfWeeks") List<DayOfWeek> dayOfWeeks
 	);
 }
