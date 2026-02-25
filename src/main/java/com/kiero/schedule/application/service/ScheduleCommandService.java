@@ -101,7 +101,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			request.startTime(),
 			request.endTime(),
 			request.scheduleColor(),
-			request.isRecurring()
+			request.isRecurring(),
+			null,
+			null
 		);
 
 		Schedule saved = schedulePort.save(schedule);
@@ -113,6 +115,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.map(day -> ScheduleRepeatDays.create(day, saved))
 				.toList();
 			repeatDaysPort.saveAll(repeatDays);
+
+			java.time.DayOfWeek earliestDay = getEarliestDay(dayOfWeeks);
+			LocalDate repeatStartDate = getDateOfThisWeek(earliestDay);
+			saved.updateRepeatStartDate(repeatStartDate);
 
 			// 당일 생성된 반복 일정 중 오늘 요일이면 scheduleDetail 생성
 			createScheduleDetailOfTodayRecurringSchedules(today);
@@ -610,8 +616,17 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			request.startTime(),
 			request.endTime(),
 			request.scheduleColor(),
-			isRecurring
+			isRecurring,
+			null,
+			null
 		);
+
+		if (isRecurring) {
+			java.time.DayOfWeek earliestDay = getEarliestDay(dayOfWeekParser(request.dayOfWeek()));
+			LocalDate repeatStartDate = getDateOfThisWeek(earliestDay);
+			newSchedule.updateRepeatStartDate(repeatStartDate);
+		}
+
 		return schedulePersistencePort.save(newSchedule);
 	}
 
@@ -692,5 +707,20 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails, earliestStoneUsedAt);
 
 		calculateStoneTypePerScheduleDetail(filteredAllScheduleDetails);
+	}
+
+	private LocalDate getDateOfThisWeek(java.time.DayOfWeek targetDay) {
+		LocalDate today = LocalDate.now();
+
+		LocalDate monday = today.with(java.time.DayOfWeek.MONDAY);
+		return monday.plusDays(targetDay.getValue() - java.time.DayOfWeek.MONDAY.getValue());
+	}
+
+	private java.time.DayOfWeek getEarliestDay(List<DayOfWeek> days) {
+		DayOfWeek earliest = days.stream()
+			.min(Comparator.comparingInt(Enum::ordinal))
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE));
+
+		return java.time.DayOfWeek.valueOf(earliest.name() + "DAY");
 	}
 }
