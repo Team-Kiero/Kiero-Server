@@ -1,8 +1,11 @@
 package com.kiero.schedule.application.port.in;
 
+import java.time.LocalDate;
+
 import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
+import com.kiero.schedule.application.dto.ScheduleUpdateRequest;
 
 public interface ScheduleCommandUseCase {
 
@@ -15,4 +18,6 @@ public interface ScheduleCommandUseCase {
 	FireLitResponse fireLit(Long childId);
 
 	void createTodayScheduleDetail();
+
+	void updateSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleUpdateRequest request);
 }

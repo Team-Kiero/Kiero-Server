@@ -28,6 +28,7 @@ public enum ScheduleErrorCode implements BaseCode {
 	403 FORBIDDEN
 	 */
 	SCHEDULE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 일정에 접근할 권한이 없습니다."),
+	NOT_ALLOWED_TO_CHILD(HttpStatus.FORBIDDEN, "자신의 아이에만 접근할 수 있습니다."),
 
 	/*
 	404 NOT FOUND

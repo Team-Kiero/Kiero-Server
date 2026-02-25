@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -24,12 +25,15 @@ import com.kiero.schedule.application.dto.NowScheduleCompleteEvent;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
 import com.kiero.schedule.application.dto.ScheduleCreatedEvent;
+import com.kiero.schedule.application.dto.ScheduleUpdateRequest;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
 import com.kiero.schedule.application.port.in.ScheduleCommandUseCase;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleEventPort;
 import com.kiero.schedule.application.port.out.SchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleRepeatDaysPersistencePort;
+import com.kiero.schedule.application.service.resolver.ScheduleUpdateCase;
+
 import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;
@@ -38,7 +42,9 @@ import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ScheduleCommandService implements ScheduleCommandUseCase {
@@ -55,6 +61,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 	private final ScheduleEventPort eventPort;
 	private final Clock clock;
+	private final SchedulePersistencePort schedulePersistencePort;
+	private final ScheduleRepeatDaysPersistencePort scheduleRepeatDaysPersistencePort;
+	private final ScheduleDetailPersistencePort scheduleDetailPersistencePort;
 
 	@Override
 	@Transactional
@@ -202,8 +211,41 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		detailPort.saveAll(scheduleDetails);
 	}
 
-	private void validateAddRequest(ScheduleAddRequest request) {
-		if (request.isRecurring() && (request.dayOfWeek() == null || request.dayOfWeek().isEmpty())) {
+	@Override
+	@Transactional
+	public void updateSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleUpdateRequest request) {
+
+		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
+
+		Schedule schedule = schedulePersistencePort.findById(scheduleId)
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
+
+		if (!parentId.equals(schedule.getParent().getId())) {
+			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
+		}
+
+		throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), schedule.getChild().getId());
+
+		ScheduleUpdateCase scheduleUpdateCase = scheduleUpdateCaseResolver(schedule, request);
+
+		log.info("scheduleUpdateCase: " + scheduleUpdateCase);
+
+		switch (scheduleUpdateCase) {
+			case NormalToNormal -> {
+				Schedule saved = deleteOriginalScheduleDetailAndSaveNewSchedule(schedule, selectedDate, request, false);
+				parseRequestDatesAndSaveNewScheduleDetail(request.dates(), saved);
+			}
+
+			case NormalToRecurring -> {
+				Schedule saved = deleteOriginalScheduleDetailAndSaveNewSchedule(schedule, selectedDate, request, true);
+
+			}
+
+		}
+	}
+
+	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates) {
+		if (isRecurring && (dayOfWeek == null || dayOfWeek.isEmpty())) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE);
 		}
 		if (isRecurring && (dates == null || dates.isEmpty())) {
@@ -312,4 +354,52 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.min(LocalDateTime::compareTo)
 			.orElse(null);
 	}
+
+	private ScheduleUpdateCase scheduleUpdateCaseResolver(Schedule schedule, ScheduleUpdateRequest request) {
+
+		if (!schedule.isRecurring()) {
+			if (!request.isRecurring()) return ScheduleUpdateCase.NormalToNormal;
+			else return ScheduleUpdateCase.NormalToRecurring;
+		} else {
+			if (!request.isRecurring()) return ScheduleUpdateCase.RecurringToNormal;
+			else {
+				List<DayOfWeek> originalRepeatDays = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(schedule.getId());
+				List<DayOfWeek> requestRepeatDays = dayOfWeekParser(request.dayOfWeek());
+				boolean isSame = new HashSet<>(originalRepeatDays).equals(new HashSet<>(requestRepeatDays));
+
+				if (!isSame) return ScheduleUpdateCase.RecurringToRecurring;
+				else if (request.includeFollowing()) return ScheduleUpdateCase.RecurringToRecurringIncludeFollowing;
+				else return ScheduleUpdateCase.RecurringToRecurringExceptFollowing;
+			}
+		}
+	}
+
+	private Schedule deleteOriginalScheduleDetailAndSaveNewSchedule(Schedule schedule, LocalDate selectedDate, ScheduleUpdateRequest request, boolean isRecurring) {
+		// 수정하고자 하는 일정의 scheduleDetail 삭제
+		scheduleDetailPersistencePort.deleteByScheduleIdAndDate(schedule.getId(), selectedDate);
+
+		// 새로운 schedule 생성 및 저장
+		Schedule newSchedule = Schedule.create(
+			schedule.getParent(),
+			schedule.getChild(),
+			request.name(),
+			request.startTime(),
+			request.endTime(),
+			request.scheduleColor(),
+			isRecurring
+		);
+		return schedulePersistencePort.save(newSchedule);
+	}
+
+	private void parseRequestDatesAndSaveNewScheduleDetail(String requestDates, Schedule savedSchedule) {
+		List<LocalDate> dates = dateParser(requestDates);
+		List<ScheduleDetail> details = dates.stream()
+			.distinct()
+			.sorted()
+			.map(date -> ScheduleDetail.create(date, null, null, ScheduleStatus.PENDING, null, savedSchedule))
+			.toList();
+		detailPort.saveAll(details);
+	}
+
+
 }
