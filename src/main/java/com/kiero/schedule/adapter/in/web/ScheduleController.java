@@ -68,7 +68,7 @@ public class ScheduleController {
 	public ResponseEntity<SuccessResponse<TodayScheduleResponse>> updateAndGetTodaySchedule(
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		TodayScheduleResponse response = scheduleQueryUseCase.getTodaySchedule(currentAuth.memberId());
+		TodayScheduleResponse response = scheduleCommandUseCase.getTodaySchedule(currentAuth.memberId());
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.TODAY_SCHEDULE_GET_SUCCESS, response));
 	}

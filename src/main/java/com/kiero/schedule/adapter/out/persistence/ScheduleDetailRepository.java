@@ -55,6 +55,18 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 		select sd
 		from ScheduleDetail sd
 		join fetch sd.schedule s
+		join fetch s.child c
+		where sd.date = :date
+		"""
+	)
+	List<ScheduleDetail> findAllByDate(
+		@Param("date") LocalDate date
+	);
+
+	@Query("""
+		select sd
+		from ScheduleDetail sd
+		join fetch sd.schedule s
 		where sd.date in :dates
 		  and s.child.id = :childId
 		order by s.startTime asc
