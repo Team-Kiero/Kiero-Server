@@ -65,4 +65,6 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 	);
 
 	List<ScheduleDetail> findAllByScheduleChildIdAndDateGreaterThanEqual(Long childId, LocalDate date);
+
+	void deleteByScheduleIdAndDate(Long scheduleId, LocalDate date);
 }
