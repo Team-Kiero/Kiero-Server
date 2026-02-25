@@ -44,4 +44,9 @@ public class SchedulePersistenceAdapter implements SchedulePersistencePort {
 		return scheduleRepository.findRecurringSchedulesToGenerateTodayDetail(startOfToday, todayDayOfWeek, today);
 	}
 
+	@Override
+	public Optional<Schedule> findById(Long scheduleId) {
+		return scheduleRepository.findById(scheduleId);
+	}
+
 }
