@@ -21,6 +21,7 @@ import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
 import com.kiero.schedule.application.dto.ScheduleTabResponse;
+import com.kiero.schedule.application.dto.ScheduleUpdateRequest;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleSuccessCode;
 import com.kiero.schedule.application.port.in.ScheduleCommandUseCase;
@@ -115,5 +116,18 @@ public class ScheduleController {
 		DefaultScheduleContentResponse response = scheduleQueryUseCase.getDefaultSchedule(currentAuth.memberId(), childId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.DEFAULT_CONTENT_GET_SUCCESS, response));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@PatchMapping("/{scheduleId}")
+	public ResponseEntity<SuccessResponse<Void>> updateSchedule(
+		@PathVariable("scheduleId") Long scheduleId,
+		@RequestParam("selectedDate") LocalDate selectedDate,
+		@RequestBody ScheduleUpdateRequest request,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		scheduleCommandUseCase.updateSchedule(currentAuth.memberId(), scheduleId, selectedDate, request);
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_UPDATE_SUCCESS));
 	}
 }
