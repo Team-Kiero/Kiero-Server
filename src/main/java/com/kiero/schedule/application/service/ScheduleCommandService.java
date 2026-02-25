@@ -111,13 +111,20 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			// 당일 생성된 반복 일정 중 오늘 요일이면 scheduleDetail 생성
 			createScheduleDetailOfTodayRecurringSchedules(today);
 
-
 			// 추가된 일정의 요일에 오늘이 포함된다면 오늘 일정들의 stoneType 재계산
 			DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
 			if (dayOfWeeks.contains(todayDayOfWeek)) recalculateTodayStoneTypes(childId);
 
 		} else {
-			parseRequestDatesAndSaveNewScheduleDetail(request.dates(), saved, today, childId);
+			List<LocalDate> dates = dateParser(request.dates());
+			List<ScheduleDetail> details = dates.stream()
+				.distinct()
+				.sorted()
+				.map(date -> ScheduleDetail.create(date, null, null, ScheduleStatus.PENDING, null, saved))
+				.toList();
+			detailPort.saveAll(details);
+
+			if (dates.contains(today)) recalculateTodayStoneTypes(childId);
 		}
 
 		eventPort.publish(new ScheduleCreatedEvent(childId, saved.getName()));
@@ -307,44 +314,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		calculateStoneTypePerScheduleDetail(allScheduleDetails);
 	}
 
-	private void calculateStoneTypePerScheduleDetail(List<ScheduleDetail> scheduleDetails) {
-
-		if (scheduleDetails.isEmpty()) return;
-
-		Map<Long, List<ScheduleDetail>> byChild = scheduleDetails.stream()
-			.collect(Collectors.groupingBy(sd -> sd.getSchedule().getChild().getId()));
-
-
-		for (List<ScheduleDetail> childDetails : byChild.values()) {
-			childDetails.sort(
-				Comparator
-					.comparing((ScheduleDetail sd) -> sd.getSchedule().getStartTime())
-					.thenComparing(sd -> sd.getSchedule().getId())
-			);
-
-			for (int i = 0; i < childDetails.size(); i++) {
-				ScheduleDetail sd = childDetails.get(i);
-
-				switch (i % 3) {
-					case 0 -> sd.changeStoneType(StoneType.COURAGE);
-					case 1 -> sd.changeStoneType(StoneType.GRIT);
-					case 2 -> sd.changeStoneType(StoneType.WISDOM);
-				}
-			}
-		}
-	}
-
-	private void recalculateTodayStoneTypes(Long childId) {
-		LocalDate today = LocalDate.now(clock);
-
-		List<ScheduleDetail> allScheduleDetails = detailPort.findByDateAndChildId(today, childId);
-		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(allScheduleDetails);
-
-		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails, earliestStoneUsedAt);
-
-		calculateStoneTypePerScheduleDetail(filteredAllScheduleDetails);
-	}
-
 	@Override
 	@Transactional
 	public void updateSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleUpdateRequest request) {
@@ -369,7 +338,17 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		switch (scheduleUpdateCase) {
 			case NormalToNormal -> {
 				Schedule saved = deleteOriginalScheduleDetailAndSaveNewSchedule(schedule, selectedDate, request, false);
-				parseRequestDatesAndSaveNewScheduleDetail(request.dates(), saved, today, saved.getChild().getId());
+
+				List<LocalDate> dates = dateParser(request.dates());
+				List<ScheduleDetail> details = dates.stream()
+					.distinct()
+					.sorted()
+					.map(date -> ScheduleDetail.create(date, null, null, ScheduleStatus.PENDING, null, saved))
+					.toList();
+				detailPort.saveAll(details);
+
+				if (dates.contains(today)) recalculateTodayStoneTypes(saved.getChild().getId());
+
 			}
 
 			case NormalToRecurring -> {
@@ -384,7 +363,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		if (isRecurring && (dayOfWeek == null || dayOfWeek.isEmpty())) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE);
 		}
-		if (isRecurring && (dates == null || dates.isEmpty())) {
+		if (!isRecurring && (dates == null || dates.isEmpty())) {
 			throw new KieroException(ScheduleErrorCode.DATE_NOT_NULLABLE_WHEN_IS_RECURRING_IS_FALSE);
 		}
 		if (dayOfWeek != null && dates != null) {
@@ -528,20 +507,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		return schedulePersistencePort.save(newSchedule);
 	}
 
-	private void parseRequestDatesAndSaveNewScheduleDetail(String requestDates, Schedule savedSchedule, LocalDate today, Long childId) {
-		List<LocalDate> dates = dateParser(requestDates);
-		List<ScheduleDetail> details = dates.stream()
-			.distinct()
-			.sorted()
-			.map(date -> ScheduleDetail.create(date, null, null, ScheduleStatus.PENDING, null, savedSchedule))
-			.toList();
-		detailPort.saveAll(details);
-
-		if (dates.contains(today)) recalculateTodayStoneTypes(childId);
-	}
-
-
-
 	private void markPassedPendingSchedulesAsFailed(List<ScheduleDetail> scheduleDetails) {
 		LocalTime now = LocalTime.now(clock);
 		scheduleDetails.stream()
@@ -581,5 +546,43 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.toList();
 
 		detailPort.saveAll(details);
+	}
+
+	private void calculateStoneTypePerScheduleDetail(List<ScheduleDetail> scheduleDetails) {
+
+		if (scheduleDetails.isEmpty()) return;
+
+		Map<Long, List<ScheduleDetail>> byChild = scheduleDetails.stream()
+			.collect(Collectors.groupingBy(sd -> sd.getSchedule().getChild().getId()));
+
+
+		for (List<ScheduleDetail> childDetails : byChild.values()) {
+			childDetails.sort(
+				Comparator
+					.comparing((ScheduleDetail sd) -> sd.getSchedule().getStartTime())
+					.thenComparing(sd -> sd.getSchedule().getId())
+			);
+
+			for (int i = 0; i < childDetails.size(); i++) {
+				ScheduleDetail sd = childDetails.get(i);
+
+				switch (i % 3) {
+					case 0 -> sd.changeStoneType(StoneType.COURAGE);
+					case 1 -> sd.changeStoneType(StoneType.GRIT);
+					case 2 -> sd.changeStoneType(StoneType.WISDOM);
+				}
+			}
+		}
+	}
+
+	private void recalculateTodayStoneTypes(Long childId) {
+		LocalDate today = LocalDate.now(clock);
+
+		List<ScheduleDetail> allScheduleDetails = detailPort.findByDateAndChildId(today, childId);
+		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(allScheduleDetails);
+
+		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails, earliestStoneUsedAt);
+
+		calculateStoneTypePerScheduleDetail(filteredAllScheduleDetails);
 	}
 }
