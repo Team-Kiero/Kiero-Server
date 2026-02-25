@@ -420,9 +420,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 			/*
 			반복일정 -> 반복일정이고 요일 변화가 있을 때,
-			1) 기존의 scheduleDetail을 삭제합니다.
-			2) 기존 반복요일과 요청 반복요일을 비교해 삭제해야 할 요일, 추가해야 할 요일을 추출합니다.
-			3) 2)에 맞춰 삭제 혹은 추가 작업을 진행합니다.
+			1) selectedDate를 기준으로 기존의 scheduleDetail가 존재한다면 삭제합니다.
+			2) 기존의 일정의 반복종료일자를 selectedDate 하루 전으로 업데이트합니다.
+			3) request body로 새로운 schedule을 생성하고, 반복시작일자는 selectedDate로 합니다.
+			4) request body와 새로 생성한 schedule로 scheduleRepeatDays를 생성합니다.
 
 			새로 생성된 일정의 요일에 오늘이 해당한다면,
 			4) scheduleDetail을 추가로 생성합니다.
@@ -430,37 +431,34 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			6) 오늘 일정들의 불조각 종류를 재계산합니다.
 			 */
 			case RecurringToRecurring -> {
-				// 수정하고자 하는 일정의 scheduleDetail 삭제
-				// 기획 답변 듣고 수정해야 할 필요 O
 				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(schedule.getId(), selectedDate);
 
-				List<DayOfWeek> originalDayOfWeeks =
-					scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(scheduleId);
-				List<DayOfWeek> requestDayOfWeeks = dayOfWeekParser(request.dayOfWeek());
+				schedule.updateRepeatEndDate(selectedDate.minusDays(1));
+				Schedule newSchedule = Schedule.create(
+					schedule.getParent(),
+					schedule.getChild(),
+					schedule.getName(),
+					schedule.getStartTime(),
+					schedule.getEndTime(),
+					schedule.getScheduleColor(),
+					true,
+					selectedDate,
+					null
+				);
 
-				EnumSet<DayOfWeek> originalSet = originalDayOfWeeks.isEmpty() ? EnumSet.noneOf(DayOfWeek.class) : EnumSet.copyOf(originalDayOfWeeks);
-				EnumSet<DayOfWeek> requestSet = requestDayOfWeeks.isEmpty() ? EnumSet.noneOf(DayOfWeek.class) : EnumSet.copyOf(requestDayOfWeeks);
+				Schedule saved = schedulePersistencePort.save(newSchedule);
+				List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
 
-				EnumSet<DayOfWeek> toAddSet = EnumSet.copyOf(requestSet);
-				toAddSet.removeAll(originalSet);
-
-				EnumSet<DayOfWeek> toBeDeletedSet = EnumSet.copyOf(originalSet);
-				toBeDeletedSet.removeAll(requestSet);
-
-				List<DayOfWeek> toAdd = new ArrayList<>(toAddSet);
-				List<DayOfWeek> toBeDeleted = new ArrayList<>(toBeDeletedSet);
-
-				List<ScheduleRepeatDays> toAddSD = toAdd.stream()
-					.map(d -> ScheduleRepeatDays.create(d, schedule))
+				List<ScheduleRepeatDays> scheduleRepeatDays = dayOfWeeks.stream()
+					.map(d -> ScheduleRepeatDays.create(d, saved))
 					.toList();
 
-				scheduleRepeatDaysPersistencePort.saveAll(toAddSD);
-				scheduleRepeatDaysPersistencePort.deleteByScheduleIdAndDayOfWeekIn(scheduleId, toBeDeleted);
+				scheduleRepeatDaysPersistencePort.saveAll(scheduleRepeatDays);
 
 				createScheduleDetailOfTodayRecurringSchedules(today);
 
 				DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
-				if (requestDayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now)) {
+				if (dayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now)) {
 					recalculateTodayStoneTypes(childId);
 					isEffectsToChildSchedule = true;
 				}
