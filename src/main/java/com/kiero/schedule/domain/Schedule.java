@@ -1,5 +1,6 @@
 package com.kiero.schedule.domain;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 import com.kiero.child.domain.Child;
@@ -53,6 +54,12 @@ public class Schedule extends BaseTimeEntity {
 	@Column(name = ScheduleTableConstants.COLUMN_IS_RECURRING, nullable = false)
 	private boolean isRecurring;
 
+	@Column(name = ScheduleTableConstants.COLUMN_REPEAT_START_DATE, nullable = false)
+	private LocalDate repeatStartDate;
+
+	@Column(name = ScheduleTableConstants.COLUMN_REPEAT_END_DATE, nullable = true)
+	private LocalDate repeatEndDate;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = ScheduleTableConstants.COLUMN_PARENT_ID, nullable = false)
 	private Parent parent;
@@ -68,7 +75,9 @@ public class Schedule extends BaseTimeEntity {
 		LocalTime startTime,
 		LocalTime endTime,
 		ScheduleColor scheduleColor,
-		boolean isRecurring
+		boolean isRecurring,
+		LocalDate repeatStartDate,
+		LocalDate repeatEndDate
 	) {
 		return Schedule.builder()
 			.parent(parent)
@@ -78,6 +87,16 @@ public class Schedule extends BaseTimeEntity {
 			.endTime(endTime)
 			.scheduleColor(scheduleColor)
 			.isRecurring(isRecurring)
+			.repeatStartDate(repeatStartDate)
+			.repeatEndDate(repeatEndDate)
 			.build();
+	}
+
+	public void updateRepeatStartDate(LocalDate repeatStartDate) {
+		this.repeatStartDate = repeatStartDate;
+	}
+
+	public void updateRepeatEndDate(LocalDate repeatEndDate) {
+		this.repeatEndDate = repeatEndDate;
 	}
 }
