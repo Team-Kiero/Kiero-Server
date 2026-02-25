@@ -22,4 +22,6 @@ public interface ScheduleDetailPersistencePort {
 
 	void saveAll(List<ScheduleDetail> details);
 
+	void deleteByScheduleIdAndDate(Long scheduleId, LocalDate date);
+
 }

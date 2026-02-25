@@ -52,4 +52,9 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 		scheduleDetailRepository.saveAll(details);
 	}
 
+	@Override
+	public void deleteByScheduleIdAndDate(Long scheduleId, LocalDate date) {
+		scheduleDetailRepository.deleteByScheduleIdAndDate(scheduleId, date);
+	}
+
 }
