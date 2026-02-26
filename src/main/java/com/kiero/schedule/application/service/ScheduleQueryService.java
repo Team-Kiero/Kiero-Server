@@ -139,6 +139,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 				.map(detail -> {
 					Schedule schedule = scheduleById.get(detail.getSchedule().getId());
 					return new NormalScheduleDto(
+						schedule.getId(),
 						schedule.getStartTime(),
 						schedule.getEndTime(),
 						schedule.getName(),

@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 public record RecurringScheduleDto(
+	Long scheduleId,
 	LocalTime startTime,
 	LocalTime endTime,
 	String name,
