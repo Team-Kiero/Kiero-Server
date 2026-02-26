@@ -75,7 +75,7 @@ public class SsePushEventListener {
 		Map<String, Object> data = new LinkedHashMap<>();
 		data.put("eventType", SseEventType.SCHEDULE_MODIFIED.name());
 
-		log.debug("자녀 SSE 푸시 (스케줄 생성): childId={}", event.childId());
+		log.debug("자녀 SSE 푸시 (스케줄 알림): childId={}", event.childId());
 
 		ssePushUseCase.pushToChild(event.childId(), SseEventType.SCHEDULE_MODIFIED, data);
 	}

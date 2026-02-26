@@ -29,15 +29,10 @@ import com.kiero.schedule.application.port.out.DiscardedSchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
 import com.kiero.schedule.application.port.out.SchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleRepeatDaysPersistencePort;
-import com.kiero.schedule.domain.DiscardedSchedule;
 import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;
 import com.kiero.schedule.domain.enums.ScheduleColor;
-import com.kiero.schedule.domain.enums.ScheduleStatus;
-import com.kiero.schedule.domain.enums.StoneType;
-import com.kiero.schedule.application.service.resolver.TodayScheduleStatus;
-import com.kiero.schedule.application.service.resolver.TodayScheduleStatusResolver;
 
 import lombok.RequiredArgsConstructor;
 
@@ -105,6 +100,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 			recurringDtos = schedules.stream()
 				.filter(Schedule::isRecurring)
+				.filter(s -> s.getRepeatEndDate() == null || s.getRepeatEndDate().isAfter(s.getRepeatStartDate()) || s.getRepeatEndDate().isEqual(s.getRepeatStartDate()))
 				.map(schedule -> {
 					List<ScheduleRepeatDays> days = repeatDaysByScheduleId.getOrDefault(schedule.getId(), List.of());
 					if (days.isEmpty()) return null;
@@ -115,6 +111,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 						.collect(Collectors.joining(", "));
 
 					return new RecurringScheduleDto(
+						schedule.getId(),
 						schedule.getStartTime(),
 						schedule.getEndTime(),
 						schedule.getName(),

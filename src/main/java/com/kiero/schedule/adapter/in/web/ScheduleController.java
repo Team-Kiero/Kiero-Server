@@ -86,7 +86,7 @@ public class ScheduleController {
 	}
 
 	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
-	@PatchMapping("/{scheduleDetailId}")
+	@PatchMapping("/verify/{scheduleDetailId}")
 	public ResponseEntity<SuccessResponse<Void>> completeNowSchedule(
 		@Valid @RequestBody NowScheduleCompleteRequest request,
 		@PathVariable("scheduleDetailId") Long scheduleDetailId,
