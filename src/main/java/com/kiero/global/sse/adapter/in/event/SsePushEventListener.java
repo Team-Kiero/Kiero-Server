@@ -8,6 +8,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.kiero.child.application.dto.ChildJoinedEvent;
+import com.kiero.coupon.application.dto.CouponCreatedEvent;
 import com.kiero.feed.domain.enums.EventType;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent.FeedItemInfo;
@@ -80,6 +81,19 @@ public class SsePushEventListener {
 			event.childId(), event.scheduleName());
 
 		ssePushUseCase.pushToChild(event.childId(), SseEventType.SCHEDULE_CREATED, data);
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handle(CouponCreatedEvent event) {
+		Map<String, Object> data = new LinkedHashMap<>();
+		data.put("eventType", SseEventType.COUPON_CREATED.name());
+		data.put("couponName", event.couponName());
+		data.put("price", event.price());
+
+		log.debug("자녀 SSE 푸시 (쿠폰 생성): childId={}, couponName={}",
+			event.childId(), event.couponName());
+
+		ssePushUseCase.pushToChild(event.childId(), SseEventType.COUPON_CREATED, data);
 	}
 
 	private SseEventType mapToSseEventType(EventType eventType) {
