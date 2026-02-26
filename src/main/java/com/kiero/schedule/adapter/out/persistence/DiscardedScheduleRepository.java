@@ -36,5 +36,16 @@ public interface DiscardedScheduleRepository extends JpaRepository<DiscardedSche
 		@Param("dates") List<LocalDate> dates
 	);
 
+	@Query("""
+		select ds
+		from DiscardedSchedule ds
+		where ds.schedule.child.id = :childId
+		  and ds.date between :startDate and :endDate
+		""")
+	List<DiscardedSchedule> findAllByChildIdAndDateBetween(
+		@Param("childId") Long childId,
+		@Param("startDate") LocalDate startDate,
+		@Param("endDate") LocalDate endDate
+	);
 
 }

@@ -19,14 +19,17 @@ import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
+import com.kiero.schedule.application.dto.DiscardedScheduleDto;
 import com.kiero.schedule.application.dto.NormalScheduleDto;
 import com.kiero.schedule.application.dto.RecurringScheduleDto;
 import com.kiero.schedule.application.dto.ScheduleTabResponse;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
 import com.kiero.schedule.application.port.in.ScheduleQueryUseCase;
+import com.kiero.schedule.application.port.out.DiscardedSchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
 import com.kiero.schedule.application.port.out.SchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleRepeatDaysPersistencePort;
+import com.kiero.schedule.domain.DiscardedSchedule;
 import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;
@@ -51,6 +54,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 	private final ScheduleDetailPersistencePort detailPort;
 
 	private final Clock clock;
+	private final DiscardedSchedulePersistencePort discardedSchedulePersistencePort;
 
 	@Override
 	@Transactional
@@ -76,7 +80,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 		List<Schedule> schedules = schedulePort.findAllByChildId(childId);
 		if (schedules.isEmpty()) {
-			return ScheduleTabResponse.of(false, List.of(), List.of());
+			return ScheduleTabResponse.of(false, List.of(), List.of(), List.of());
 		}
 
 		List<Long> scheduleIds = schedules.stream().map(Schedule::getId).toList();
@@ -145,7 +149,11 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 				.toList();
 		}
 
-		return ScheduleTabResponse.of(isFireLitToday, recurringDtos, normalDtos);
+		List<DiscardedScheduleDto> discardedDtos = discardedSchedulePersistencePort.findAllByChildIdAndDateBetween(childId, startDate, endDate).stream()
+			.map(ds -> new DiscardedScheduleDto(ds.getSchedule().getId(), ds.getDate(), ds.getDayOfWeek()))
+			.toList();
+
+		return ScheduleTabResponse.of(isFireLitToday, recurringDtos, normalDtos, discardedDtos);
 	}
 
 	private void checkIsExistsAndAccessibleByParentIdAndChildId(Long parentId, Long childId) {
