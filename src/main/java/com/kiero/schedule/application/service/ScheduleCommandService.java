@@ -338,25 +338,25 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
 
-		Schedule schedule = schedulePersistencePort.findById(scheduleId)
+		Schedule originalSchedule = schedulePersistencePort.findById(scheduleId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
 
-		if (!parentId.equals(schedule.getParent().getId())) {
+		if (!parentId.equals(originalSchedule.getParent().getId())) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
-		throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), schedule.getChild().getId());
+		throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), originalSchedule.getChild().getId());
 
 		boolean isEffectsToChildSchedule = false;
 
-		ScheduleUpdateCase scheduleUpdateCase = scheduleUpdateCaseResolver(schedule, request);
+		ScheduleUpdateCase scheduleUpdateCase = scheduleUpdateCaseResolver(originalSchedule, request);
 
 		log.info("scheduleUpdateCase: " + scheduleUpdateCase);
 
 		LocalDate today = LocalDate.now(clock);
 		LocalTime now = LocalTime.now(clock);
 
-		Long childId = schedule.getChild().getId();
+		Long childId = originalSchedule.getChild().getId();
 
 		switch (scheduleUpdateCase) {
 
@@ -371,7 +371,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			5) 오늘 일정들의 불조각 종류를 재계산합니다.
 			 */
 			case NormalToNormal -> {
-				Schedule saved = deleteOriginalScheduleDetailAndSaveNewSchedule(schedule, selectedDate, request, false);
+				Schedule saved = deleteOriginalScheduleDetailAndSaveNewSchedule(originalSchedule, selectedDate, request, false);
 
 				List<LocalDate> dates = dateParser(request.dates());
 				List<ScheduleDetail> details = dates.stream()
@@ -399,7 +399,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			6) 오늘 일정들의 불조각 종류를 재계산합니다.
 			 */
 			case NormalToRecurring -> {
-				Schedule saved = deleteOriginalScheduleDetailAndSaveNewSchedule(schedule, selectedDate, request, true);
+				Schedule saved = deleteOriginalScheduleDetailAndSaveNewSchedule(originalSchedule, selectedDate, request, true);
 
 				List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
 				List<ScheduleRepeatDays> repeatDays = dayOfWeeks.stream()
@@ -429,16 +429,16 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			6) 오늘 일정들의 불조각 종류를 재계산합니다.
 			 */
 			case RecurringToRecurring -> {
-				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(schedule.getId(), selectedDate);
+				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 
-				schedule.changeRepeatEndDate(selectedDate.minusDays(1));
+				originalSchedule.changeRepeatEndDate(selectedDate.minusDays(1));
 				Schedule newSchedule = Schedule.create(
-					schedule.getParent(),
-					schedule.getChild(),
-					schedule.getName(),
-					schedule.getStartTime(),
-					schedule.getEndTime(),
-					schedule.getScheduleColor(),
+					originalSchedule.getParent(),
+					originalSchedule.getChild(),
+					originalSchedule.getName(),
+					originalSchedule.getStartTime(),
+					originalSchedule.getEndTime(),
+					originalSchedule.getScheduleColor(),
 					true,
 					selectedDate,
 					null
@@ -476,15 +476,15 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			7) 오늘 일정들의 불조각 종류를 재계산합니다.
 			 */
 			case RecurringToRecurringIncludeFollowing -> {
-				schedule.changeRepeatEndDate(selectedDate.minusDays(1));
+				originalSchedule.changeRepeatEndDate(selectedDate.minusDays(1));
 
 				Schedule newSchedule = Schedule.create(
-					schedule.getParent(),
-					schedule.getChild(),
-					schedule.getName(),
-					schedule.getStartTime(),
-					schedule.getEndTime(),
-					schedule.getScheduleColor(),
+					originalSchedule.getParent(),
+					originalSchedule.getChild(),
+					originalSchedule.getName(),
+					originalSchedule.getStartTime(),
+					originalSchedule.getEndTime(),
+					originalSchedule.getScheduleColor(),
 					true,
 					selectedDate,
 					null
@@ -499,7 +499,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				scheduleRepeatDaysPersistencePort.saveAll(scheduleRepeatDays);
 
-				Optional<ScheduleDetail> originalDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(schedule.getId(), selectedDate);
+				Optional<ScheduleDetail> originalDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
+					originalSchedule.getId(), selectedDate);
 
 				if(originalDetail.isPresent()) {
 					originalDetail.get().changeSchedule(newSchedule);
