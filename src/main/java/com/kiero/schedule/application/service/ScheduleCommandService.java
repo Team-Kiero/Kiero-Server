@@ -93,7 +93,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		boolean isEffectsToChildSchedule = false;
 
 		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
-		throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), child.getId());
+		throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), child.getId(), null);
 
 		Schedule schedule = Schedule.create(
 			parent, child,
@@ -349,10 +349,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
 		}
 
-		if (selectedDate.equals(today) && request.startTime().isBefore(now)) {
-			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
-		}
-
 		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
 
 		Schedule originalSchedule = schedulePersistencePort.findById(scheduleId)
@@ -361,8 +357,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		if (!parentId.equals(originalSchedule.getParent().getId())) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
-
-		throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), originalSchedule.getChild().getId());
 
 		boolean isEffectsToChildSchedule = false;
 
@@ -380,12 +374,14 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			2) 새로운 schedule을 생성합니다.
 			3) scheduleDetail을 생성합니다.
 
-			새로 생성된 일정의 날짜가 오늘이라면,
+			새로 생성된 일정의 날짜가 오늘이고 일정 시작 시각이 현재보다 이후라면,
 			4) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
 			5) 오늘 일정들의 불조각 종류를 재계산합니다.
 			 */
 			case NormalToNormal -> {
 				Schedule saved = deleteOriginalScheduleDetailAndSaveNewSchedule(originalSchedule, selectedDate, request, false);
+
+				throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), originalSchedule.getChild().getId(), selectedDate);
 
 				List<LocalDate> dates = dateParser(request.dates());
 				List<ScheduleDetail> details = dates.stream()
@@ -407,13 +403,15 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			2) 새로운 schedule을 생성합니다.
 			3) 새로운 scheduleRepeatDays를 생성합니다.
 
-			새로 생성된 일정의 요일에 오늘이 해당한다면,
+			새로 생성된 일정의 날짜가 오늘이고 일정 시작 시각이 현재보다 이후라면,
 			4) scheduleDetail을 추가로 생성합니다.
 			5) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
 			6) 오늘 일정들의 불조각 종류를 재계산합니다.
 			 */
 			case NormalToRecurring -> {
 				Schedule saved = deleteOriginalScheduleDetailAndSaveNewSchedule(originalSchedule, selectedDate, request, true);
+
+				throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), originalSchedule.getChild().getId(), selectedDate);
 
 				List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
 				List<ScheduleRepeatDays> repeatDays = dayOfWeeks.stream()
@@ -437,13 +435,15 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			3) request body로 새로운 schedule을 생성하고, 반복시작일자는 selectedDate로 합니다.
 			4) request body와 새로 생성한 schedule로 scheduleRepeatDays를 생성합니다.
 
-			새로 생성된 일정의 요일에 오늘이 해당한다면,
+			새로 생성된 일정의 날짜가 오늘이고 일정 시작 시각이 현재보다 이후라면,
 			4) scheduleDetail을 추가로 생성합니다.
 			5) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
 			6) 오늘 일정들의 불조각 종류를 재계산합니다.
 			 */
 			case RecurringToRecurring -> {
 				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
+
+				throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), originalSchedule.getChild().getId(), selectedDate);
 
 				originalSchedule.changeRepeatEndDate(selectedDate.minusDays(1));
 				Schedule newSchedule = Schedule.create(
@@ -490,6 +490,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			7) 오늘 일정들의 불조각 종류를 재계산합니다.
 			 */
 			case RecurringToRecurringIncludeFollowing -> {
+
+				throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), originalSchedule.getChild().getId(), selectedDate);
+
 				originalSchedule.changeRepeatEndDate(selectedDate.minusDays(1));
 
 				Schedule newSchedule = Schedule.create(
@@ -516,6 +519,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				Optional<ScheduleDetail> originalDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
 					originalSchedule.getId(), selectedDate);
 
+				log.info("now: {}, request startTime: {}", now, request.startTime());
 				if(originalDetail.isPresent()) {
 					originalDetail.get().changeSchedule(saved);
 					if (request.startTime().isAfter(now)) {
@@ -539,6 +543,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			5) 오리지널 일정을 담아 discardedSchedule을 생성합니다.
 			 */
 			case RecurringToRecurringExceptFollowing -> {
+
+				throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), originalSchedule.getChild().getId(), selectedDate);
 
 				Schedule newSchedule = Schedule.create(
 					originalSchedule.getParent(),
@@ -584,6 +590,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				scheduleRepeatDaysPersistencePort.deleteAllByScheduleId(scheduleId);
 
+				throwExceptionWhenScheduleDuplicated(request.isRecurring(), request.dayOfWeek(), request.startTime(), request.endTime(), request.dates(), originalSchedule.getChild().getId(), selectedDate);
+
 				List<LocalDate> dates = dateParser(request.dates());
 
 				originalSchedule.changeBasics(request.name(), request.startTime(), request.endTime(), request.scheduleColor());
@@ -608,6 +616,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		// 아이의 오늘 일정에 영향이 있을 때만 이벤트 전송
 		if (isEffectsToChildSchedule) eventPort.publish(new ScheduleModifiedEvent(childId));
 
+		log.info("scheduleUpdateCase: {}, eventSend: {}", scheduleUpdateCase, isEffectsToChildSchedule);
 	}
 
 	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates) {
@@ -622,7 +631,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
-	private void throwExceptionWhenScheduleDuplicated(boolean isRecurring, String dayOfWeek, LocalTime startTime, LocalTime endTime, String requestDates, Long childId) {
+	private void throwExceptionWhenScheduleDuplicated(boolean isRecurring, String dayOfWeek, LocalTime startTime, LocalTime endTime, String requestDates, Long childId, LocalDate selectedDate) {
 		// 새로 추가하려는 일정이 반복일정일 때
 		if (isRecurring) {
 			List<DayOfWeek> targetDays = dayOfWeekParser(dayOfWeek);
@@ -643,9 +652,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.collect(Collectors.toSet());
 
 			// 기존의 단일일정과 충돌하는지 검사
+			// 일정 수정을 위한 충돌 검사의 경우 (selectedDate가 not null인 경우), 추가 필터를 적용한다.
+			// ㄴ selectedDate부터 반복일정의 반복이 시작되므로, selectedDate 이후 시점에 있는 단일 일정만 충돌 고려 대상으로 둔다.
 			boolean conflictWithNormal = normalsFromToday.stream()
 				.filter(sd -> targetDays.contains(DayOfWeek.from(sd.getDate().getDayOfWeek())))
 				.filter(sd -> !discardedKeys.contains(new DiscardKey(sd.getSchedule().getId(), sd.getDate())))
+				.filter(sd -> selectedDate == null || sd.getDate().isAfter(selectedDate))
 				.anyMatch(sd -> isTimeOverlapped(
 					startTime, endTime,
 					sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
