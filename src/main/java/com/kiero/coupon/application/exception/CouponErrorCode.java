@@ -19,7 +19,8 @@ public enum CouponErrorCode implements BaseCode {
     404 Not Found
     */
     COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
-    CHILD_NOT_FOUND(HttpStatus.NOT_FOUND, "아이 정보를 찾을 수 없습니다."),
+    CHILD_NOT_FOUND(HttpStatus.NOT_FOUND, "아이를 찾을 수 없습니다."),
+    PARENT_NOT_FOUND(HttpStatus.NOT_FOUND, "부모를 찾을 수 없습니다."),
 
     /*
     403 Forbidden

@@ -3,7 +3,6 @@ package com.kiero.coupon.application.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kiero.child.application.exception.ChildErrorCode;
 import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.coupon.application.dto.CouponResponse;
@@ -16,7 +15,6 @@ import com.kiero.coupon.application.port.out.CouponLoadPort;
 import com.kiero.coupon.application.port.out.CouponPersistencePort;
 import com.kiero.coupon.domain.Coupon;
 import com.kiero.global.exception.KieroException;
-import com.kiero.parent.application.exception.ParentErrorCode;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
@@ -41,10 +39,10 @@ public class CouponCommandService implements CouponCommandUseCase {
 		}
 
 		Parent parent = parentLoadPort.findById(command.parentId())
-			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
+			.orElseThrow(() -> new KieroException(CouponErrorCode.PARENT_NOT_FOUND));
 
 		Child child = childLoadPort.findById(command.childId())
-			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+			.orElseThrow(() -> new KieroException(CouponErrorCode.CHILD_NOT_FOUND));
 
 		Coupon coupon = Coupon.create(command.name(), command.price(), parent, child);
 
