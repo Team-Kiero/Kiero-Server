@@ -5,17 +5,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -464,10 +462,63 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				}
 			}
 
+			/*
+			반복일정 -> 반복일정이고 요일 변화가 없을 때,
+			1) 기존의 일정의 반복마감일자를 selectedDate 하루 전으로 업데이트합니다.
+			2) request body로 새로운 schedule을 생성하고, 반복시작일자는 selectedDate로 합니다.
+			3) 기존의 일정의 반복요일과 새로 생성한 schedule로 새로 생성된 schedule의 scheduleRepeatDays를 생성합니다.
+
+			기존의 일정의 scheduleDetail이 생성되어 있다면, (즉, 반복요일에 오늘이 해당된다면)
+			4) 참조하는 schedule을 오리지널에서 새로 생성된 schedule로 변경합니다.
+
+			요청의 일정의 startTime이 현재 시간보다 이후라면,
+			6) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
+			7) 오늘 일정들의 불조각 종류를 재계산합니다.
+			 */
 			case RecurringToRecurringIncludeFollowing -> {
+				schedule.changeRepeatEndDate(selectedDate.minusDays(1));
+
+				Schedule newSchedule = Schedule.create(
+					schedule.getParent(),
+					schedule.getChild(),
+					schedule.getName(),
+					schedule.getStartTime(),
+					schedule.getEndTime(),
+					schedule.getScheduleColor(),
+					true,
+					selectedDate,
+					null
+				);
+
+				Schedule saved = schedulePersistencePort.save(newSchedule);
+				List<DayOfWeek> dayOfWeeks = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(scheduleId);
+
+				List<ScheduleRepeatDays> scheduleRepeatDays = dayOfWeeks.stream()
+					.map(d -> ScheduleRepeatDays.create(d, saved))
+					.toList();
+
+				scheduleRepeatDaysPersistencePort.saveAll(scheduleRepeatDays);
+
+				Optional<ScheduleDetail> originalDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(schedule.getId(), selectedDate);
+
+				if(originalDetail.isPresent()) {
+					originalDetail.get().changeSchedule(newSchedule);
+					if (request.startTime().isAfter(now)) {
+						recalculateTodayStoneTypes(childId);
+						isEffectsToChildSchedule = true;
+					}
+				}
+			}
+
+			case RecurringToRecurringExceptFollowing -> {
 
 			}
 
+			case RecurringToNormal -> {
+
+			}
+
+			default -> throw new KieroException(ScheduleErrorCode.SCHEDULE_UPDATE_CASE_CANNOT_RESOLVED);
 		}
 	}
 
@@ -622,7 +673,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		if (isRecurring) {
 			java.time.DayOfWeek earliestDay = getEarliestDay(dayOfWeekParser(request.dayOfWeek()));
 			LocalDate repeatStartDate = getDateOfThisWeek(earliestDay);
-			newSchedule.updateRepeatStartDate(repeatStartDate);
+			newSchedule.changeRepeatStartDate(repeatStartDate);
 		}
 
 		return schedulePersistencePort.save(newSchedule);

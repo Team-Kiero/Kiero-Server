@@ -27,4 +27,5 @@ public interface ScheduleDetailPersistencePort {
 
 	void deleteByScheduleIdAndDate(Long scheduleId, LocalDate date);
 
+	Optional<ScheduleDetail> findByScheduleIdAndDate(Long scheduleId, LocalDate date);
 }

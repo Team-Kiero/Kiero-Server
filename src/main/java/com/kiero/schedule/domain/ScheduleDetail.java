@@ -91,4 +91,8 @@ public class ScheduleDetail {
 		this.stoneUsedAt = stoneUsedAt;
 	}
 
+	public void changeSchedule(Schedule schedule) {
+		this.schedule = schedule;
+	}
+
 }

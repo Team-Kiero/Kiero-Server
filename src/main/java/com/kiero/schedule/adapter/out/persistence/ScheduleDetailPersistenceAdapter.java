@@ -63,4 +63,9 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 		scheduleDetailRepository.deleteByScheduleIdAndDate(scheduleId, date);
 	}
 
+	@Override
+	public Optional<ScheduleDetail> findByScheduleIdAndDate(Long scheduleId, LocalDate date) {
+		return scheduleDetailRepository.findByScheduleIdAndDate(scheduleId, date);
+	}
+
 }
