@@ -16,11 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kiero.coupon.application.dto.CouponCreateRequest;
 import com.kiero.coupon.application.dto.CouponResponse;
 import com.kiero.coupon.application.dto.CouponUpdateRequest;
-import com.kiero.coupon.application.dto.PurchaseCouponCommand;
 import com.kiero.coupon.application.exception.CouponSuccessCode;
 import com.kiero.coupon.application.port.in.CouponCommandUseCase;
-import com.kiero.coupon.application.port.in.GetCouponsUseCase;
-import com.kiero.coupon.application.port.in.PurchaseCouponUseCase;
+import com.kiero.coupon.application.port.in.CouponsQueryUseCase;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
@@ -34,14 +32,13 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/coupons")
 public class CouponController {
 
-	private final GetCouponsUseCase getCouponsUseCase;
-	private final PurchaseCouponUseCase purchaseCouponUseCase;
+	private final CouponsQueryUseCase couponsQueryUseCase;
 	private final CouponCommandUseCase couponCommandUseCase;
 
 	@PreAuthorize("hasAnyRole('CHILD', 'PARENT', 'ADMIN')")
 	@GetMapping
 	public ResponseEntity<SuccessResponse<List<CouponResponse>>> getAllCoupons() {
-    List<CouponResponse> response = getCouponsUseCase.getAll();
+    List<CouponResponse> response = couponsQueryUseCase.getAll();
 
 		return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPONS_RETRIEVED, response));
 	}
@@ -89,9 +86,7 @@ public class CouponController {
 		@CurrentMember CurrentAuth currentAuth,
 		@PathVariable Long couponId
 	) {
-		CouponResponse dto = purchaseCouponUseCase.purchase(
-			new PurchaseCouponCommand(currentAuth.memberId(), couponId)
-		);
+		CouponResponse dto = couponCommandUseCase.purchaseCoupon(currentAuth.memberId(), couponId);
 
 		CouponResponse response = new CouponResponse(dto.couponId(), dto.name(), dto.price());
 

@@ -4,6 +4,6 @@ import java.util.List;
 
 import com.kiero.coupon.application.dto.CouponResponse;
 
-public interface GetCouponsUseCase {
+public interface CouponsQueryUseCase {
 	List<CouponResponse> getAll();
 }

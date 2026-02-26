@@ -6,14 +6,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.coupon.application.dto.CouponResponse;
-import com.kiero.coupon.application.port.in.GetCouponsUseCase;
+import com.kiero.coupon.application.port.in.CouponsQueryUseCase;
 import com.kiero.coupon.application.port.out.CouponLoadPort;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class CouponQueryService implements GetCouponsUseCase {
+public class CouponQueryService implements CouponsQueryUseCase {
 
 	private final CouponLoadPort couponLoadPort;
 

@@ -1,7 +1,10 @@
 package com.kiero.coupon.application.service;
 
 import com.kiero.coupon.application.dto.CouponCreateRequest;
+import com.kiero.coupon.application.dto.CouponPurchaseEvent;
 import com.kiero.coupon.application.dto.CouponUpdateRequest;
+import com.kiero.coupon.application.port.out.CouponPurchaseEventPort;
+import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,7 @@ public class CouponCommandService implements CouponCommandUseCase {
 	private final ChildLoadPort childLoadPort;
 	private final CouponLoadPort couponLoadPort;
 	private final CouponPersistencePort couponPersistencePort;
+  private final CouponPurchaseEventPort eventPort;
 
 	@Override
 	@Transactional
@@ -75,4 +79,34 @@ public class CouponCommandService implements CouponCommandUseCase {
 
 		couponPersistencePort.delete(coupon);
 	}
+
+  @Override
+  @Transactional
+  public CouponResponse purchaseCoupon(Long childId, Long couponId) {
+
+    Child child = childLoadPort.findByIdWithLock(childId)
+        .orElseThrow(() -> new KieroException(CouponErrorCode.CHILD_NOT_FOUND));
+
+    Coupon coupon = couponLoadPort.findById(couponId)
+        .orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
+
+    if (!coupon.getChild().getId().equals(childId)) {
+      throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
+    }
+
+    if (!child.hasEnoughCoin(coupon.getPrice())) {
+      throw new KieroException(CouponErrorCode.INSUFFICIENT_COINS);
+    }
+
+    child.deductCoin(coupon.getPrice());
+
+    eventPort.publish(new CouponPurchaseEvent(
+        child.getId(),
+        coupon.getName(),
+        coupon.getPrice(),
+        LocalDateTime.now()
+    ));
+
+    return new CouponResponse(coupon.getId(), coupon.getName(), coupon.getPrice());
+  }
 }

@@ -8,4 +8,5 @@ public interface CouponCommandUseCase {
 	CouponResponse createCoupon(Long parentId, Long childId, CouponCreateRequest request);
 	CouponResponse updateCoupon(Long parentId, Long couponId, CouponUpdateRequest request);
 	void deleteCoupon(Long parentId, Long couponId);
+  CouponResponse purchaseCoupon(Long childId, Long couponId);
 }
