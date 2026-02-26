@@ -116,9 +116,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.toList();
 			scheduleRepeatDaysPersistencePort.saveAll(repeatDays);
 
-			java.time.DayOfWeek earliestDay = getEarliestDay(dayOfWeeks);
-			LocalDate repeatStartDate = getDateOfThisWeek(earliestDay);
-			saved.changeRepeatStartDate(repeatStartDate);
+			saved.changeRepeatStartDate(request.repeatStartDate());
 
 			// 당일 생성된 반복 일정 중 오늘 요일이면 scheduleDetail 생성
 			createScheduleDetailOfTodayRecurringSchedules(today);
@@ -789,7 +787,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		if (isRecurring) {
 			java.time.DayOfWeek earliestDay = getEarliestDay(dayOfWeekParser(request.dayOfWeek()));
-			LocalDate repeatStartDate = getDateOfThisWeek(earliestDay);
+			LocalDate repeatStartDate = getDateOfSelectedDate(earliestDay, selectedDate);
 			newSchedule.changeRepeatStartDate(repeatStartDate);
 		}
 
@@ -875,10 +873,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		calculateStoneTypePerScheduleDetail(filteredAllScheduleDetails);
 	}
 
-	private LocalDate getDateOfThisWeek(java.time.DayOfWeek targetDay) {
-		LocalDate today = LocalDate.now(clock);
+	private LocalDate getDateOfSelectedDate(java.time.DayOfWeek targetDay, LocalDate selectedDate) {
 
-		LocalDate monday = today.with(java.time.DayOfWeek.MONDAY);
+		LocalDate monday = selectedDate.with(java.time.DayOfWeek.MONDAY);
 		return monday.plusDays(targetDay.getValue() - java.time.DayOfWeek.MONDAY.getValue());
 	}
 
@@ -887,6 +884,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.min(Comparator.comparingInt(Enum::ordinal))
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE));
 
-		return java.time.DayOfWeek.valueOf(earliest.name() + "DAY");
+		return DayOfWeek.toJavaDayOfWeek(earliest);
 	}
 }

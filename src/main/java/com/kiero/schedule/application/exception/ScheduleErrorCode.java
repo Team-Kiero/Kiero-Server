@@ -38,10 +38,10 @@ public enum ScheduleErrorCode implements BaseCode {
 	CHILD_NOT_FOUND(HttpStatus.NOT_FOUND, "아이 정보를 찾을 수 없습니다."),
 	PARENT_NOT_FOUND(HttpStatus.NOT_FOUND, "부모 정보를 찾을 수 없습니다."),
 
-
 	/*
 	500 INTERNAL SERVER ERROR
 	 */
+	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "예기치 않은 서버 에러가 발생했습니다."),
 	SCHEDULE_UPDATE_CASE_CANNOT_RESOLVED(HttpStatus.INTERNAL_SERVER_ERROR, "일정 업데이트 유형 판단에 실패했습니다."),
 	;
 
