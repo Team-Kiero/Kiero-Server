@@ -44,13 +44,9 @@ public class CouponController {
 	@PreAuthorize("hasAnyRole('CHILD', 'PARENT', 'ADMIN')")
 	@GetMapping
 	public ResponseEntity<SuccessResponse<List<CouponResponse>>> getAllCoupons() {
+    List<CouponResponse> response = getCouponsUseCase.getAll();
 
-		List<CouponResponse> coupons = getCouponsUseCase.getAll()
-			.stream()
-			.map(dto -> new CouponResponse(dto.couponId(), dto.name(), dto.price()))
-			.toList();
-
-		return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPONS_RETRIEVED, coupons));
+		return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPONS_RETRIEVED, response));
 	}
 
 	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
