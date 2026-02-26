@@ -82,4 +82,6 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 	void deleteByScheduleIdAndDate(Long scheduleId, LocalDate date);
 
 	Optional<ScheduleDetail> findByScheduleIdAndDate(Long scheduleId, LocalDate date);
+
+	boolean existsByScheduleIdAndDate(Long scheduleId, LocalDate date);
 }

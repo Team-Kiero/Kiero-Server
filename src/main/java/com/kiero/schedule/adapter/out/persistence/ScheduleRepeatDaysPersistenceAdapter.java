@@ -47,4 +47,9 @@ public class ScheduleRepeatDaysPersistenceAdapter implements ScheduleRepeatDaysP
 	public List<Schedule> findSchedulesByChildIdAndDayOfWeekIn(Long childId, List<DayOfWeek> dayOfWeeks) {
 		return scheduleRepeatDaysRepository.findSchedulesByChildIdAndDayOfWeekIn(childId, dayOfWeeks);
 	}
+
+	@Override
+	public void deleteAllByScheduleId(Long scheduleId) {
+		scheduleRepeatDaysRepository.deleteAllByScheduleId(scheduleId);
+	}
 }

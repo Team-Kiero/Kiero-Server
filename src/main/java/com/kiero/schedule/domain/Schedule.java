@@ -99,4 +99,17 @@ public class Schedule extends BaseTimeEntity {
 	public void changeRepeatEndDate(LocalDate repeatEndDate) {
 		this.repeatEndDate = repeatEndDate;
 	}
+
+	public void changeBasics(String name, LocalTime startTime, LocalTime endTime, ScheduleColor scheduleColor) {
+		this.name = name;
+		this.startTime = startTime;
+		this.endTime = endTime;
+		this.scheduleColor = scheduleColor;
+	}
+
+	public void convertToNormal() {
+		this.isRecurring = false;
+		this.repeatStartDate = null;
+		this.repeatEndDate = null;
+	}
 }

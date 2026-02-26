@@ -23,9 +23,13 @@ public interface ScheduleDetailPersistencePort {
 
 	List<ScheduleDetail> findAllByScheduleChildIdAndDateGreaterThanEqual(Long childId, LocalDate date);
 
+	ScheduleDetail save(ScheduleDetail scheduleDetail);
+
 	List<ScheduleDetail> saveAll(List<ScheduleDetail> details);
 
 	void deleteByScheduleIdAndDate(Long scheduleId, LocalDate date);
 
 	Optional<ScheduleDetail> findByScheduleIdAndDate(Long scheduleId, LocalDate date);
+
+	boolean existsByScheduleIdAndDate(Long scheduleId, LocalDate date);
 }

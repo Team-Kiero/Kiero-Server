@@ -20,4 +20,6 @@ public interface ScheduleRepeatDaysPersistencePort {
 	List<Schedule> findSchedulesByChildIdAndDayOfWeeks(Long childId, List<DayOfWeek> dayOfWeeks);
 
 	List<Schedule> findSchedulesByChildIdAndDayOfWeekIn(Long childId, List<DayOfWeek> dayOfWeeks);
+
+	void deleteAllByScheduleId(Long scheduleId);
 }

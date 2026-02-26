@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,11 +29,12 @@ import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteEvent;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
-import com.kiero.schedule.application.dto.ScheduleCreatedEvent;
+import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
 import com.kiero.schedule.application.dto.ScheduleUpdateRequest;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
 import com.kiero.schedule.application.port.in.ScheduleCommandUseCase;
+import com.kiero.schedule.application.port.out.DiscardedSchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleEventPort;
 import com.kiero.schedule.application.port.out.SchedulePersistencePort;
@@ -41,12 +43,14 @@ import com.kiero.schedule.application.service.resolver.ScheduleUpdateCase;
 import com.kiero.schedule.application.service.resolver.TodayScheduleStatus;
 import com.kiero.schedule.application.service.resolver.TodayScheduleStatusResolver;
 
+import com.kiero.schedule.domain.DiscardedSchedule;
 import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;
 import com.kiero.schedule.domain.enums.DayOfWeek;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
+import com.kiero.schedule.domain.vo.DiscardKey;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,15 +66,13 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	private final ChildLoadPort childLoadPort;
 	private final ParentChildAccessPort parentChildAccessPort;
 
-	private final SchedulePersistencePort schedulePort;
-	private final ScheduleRepeatDaysPersistencePort repeatDaysPort;
-	private final ScheduleDetailPersistencePort detailPort;
-
 	private final ScheduleEventPort eventPort;
 	private final Clock clock;
+
 	private final SchedulePersistencePort schedulePersistencePort;
 	private final ScheduleRepeatDaysPersistencePort scheduleRepeatDaysPersistencePort;
 	private final ScheduleDetailPersistencePort scheduleDetailPersistencePort;
+	private final DiscardedSchedulePersistencePort discardedSchedulePersistencePort;
 
 	@Override
 	@Transactional
@@ -104,7 +106,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			null
 		);
 
-		Schedule saved = schedulePort.save(schedule);
+		Schedule saved = schedulePersistencePort.save(schedule);
 
 		if (request.isRecurring()) {
 
@@ -112,7 +114,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			List<ScheduleRepeatDays> repeatDays = dayOfWeeks.stream()
 				.map(day -> ScheduleRepeatDays.create(day, saved))
 				.toList();
-			repeatDaysPort.saveAll(repeatDays);
+			scheduleRepeatDaysPersistencePort.saveAll(repeatDays);
 
 			java.time.DayOfWeek earliestDay = getEarliestDay(dayOfWeeks);
 			LocalDate repeatStartDate = getDateOfThisWeek(earliestDay);
@@ -135,7 +137,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.sorted()
 				.map(date -> ScheduleDetail.create(date, null, null, ScheduleStatus.PENDING, null, saved))
 				.toList();
-			detailPort.saveAll(details);
+			scheduleDetailPersistencePort.saveAll(details);
 
 			// 추가된 일정이 오늘 일정이고, 추가된 일정의 시작 시간이 현재 시간 이후라면 불조각 종류를 재계산함
 			if (dates.contains(today) && request.startTime().isAfter(now)) {
@@ -145,7 +147,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 
 		// 아이의 오늘 일정에 영향이 있을 때만 이벤트 전송
-		if (isEffectsToChildSchedule) eventPort.publish(new ScheduleCreatedEvent(childId, saved.getName()));
+		if (isEffectsToChildSchedule) eventPort.publish(new ScheduleModifiedEvent(childId));
 	}
 
 	@Override
@@ -153,7 +155,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	public TodayScheduleResponse getTodaySchedule(Long childId) {
 		LocalDate today = LocalDate.now(clock);
 
-		List<ScheduleDetail> allScheduleDetails = detailPort.findByDateAndChildId(today, childId).stream()
+		List<ScheduleDetail> allScheduleDetails = scheduleDetailPersistencePort.findByDateAndChildId(today, childId).stream()
 			.sorted(Comparator
 					.comparing((ScheduleDetail sd) -> sd.getSchedule().getStartTime())
 					.thenComparing(sd -> sd.getSchedule().getId()))
@@ -227,7 +229,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.CHILD_NOT_FOUND));
 
-		ScheduleDetail scheduleDetail = detailPort.findById(scheduleDetailId)
+		ScheduleDetail scheduleDetail = scheduleDetailPersistencePort.findById(scheduleDetailId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
 
 		if (!childId.equals(scheduleDetail.getSchedule().getChild().getId())) {
@@ -246,7 +248,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	@Override
 	@Transactional
 	public void completeNowSchedule(Long childId, Long scheduleDetailId, NowScheduleCompleteRequest request) {
-		ScheduleDetail scheduleDetail = detailPort.findById(scheduleDetailId)
+		ScheduleDetail scheduleDetail = scheduleDetailPersistencePort.findById(scheduleDetailId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
 
 		if (!childId.equals(scheduleDetail.getSchedule().getChild().getId())) {
@@ -281,7 +283,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		Child child = childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.CHILD_NOT_FOUND));
 
-		List<ScheduleDetail> all = detailPort.findByDateAndChildId(today, childId);
+		List<ScheduleDetail> all = scheduleDetailPersistencePort.findByDateAndChildId(today, childId);
 
 		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(all);
 		if (earliestStoneUsedAt != null) {
@@ -320,14 +322,14 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		LocalDate today = LocalDate.now(clock);
 		DayOfWeek customDayOfWeek = DayOfWeek.valueOf(today.getDayOfWeek().name().substring(0, 3));
 
-		List<Schedule> schedules = repeatDaysPort.findSchedulesToCreateTodayDetail(customDayOfWeek, today);
+		List<Schedule> schedules = scheduleRepeatDaysPersistencePort.findSchedulesToCreateTodayDetail(customDayOfWeek, today);
 		List<ScheduleDetail> scheduleDetails = schedules.stream()
 			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
 			.toList();
 
-		detailPort.saveAll(scheduleDetails);
+		scheduleDetailPersistencePort.saveAll(scheduleDetails);
 
-		List<ScheduleDetail> allScheduleDetails = detailPort.findAllByDate(today);
+		List<ScheduleDetail> allScheduleDetails = scheduleDetailPersistencePort.findAllByDate(today);
 
 		calculateStoneTypePerScheduleDetail(allScheduleDetails);
 	}
@@ -335,6 +337,17 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	@Override
 	@Transactional
 	public void updateSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleUpdateRequest request) {
+
+		LocalDate today = LocalDate.now(clock);
+		LocalTime now = LocalTime.now(clock);
+
+		if (selectedDate.isBefore(today)) {
+			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
+		}
+
+		if (selectedDate.equals(today) && request.startTime().isBefore(now)) {
+			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
+		}
 
 		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
 
@@ -352,9 +365,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		ScheduleUpdateCase scheduleUpdateCase = scheduleUpdateCaseResolver(originalSchedule, request);
 
 		log.info("scheduleUpdateCase: " + scheduleUpdateCase);
-
-		LocalDate today = LocalDate.now(clock);
-		LocalTime now = LocalTime.now(clock);
 
 		Long childId = originalSchedule.getChild().getId();
 
@@ -379,7 +389,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					.sorted()
 					.map(date -> ScheduleDetail.create(date, null, null, ScheduleStatus.PENDING, null, saved))
 					.toList();
-				detailPort.saveAll(details);
+				scheduleDetailPersistencePort.saveAll(details);
 
 				if (dates.contains(today) && request.startTime().isAfter(now)) {
 					recalculateTodayStoneTypes(childId);
@@ -405,7 +415,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				List<ScheduleRepeatDays> repeatDays = dayOfWeeks.stream()
 					.map(day -> ScheduleRepeatDays.create(day, saved))
 					.toList();
-				repeatDaysPort.saveAll(repeatDays);
+				scheduleRepeatDaysPersistencePort.saveAll(repeatDays);
 
 				createScheduleDetailOfTodayRecurringSchedules(today);
 
@@ -435,10 +445,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				Schedule newSchedule = Schedule.create(
 					originalSchedule.getParent(),
 					originalSchedule.getChild(),
-					originalSchedule.getName(),
-					originalSchedule.getStartTime(),
-					originalSchedule.getEndTime(),
-					originalSchedule.getScheduleColor(),
+					request.name(),
+					request.startTime(),
+					request.endTime(),
+					request.scheduleColor(),
 					true,
 					selectedDate,
 					null
@@ -463,7 +473,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			}
 
 			/*
-			반복일정 -> 반복일정이고 요일 변화가 없을 때,
+			반복일정 -> 반복일정이고 요일 변화가 없고 이후 일정을 포함하여 수정할 때,
 			1) 기존의 일정의 반복마감일자를 selectedDate 하루 전으로 업데이트합니다.
 			2) request body로 새로운 schedule을 생성하고, 반복시작일자는 selectedDate로 합니다.
 			3) 기존의 일정의 반복요일과 새로 생성한 schedule로 새로 생성된 schedule의 scheduleRepeatDays를 생성합니다.
@@ -481,10 +491,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				Schedule newSchedule = Schedule.create(
 					originalSchedule.getParent(),
 					originalSchedule.getChild(),
-					originalSchedule.getName(),
-					originalSchedule.getStartTime(),
-					originalSchedule.getEndTime(),
-					originalSchedule.getScheduleColor(),
+					request.name(),
+					request.startTime(),
+					request.endTime(),
+					request.scheduleColor(),
 					true,
 					selectedDate,
 					null
@@ -503,7 +513,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					originalSchedule.getId(), selectedDate);
 
 				if(originalDetail.isPresent()) {
-					originalDetail.get().changeSchedule(newSchedule);
+					originalDetail.get().changeSchedule(saved);
 					if (request.startTime().isAfter(now)) {
 						recalculateTodayStoneTypes(childId);
 						isEffectsToChildSchedule = true;
@@ -511,16 +521,89 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				}
 			}
 
+			/*
+			반복일정 -> 반복일정이고 요일 변화가 없고 이후 일정을 포함하지 않고 수정할 때,
+			1) request body로 새로운 schedule을 생성하고, isRecurring은 false로 설정합니다.
+
+			기존의 일정의 scheduleDetail이 생성되어 있다면, (즉, 반복요일에 오늘이 해당된다면)
+			2) 참조하는 schedule을 오리지널에서 새로 생성된 schedule로 변경합니다.
+
+			요청의 일정의 startTime이 현재 시간보다 이후라면,
+			3) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
+			4) 오늘 일정들의 불조각 종류를 재계산합니다.
+
+			5) 오리지널 일정을 담아 discardedSchedule을 생성합니다.
+			 */
 			case RecurringToRecurringExceptFollowing -> {
 
+				Schedule newSchedule = Schedule.create(
+					originalSchedule.getParent(),
+					originalSchedule.getChild(),
+					request.name(),
+					request.startTime(),
+					request.endTime(),
+					request.scheduleColor(),
+					false,
+					null,
+					null
+				);
+
+				Schedule saved = schedulePersistencePort.save(newSchedule);
+
+				Optional<ScheduleDetail> originalDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
+					originalSchedule.getId(), selectedDate);
+
+				if(originalDetail.isPresent()) {
+					originalDetail.get().changeSchedule(saved);
+					if (request.startTime().isAfter(now)) {
+						recalculateTodayStoneTypes(childId);
+						isEffectsToChildSchedule = true;
+					}
+				}
+
+				DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
+
+				discardedSchedulePersistencePort.save(discardedSchedule);
 			}
 
+			/*
+			반복일정 -> 단일일정일 때,
+			1) 오리지널 schedule과 연관된 scheduleRepeatDays 삭제합니다.
+			2) 오리지널 schedule을 request body 내용으로 업데이트합니다.
+			3) 각 일자의 scheduleDetail이 생성되어 있지 않다면, 새로 scheduleDetail을 생성합니다.
+
+			요청의 dates에 오늘이 포함되어 있고, startTime이 현재 시간보다 이후라면,
+			3) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
+			4) 오늘 일정들의 불조각 종류를 재계산합니다.
+			 */
 			case RecurringToNormal -> {
 
+				scheduleRepeatDaysPersistencePort.deleteAllByScheduleId(scheduleId);
+
+				List<LocalDate> dates = dateParser(request.dates());
+
+				originalSchedule.changeBasics(request.name(), request.startTime(), request.endTime(), request.scheduleColor());
+				originalSchedule.convertToNormal();
+
+				List<ScheduleDetail> scheduleDetails = dates.stream()
+					.filter(d -> !scheduleDetailPersistencePort.existsByScheduleIdAndDate(scheduleId, d))
+					.map(d -> ScheduleDetail.create(d, null, null, ScheduleStatus.PENDING, null, originalSchedule))
+					.toList();
+
+				scheduleDetailPersistencePort.saveAll(scheduleDetails);
+
+				if (dates.contains(today) && request.startTime().isAfter(now)) {
+					recalculateTodayStoneTypes(childId);
+					isEffectsToChildSchedule = true;
+				}
 			}
 
 			default -> throw new KieroException(ScheduleErrorCode.SCHEDULE_UPDATE_CASE_CANNOT_RESOLVED);
 		}
+
+		// 아이의 오늘 일정에 영향이 있을 때만 이벤트 전송
+		if (isEffectsToChildSchedule) eventPort.publish(new ScheduleModifiedEvent(childId));
+
 	}
 
 	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates) {
@@ -536,20 +619,29 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	}
 
 	private void throwExceptionWhenScheduleDuplicated(boolean isRecurring, String dayOfWeek, LocalTime startTime, LocalTime endTime, String requestDates, Long childId) {
+		// 새로 추가하려는 일정이 반복일정일 때
 		if (isRecurring) {
 			List<DayOfWeek> targetDays = dayOfWeekParser(dayOfWeek);
-			List<Schedule> existingRecurring = repeatDaysPort.findSchedulesByChildIdAndDayOfWeeks(childId, targetDays);
+			List<Schedule> existingRecurring = scheduleRepeatDaysPersistencePort.findSchedulesByChildIdAndDayOfWeeks(childId, targetDays);
 
+			// 기존의 반복일정과 충돌하는지 검사
 			boolean conflictWithRecurring = existingRecurring.stream()
 				.anyMatch(s -> isTimeOverlapped(startTime, endTime, s.getStartTime(), s.getEndTime()));
 
 			if (conflictWithRecurring) throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
 
 			LocalDate today = LocalDate.now(clock);
-			List<ScheduleDetail> normalsFromToday = detailPort.findAllByScheduleChildIdAndDateGreaterThanEqual(childId, today);
+			List<ScheduleDetail> normalsFromToday = scheduleDetailPersistencePort.findAllByScheduleChildIdAndDateGreaterThanEqual(childId, today);
+			List<DiscardedSchedule> discardedSchedules = discardedSchedulePersistencePort.findAllByChildIdAndDayOfWeekIn(childId, targetDays);
 
+			Set<DiscardKey> discardedKeys = discardedSchedules.stream()
+				.map(ds -> new DiscardKey(ds.getSchedule().getId(), ds.getDate()))
+				.collect(Collectors.toSet());
+
+			// 기존의 단일일정과 충돌하는지 검사
 			boolean conflictWithNormal = normalsFromToday.stream()
 				.filter(sd -> targetDays.contains(DayOfWeek.from(sd.getDate().getDayOfWeek())))
+				.filter(sd -> !discardedKeys.contains(new DiscardKey(sd.getSchedule().getId(), sd.getDate())))
 				.anyMatch(sd -> isTimeOverlapped(
 					startTime, endTime,
 					sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
@@ -559,10 +651,18 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			return;
 		}
 
+		// 새로 추가하려는 일정이 단일일ㄹ정일 때
 		List<LocalDate> dates = dateParser(requestDates);
-		List<ScheduleDetail> thatDayDetails = detailPort.findByDateInAndChildId(dates, childId);
+		List<ScheduleDetail> thatDayDetails = scheduleDetailPersistencePort.findByDateInAndChildId(dates, childId);
+		List<DiscardedSchedule> discardedSchedules = discardedSchedulePersistencePort.findAllByChildIdAndDateIn(childId, dates);
 
+		Set<DiscardKey> discardedKeys = discardedSchedules.stream()
+			.map(ds -> new DiscardKey(ds.getSchedule().getId(), ds.getDate()))
+			.collect(Collectors.toSet());
+
+		// 기존의 단일일정과 충돌하는지 검사
 		boolean conflictWithNormal = thatDayDetails.stream()
+			.filter(sd -> !discardedKeys.contains(new DiscardKey(sd.getSchedule().getId(), sd.getDate())))
 			.anyMatch(sd -> isTimeOverlapped(
 				startTime, endTime,
 				sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
@@ -570,17 +670,23 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		if (conflictWithNormal) throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
 
-		List<DayOfWeek> targetDays = dates.stream()
-			.map(date -> DayOfWeek.from(date.getDayOfWeek()))
-			.distinct()
-			.toList();
+		// 기존의 반복일정과 충돌하는지 검사
+		for (LocalDate date : dates) {
+			DayOfWeek dow = DayOfWeek.from(date.getDayOfWeek());
 
-		List<Schedule> existingRecurringOnThatDay = repeatDaysPort.findSchedulesByChildIdAndDayOfWeekIn(childId, targetDays);
+			List<Schedule> recurringThatDay =
+				scheduleRepeatDaysPersistencePort.findSchedulesByChildIdAndDayOfWeekIn(childId, List.of(dow));
 
-		boolean conflictWithRecurring = existingRecurringOnThatDay.stream()
-			.anyMatch(s -> isTimeOverlapped(startTime, endTime, s.getStartTime(), s.getEndTime()));
+			boolean conflictWithRecurringOnThisDate = recurringThatDay.stream()
+				.filter(s -> !discardedKeys.contains(new DiscardKey(s.getId(), date)))
+				.filter(s -> s.getRepeatStartDate() != null && !s.getRepeatStartDate().isAfter(date))
+				.filter(s -> s.getRepeatEndDate() == null || !s.getRepeatEndDate().isBefore(date))
+				.anyMatch(s -> isTimeOverlapped(startTime, endTime, s.getStartTime(), s.getEndTime()));
 
-		if (conflictWithRecurring) throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
+			if (conflictWithRecurringOnThisDate) {
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
+			}
+		}
 	}
 
 	private boolean isTimeOverlapped(LocalTime newStart, LocalTime newEnd, LocalTime oldStart, LocalTime oldEnd) {
@@ -617,11 +723,15 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		return scheduleDetails.stream()
 			.filter(sd -> {
 				Schedule schedule = sd.getSchedule();
-				LocalDateTime createdAt = schedule.getCreatedAt();
+				LocalDateTime createdAt = sd.getCreatedAt();
 
-				if (!createdAt.toLocalDate().equals(today)) return true;
+				// 당일 생성된 일정이 아니거나, 스케쥴러가 생성한 반복일정의 scheduleDetail이라면(오전 8시 이전에 생성되었다면) 통과
+				if (!createdAt.toLocalDate().equals(today) || createdAt.isBefore(today.atTime(8, 0))) return true;
+
+				// 일정의 생성 시각이 일정의 startTime보다 이후라면 통과하지 못함
 				if (createdAt.toLocalTime().isAfter(schedule.getStartTime())) return false;
 
+				// 불 피우기를 이후에 생성된 일정은 통과하지 못함
 				return earliestStoneUsedAt == null || !createdAt.isAfter(earliestStoneUsedAt);
 			})
 			.toList();
@@ -706,7 +816,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		LocalDateTime startOfToday = today.atStartOfDay();
 		DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
 
-		List<Schedule> schedules = schedulePort.findRecurringSchedulesToGenerateTodayDetail(
+		List<Schedule> schedules = schedulePersistencePort.findRecurringSchedulesToGenerateTodayDetail(
 			startOfToday,
 			todayDayOfWeek,
 			today
@@ -718,7 +828,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
 			.toList();
 
-		detailPort.saveAll(details);
+		scheduleDetailPersistencePort.saveAll(details);
 	}
 
 	private void calculateStoneTypePerScheduleDetail(List<ScheduleDetail> scheduleDetails) {
@@ -751,7 +861,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	private void recalculateTodayStoneTypes(Long childId) {
 		LocalDate today = LocalDate.now(clock);
 
-		List<ScheduleDetail> allScheduleDetails = detailPort.findByDateAndChildId(today, childId);
+		List<ScheduleDetail> allScheduleDetails = scheduleDetailPersistencePort.findByDateAndChildId(today, childId);
 		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(allScheduleDetails);
 
 		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails, earliestStoneUsedAt);
@@ -760,7 +870,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	}
 
 	private LocalDate getDateOfThisWeek(java.time.DayOfWeek targetDay) {
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(clock);
 
 		LocalDate monday = today.with(java.time.DayOfWeek.MONDAY);
 		return monday.plusDays(targetDay.getValue() - java.time.DayOfWeek.MONDAY.getValue());

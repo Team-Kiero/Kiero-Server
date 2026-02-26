@@ -54,6 +54,11 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	}
 
 	@Override
+	public ScheduleDetail save(ScheduleDetail scheduleDetail) {
+		return scheduleDetailRepository.save(scheduleDetail);
+	}
+
+	@Override
 	public List<ScheduleDetail> saveAll(List<ScheduleDetail> details) {
 		return scheduleDetailRepository.saveAll(details);
 	}
@@ -66,6 +71,11 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	@Override
 	public Optional<ScheduleDetail> findByScheduleIdAndDate(Long scheduleId, LocalDate date) {
 		return scheduleDetailRepository.findByScheduleIdAndDate(scheduleId, date);
+	}
+
+	@Override
+	public boolean existsByScheduleIdAndDate(Long scheduleId, LocalDate date) {
+		return scheduleDetailRepository.existsByScheduleIdAndDate(scheduleId, date);
 	}
 
 }

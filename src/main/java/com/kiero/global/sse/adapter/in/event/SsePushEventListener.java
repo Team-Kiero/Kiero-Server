@@ -14,7 +14,7 @@ import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent.FeedItemInfo;
 import com.kiero.global.sse.application.port.in.SsePushUseCase;
 import com.kiero.global.sse.domain.SseEventType;
 import com.kiero.mission.application.dto.MissionCreatedEvent;
-import com.kiero.schedule.application.dto.ScheduleCreatedEvent;
+import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,15 +71,13 @@ public class SsePushEventListener {
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handle(ScheduleCreatedEvent event) {
+	public void handle(ScheduleModifiedEvent event) {
 		Map<String, Object> data = new LinkedHashMap<>();
-		data.put("eventType", SseEventType.SCHEDULE_CREATED.name());
-		data.put("scheduleName", event.scheduleName());
+		data.put("eventType", SseEventType.SCHEDULE_MODIFIED.name());
 
-		log.debug("자녀 SSE 푸시 (스케줄 생성): childId={}, scheduleName={}",
-			event.childId(), event.scheduleName());
+		log.debug("자녀 SSE 푸시 (스케줄 생성): childId={}", event.childId());
 
-		ssePushUseCase.pushToChild(event.childId(), SseEventType.SCHEDULE_CREATED, data);
+		ssePushUseCase.pushToChild(event.childId(), SseEventType.SCHEDULE_MODIFIED, data);
 	}
 
 	private SseEventType mapToSseEventType(EventType eventType) {

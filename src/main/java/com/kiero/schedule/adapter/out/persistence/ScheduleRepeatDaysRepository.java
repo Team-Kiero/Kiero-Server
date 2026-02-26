@@ -76,4 +76,7 @@ public interface ScheduleRepeatDaysRepository extends JpaRepository<ScheduleRepe
 		@Param("childId") Long childId,
 		@Param("dayOfWeeks") List<DayOfWeek> dayOfWeeks
 	);
+
+	@Modifying
+	void deleteAllByScheduleId(Long scheduleId);
 }

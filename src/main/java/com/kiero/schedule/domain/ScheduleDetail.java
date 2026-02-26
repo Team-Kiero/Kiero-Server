@@ -3,6 +3,7 @@ package com.kiero.schedule.domain;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.kiero.global.entity.BaseTimeEntity;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.enums.StoneType;
 
@@ -29,7 +30,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Table(name = ScheduleDetailTableConstants.TABLE_SCHEDULE_DETAIL)
-public class ScheduleDetail {
+public class ScheduleDetail extends BaseTimeEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

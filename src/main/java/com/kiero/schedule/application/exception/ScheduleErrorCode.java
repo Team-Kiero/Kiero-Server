@@ -23,6 +23,7 @@ public enum ScheduleErrorCode implements BaseCode {
 	INVALID_DATE_DURATION(HttpStatus.BAD_REQUEST, "시작 일자가 종료 일자의 이전 시점이어야 합니다."),
 	SCHEDULE_DUPLICATED(HttpStatus.BAD_REQUEST, "기존의 일정과 시간이 중복되는 일정은 추가할 수 없습니다."),
 	INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST, "입력된 일자가 형식에 맞지 않습니다."),
+	PAST_SCHEDULE_CANNOT_BE_MODIFIED(HttpStatus.BAD_REQUEST, "과거의 일정은 수정될 수 없습니다."),
 
 	/*
 	403 FORBIDDEN
