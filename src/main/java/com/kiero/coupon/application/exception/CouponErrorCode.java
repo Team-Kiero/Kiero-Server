@@ -25,7 +25,7 @@ public enum CouponErrorCode implements BaseCode {
     403 Forbidden
     */
     NOT_YOUR_CHILD(HttpStatus.FORBIDDEN, "해당 아이의 부모가 아닙니다."),
-    NOT_YOUR_COUPON(HttpStatus.FORBIDDEN, "해당 쿠폰을 수정할 권한이 없습니다."),
+    NOT_YOUR_COUPON(HttpStatus.FORBIDDEN, "해당 쿠폰에 대한 권한이 없습니다."),
     ;
 
     private final HttpStatus httpStatus;
