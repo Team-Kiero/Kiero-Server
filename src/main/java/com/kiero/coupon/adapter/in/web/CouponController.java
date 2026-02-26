@@ -35,10 +35,23 @@ public class CouponController {
 	private final CouponsQueryUseCase couponsQueryUseCase;
 	private final CouponCommandUseCase couponCommandUseCase;
 
-	@PreAuthorize("hasAnyRole('CHILD', 'PARENT', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
 	@GetMapping
-	public ResponseEntity<SuccessResponse<List<CouponResponse>>> getAllCoupons() {
-    List<CouponResponse> response = couponsQueryUseCase.getAll();
+	public ResponseEntity<SuccessResponse<List<CouponResponse>>> getCouponsByChild(
+    @CurrentMember CurrentAuth currentAuth
+  ) {
+    List<CouponResponse> response = couponsQueryUseCase.getCouponsByChild(currentAuth.memberId());
+
+    return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPONS_RETRIEVED, response));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@GetMapping("/{childId}")
+	public ResponseEntity<SuccessResponse<List<CouponResponse>>> getCouponsByParent(
+		@CurrentMember CurrentAuth currentAuth,
+		@PathVariable Long childId
+	) {
+		List<CouponResponse> response = couponsQueryUseCase.getCouponsByParent(currentAuth.memberId(), childId);
 
 		return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPONS_RETRIEVED, response));
 	}

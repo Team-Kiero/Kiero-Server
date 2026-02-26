@@ -6,6 +6,6 @@ import java.util.Optional;
 import com.kiero.coupon.domain.Coupon;
 
 public interface CouponLoadPort {
-	List<Coupon> findAllOrderByPriceAsc();
+	List<Coupon> findAllByChildIdOrderByPriceAsc(Long childId);
 	Optional<Coupon> findById(Long couponId);
 }

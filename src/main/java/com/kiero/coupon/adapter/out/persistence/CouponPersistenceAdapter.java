@@ -18,8 +18,8 @@ public class CouponPersistenceAdapter implements CouponLoadPort, CouponPersisten
 	private final CouponRepository couponRepository;
 
 	@Override
-	public List<Coupon> findAllOrderByPriceAsc() {
-		return couponRepository.findAllByOrderByPriceAsc();
+	public List<Coupon> findAllByChildIdOrderByPriceAsc(Long childId) {
+		return couponRepository.findAllByChildIdOrderByPriceAsc(childId);
 	}
 
 	@Override
