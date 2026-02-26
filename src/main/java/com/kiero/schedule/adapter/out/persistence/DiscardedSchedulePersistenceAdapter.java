@@ -42,4 +42,9 @@ public class DiscardedSchedulePersistenceAdapter implements DiscardedSchedulePer
 	) {
 		return discardedScheduleRepository.findAllByChildIdAndDateBetween(childId, startDate, endDate);
 	}
+
+	@Override
+	public List<DiscardedSchedule> findAllByDate(LocalDate today) {
+		return discardedScheduleRepository.findAllByDate(today);
+	}
 }

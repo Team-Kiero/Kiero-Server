@@ -323,7 +323,13 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		DayOfWeek customDayOfWeek = DayOfWeek.valueOf(today.getDayOfWeek().name().substring(0, 3));
 
 		List<Schedule> schedules = scheduleRepeatDaysPersistencePort.findSchedulesToCreateTodayDetail(customDayOfWeek, today);
+
+		Set<Long> discardedSchedules = discardedSchedulePersistencePort.findAllByDate(today).stream()
+			.map(ds -> ds.getSchedule().getId())
+			.collect(Collectors.toSet());
+
 		List<ScheduleDetail> scheduleDetails = schedules.stream()
+			.filter(schedule -> !discardedSchedules.contains(schedule.getId()))
 			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
 			.toList();
 

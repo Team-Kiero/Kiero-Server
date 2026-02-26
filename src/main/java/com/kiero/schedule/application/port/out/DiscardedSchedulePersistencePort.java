@@ -20,4 +20,6 @@ public interface DiscardedSchedulePersistencePort {
 	List<DiscardedSchedule> findAllByChildIdAndDateBetween(
 		Long childId, LocalDate startDate, LocalDate endDate
 	);
+
+	List<DiscardedSchedule> findAllByDate(LocalDate today);
 }

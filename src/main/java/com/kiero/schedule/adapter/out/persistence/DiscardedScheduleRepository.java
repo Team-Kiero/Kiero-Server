@@ -48,4 +48,6 @@ public interface DiscardedScheduleRepository extends JpaRepository<DiscardedSche
 		@Param("endDate") LocalDate endDate
 	);
 
+	List<DiscardedSchedule> findAllByDate(LocalDate today);
+
 }
