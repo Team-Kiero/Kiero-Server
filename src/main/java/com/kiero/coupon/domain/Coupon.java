@@ -1,11 +1,16 @@
 package com.kiero.coupon.domain;
 
+import com.kiero.child.domain.Child;
+import com.kiero.parent.domain.Parent;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -21,8 +26,8 @@ import lombok.NoArgsConstructor;
 @Table(name = CouponTableConstants.TABLE_COUPON)
 public class Coupon {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = CouponTableConstants.COLUMN_ID)
 	private Long id;
 
@@ -32,10 +37,25 @@ public class Coupon {
 	@Column(name = CouponTableConstants.COLUMN_PRICE, nullable = false)
 	private int price;
 
-	public static Coupon create(String name, int price) {
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = CouponTableConstants.COLUMN_PARENT_ID, nullable = false)
+	private Parent parent;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = CouponTableConstants.COLUMN_CHILD_ID, nullable = false)
+	private Child child;
+
+	public static Coupon create(String name, int price, Parent parent, Child child) {
 		return Coupon.builder()
 			.name(name)
 			.price(price)
+			.parent(parent)
+			.child(child)
 			.build();
+	}
+
+	public void update(String name, int price) {
+		this.name = name;
+		this.price = price;
 	}
 }
