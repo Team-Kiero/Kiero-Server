@@ -1,14 +1,13 @@
 package com.kiero.coupon.application.service;
 
+import com.kiero.coupon.application.dto.CouponCreateRequest;
+import com.kiero.coupon.application.dto.CouponUpdateRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.coupon.application.dto.CouponResponse;
-import com.kiero.coupon.application.dto.CreateCouponCommand;
-import com.kiero.coupon.application.dto.DeleteCouponCommand;
-import com.kiero.coupon.application.dto.UpdateCouponCommand;
 import com.kiero.coupon.application.exception.CouponErrorCode;
 import com.kiero.coupon.application.port.in.CouponCommandUseCase;
 import com.kiero.coupon.application.port.out.CouponLoadPort;
@@ -33,44 +32,44 @@ public class CouponCommandService implements CouponCommandUseCase {
 
 	@Override
 	@Transactional
-	public CouponResponse create(CreateCouponCommand command) {
-		if (!parentChildAccessPort.existsByParentIdAndChildId(command.parentId(), command.childId())) {
+	public CouponResponse createCoupon(Long parentId, Long childId, CouponCreateRequest request) {
+		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
 			throw new KieroException(CouponErrorCode.NOT_YOUR_CHILD);
 		}
 
-		Parent parent = parentLoadPort.findById(command.parentId())
+		Parent parent = parentLoadPort.findById(parentId)
 			.orElseThrow(() -> new KieroException(CouponErrorCode.PARENT_NOT_FOUND));
 
-		Child child = childLoadPort.findById(command.childId())
+		Child child = childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(CouponErrorCode.CHILD_NOT_FOUND));
 
-		Coupon coupon = Coupon.create(command.name(), command.price(), parent, child);
+		Coupon coupon = Coupon.create(request.name(), request.price(), parent, child);
 
 		return CouponResponse.from(couponPersistencePort.save(coupon));
 	}
 
 	@Override
 	@Transactional
-	public CouponResponse update(UpdateCouponCommand command) {
-		Coupon coupon = couponLoadPort.findById(command.couponId())
+	public CouponResponse updateCoupon(Long parentId, Long couponId, CouponUpdateRequest request) {
+		Coupon coupon = couponLoadPort.findById(couponId)
 			.orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
 
-		if (!coupon.getParent().getId().equals(command.parentId())) {
+		if (!coupon.getParent().getId().equals(parentId)) {
 			throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
 		}
 
-		coupon.update(command.name(), command.price());
+		coupon.update(request.name(), request.price());
 
 		return CouponResponse.from(coupon);
 	}
 
 	@Override
 	@Transactional
-	public void delete(DeleteCouponCommand command) {
-		Coupon coupon = couponLoadPort.findById(command.couponId())
+	public void deleteCoupon(Long parentId, Long couponId) {
+		Coupon coupon = couponLoadPort.findById(couponId)
 			.orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
 
-		if (!coupon.getParent().getId().equals(command.parentId())) {
+		if (!coupon.getParent().getId().equals(parentId)) {
 			throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
 		}
 

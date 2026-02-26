@@ -16,10 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kiero.coupon.application.dto.CouponCreateRequest;
 import com.kiero.coupon.application.dto.CouponResponse;
 import com.kiero.coupon.application.dto.CouponUpdateRequest;
-import com.kiero.coupon.application.dto.CreateCouponCommand;
-import com.kiero.coupon.application.dto.DeleteCouponCommand;
 import com.kiero.coupon.application.dto.PurchaseCouponCommand;
-import com.kiero.coupon.application.dto.UpdateCouponCommand;
 import com.kiero.coupon.application.exception.CouponSuccessCode;
 import com.kiero.coupon.application.port.in.CouponCommandUseCase;
 import com.kiero.coupon.application.port.in.GetCouponsUseCase;
@@ -56,9 +53,7 @@ public class CouponController {
 		@PathVariable Long childId,
 		@Valid @RequestBody CouponCreateRequest request
 	) {
-		CouponResponse response = couponCommandUseCase.create(
-			new CreateCouponCommand(currentAuth.memberId(), childId, request.name(), request.price())
-		);
+		CouponResponse response = couponCommandUseCase.createCoupon(currentAuth.memberId(), childId, request);
 
 		return ResponseEntity
 			.status(CouponSuccessCode.COUPON_CREATED.getHttpStatus())
@@ -72,9 +67,7 @@ public class CouponController {
 		@PathVariable Long couponId,
 		@Valid @RequestBody CouponUpdateRequest request
 	) {
-		CouponResponse response = couponCommandUseCase.update(
-			new UpdateCouponCommand(currentAuth.memberId(), couponId, request.name(), request.price())
-		);
+		CouponResponse response = couponCommandUseCase.updateCoupon(currentAuth.memberId(), couponId, request);
 
 		return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPON_UPDATED, response));
 	}
@@ -85,7 +78,7 @@ public class CouponController {
 		@CurrentMember CurrentAuth currentAuth,
 		@PathVariable Long couponId
 	) {
-		couponCommandUseCase.delete(new DeleteCouponCommand(currentAuth.memberId(), couponId));
+		couponCommandUseCase.deleteCoupon(currentAuth.memberId(), couponId);
 
 		return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPON_DELETED));
 	}
