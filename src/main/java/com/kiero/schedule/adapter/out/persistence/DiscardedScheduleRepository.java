@@ -20,7 +20,7 @@ public interface DiscardedScheduleRepository extends JpaRepository<DiscardedSche
 		where ds.schedule.child.id = :childId
 		  and ds.dayOfWeek in :dayOfWeeks
 		""")
-	List<DiscardedSchedule> findAllByChildIdAndDateGreaterThanEqualAndDayOfWeekIn(
+	List<DiscardedSchedule> findAllByChildIdAndDayOfWeekIn(
 		@Param("childId") Long childId,
 		@Param("dayOfWeeks") List<DayOfWeek> dayOfWeeks
 	);
@@ -31,7 +31,7 @@ public interface DiscardedScheduleRepository extends JpaRepository<DiscardedSche
 		where ds.schedule.child.id = :childId
 		  and ds.date in :dates
 		""")
-	List<DiscardedSchedule> findAllByChildIdAndDateGreaterThanEqualAndDateIn(
+	List<DiscardedSchedule> findAllByChildIdAndDateIn(
 		@Param("childId") Long childId,
 		@Param("dates") List<LocalDate> dates
 	);

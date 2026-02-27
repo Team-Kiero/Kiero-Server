@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -79,6 +80,7 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 
 	List<ScheduleDetail> findAllByScheduleChildIdAndDateGreaterThanEqual(Long childId, LocalDate date);
 
+	@Modifying
 	void deleteByScheduleIdAndDate(Long scheduleId, LocalDate date);
 
 	Optional<ScheduleDetail> findByScheduleIdAndDate(Long scheduleId, LocalDate date);

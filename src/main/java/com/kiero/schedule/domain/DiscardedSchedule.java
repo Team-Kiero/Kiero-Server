@@ -32,14 +32,14 @@ public class DiscardedSchedule {
 	@Id
 	@Column(name = DiscardedScheduleTableConstants.COLUMN_ID)
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	Long id;
+	private Long id;
 
 	@Column(name = DiscardedScheduleTableConstants.COLUMN_DATE, nullable = false)
-	LocalDate date;
+	private LocalDate date;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = DiscardedScheduleTableConstants.COLUMN_DAY_OF_WEEK, nullable = false)
-	DayOfWeek dayOfWeek;
+	private DayOfWeek dayOfWeek;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = DiscardedScheduleTableConstants.COLUMN_SCHEDULE_ID, nullable = false)

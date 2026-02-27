@@ -741,7 +741,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		boolean conflictWithNormal = normalsFromToday.stream()
 			.filter(sd -> targetDays.contains(DayOfWeek.from(sd.getDate().getDayOfWeek())))
 			.filter(sd -> !discardedKeys.contains(new DiscardKey(sd.getSchedule().getId(), sd.getDate())))
-			.filter(s -> !s.getId().equals(excludeScheduleId))
+			.filter(sd -> !sd.getSchedule().getId().equals(excludeScheduleId))
 			.filter(sd -> selectedDate == null || sd.getDate().isAfter(selectedDate))
 			.anyMatch(sd -> isTimeOverlapped(
 				startTime, endTime,

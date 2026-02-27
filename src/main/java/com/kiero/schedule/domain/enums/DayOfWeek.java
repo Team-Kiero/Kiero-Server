@@ -1,8 +1,5 @@
 package com.kiero.schedule.domain.enums;
 
-import com.kiero.global.exception.KieroException;
-import com.kiero.schedule.application.exception.ScheduleErrorCode;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -15,8 +12,7 @@ public enum DayOfWeek {
 	THU("목요일"),
 	FRI("금요일"),
 	SAT("토요일"),
-	SUN("일요일")
-	;
+	SUN("일요일");
 
 	private final String dayOfWeek;
 
@@ -25,15 +21,14 @@ public enum DayOfWeek {
 	}
 
 	public static java.time.DayOfWeek toJavaDayOfWeek(DayOfWeek dayOfWeek) {
-		switch (dayOfWeek) {
-			case MON -> { return java.time.DayOfWeek.MONDAY; }
-			case TUE -> { return java.time.DayOfWeek.TUESDAY; }
-			case WED -> { return java.time.DayOfWeek.WEDNESDAY; }
-			case THU -> { return java.time.DayOfWeek.THURSDAY; }
-			case FRI -> { return java.time.DayOfWeek.FRIDAY; }
-			case SAT -> { return java.time.DayOfWeek.SATURDAY; }
-			case SUN -> { return java.time.DayOfWeek.SUNDAY; }
-		}
-		throw new KieroException(ScheduleErrorCode.INTERNAL_SERVER_ERROR);
+		return switch (dayOfWeek) {
+			case MON -> java.time.DayOfWeek.MONDAY;
+			case TUE -> java.time.DayOfWeek.TUESDAY;
+			case WED -> java.time.DayOfWeek.WEDNESDAY;
+			case THU -> java.time.DayOfWeek.THURSDAY;
+			case FRI -> java.time.DayOfWeek.FRIDAY;
+			case SAT -> java.time.DayOfWeek.SATURDAY;
+			case SUN -> java.time.DayOfWeek.SUNDAY;
+		};
 	}
 }

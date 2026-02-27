@@ -26,14 +26,14 @@ public class DiscardedSchedulePersistenceAdapter implements DiscardedSchedulePer
 	public List<DiscardedSchedule> findAllByChildIdAndDayOfWeekIn(
 		Long childId, List<DayOfWeek> dayOfWeeks
 	) {
-		return discardedScheduleRepository.findAllByChildIdAndDateGreaterThanEqualAndDayOfWeekIn(childId, dayOfWeeks);
+		return discardedScheduleRepository.findAllByChildIdAndDayOfWeekIn(childId, dayOfWeeks);
 	}
 
 	@Override
 	public List<DiscardedSchedule> findAllByChildIdAndDateIn(
 		Long childId, List<LocalDate> dates
 	) {
-		return discardedScheduleRepository.findAllByChildIdAndDateGreaterThanEqualAndDateIn(childId, dates);
+		return discardedScheduleRepository.findAllByChildIdAndDateIn(childId, dates);
 	}
 
 	@Override
