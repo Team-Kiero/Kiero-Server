@@ -647,6 +647,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 						recalculateTodayStoneTypes(childId);
 						isEffectsToChildSchedule = true;
 					}
+				} else {
+					ScheduleDetail scheduleDetail = ScheduleDetail.create(selectedDate, null, null, ScheduleStatus.PENDING, null, newSchedule);
+					scheduleDetailPersistencePort.save(scheduleDetail);
 				}
 
 				DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
