@@ -14,7 +14,7 @@ public record ScheduleAddRequest(
 	@NotNull LocalTime startTime,
 	@NotNull LocalTime endTime,
 	@NotNull ScheduleColor scheduleColor,
-	LocalDate repeatStartDate,
+	LocalDate firstOrderDate,
 	String dayOfWeek,
 	String dates
 ) {

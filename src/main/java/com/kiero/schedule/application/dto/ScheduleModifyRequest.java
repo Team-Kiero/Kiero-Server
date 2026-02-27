@@ -7,7 +7,7 @@ import com.kiero.schedule.domain.enums.ScheduleColor;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record ScheduleUpdateRequest(
+public record ScheduleModifyRequest(
 	@Size(max = 10) @NotNull String name,
 	@NotNull Boolean isRecurring,
 	@NotNull LocalTime startTime,
@@ -15,6 +15,6 @@ public record ScheduleUpdateRequest(
 	@NotNull ScheduleColor scheduleColor,
 	String dayOfWeek,
 	String dates,
-	Boolean includeFollowing
+	Boolean isIncludeFollowing
 ) {
 }

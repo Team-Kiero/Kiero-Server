@@ -21,7 +21,7 @@ import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
 import com.kiero.schedule.application.dto.ScheduleTabResponse;
-import com.kiero.schedule.application.dto.ScheduleUpdateRequest;
+import com.kiero.schedule.application.dto.ScheduleModifyRequest;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleSuccessCode;
 import com.kiero.schedule.application.port.in.ScheduleCommandUseCase;
@@ -123,7 +123,7 @@ public class ScheduleController {
 	public ResponseEntity<SuccessResponse<Void>> updateSchedule(
 		@PathVariable("scheduleId") Long scheduleId,
 		@RequestParam("selectedDate") LocalDate selectedDate,
-		@RequestBody ScheduleUpdateRequest request,
+		@RequestBody ScheduleModifyRequest request,
 		@CurrentMember CurrentAuth currentAuth
 	) {
 		scheduleCommandUseCase.updateSchedule(currentAuth.memberId(), scheduleId, selectedDate, request);
