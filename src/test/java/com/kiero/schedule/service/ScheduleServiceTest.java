@@ -1,1677 +1,1677 @@
-package com.kiero.schedule.service;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.anyInt;
-import static org.mockito.BDDMockito.eq;
-import static org.mockito.BDDMockito.*;
-
-import java.time.Clock;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.util.List;
-import java.util.Optional;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import com.kiero.child.application.exception.ChildErrorCode;
-import com.kiero.child.application.port.out.ChildLoadPort;
-import com.kiero.child.domain.Child;
-import com.kiero.global.exception.KieroException;
-import com.kiero.parent.application.exception.ParentErrorCode;
-import com.kiero.parent.application.port.out.ParentChildAccessPort;
-import com.kiero.parent.application.port.out.ParentLoadPort;
-import com.kiero.parent.domain.Parent;
-import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
-import com.kiero.schedule.application.dto.FireLitEvent;
-import com.kiero.schedule.application.dto.FireLitResponse;
-import com.kiero.schedule.application.dto.NormalScheduleDto;
-import com.kiero.schedule.application.dto.NowScheduleCompleteEvent;
-import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
-import com.kiero.schedule.application.dto.RecurringScheduleDto;
-import com.kiero.schedule.application.dto.ScheduleAddRequest;
-import com.kiero.schedule.application.dto.ScheduleTabResponse;
-import com.kiero.schedule.application.dto.TodayScheduleResponse;
-import com.kiero.schedule.application.exception.ScheduleErrorCode;
-import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
-import com.kiero.schedule.application.port.out.ScheduleEventPort;
-import com.kiero.schedule.application.port.out.SchedulePersistencePort;
-import com.kiero.schedule.application.port.out.ScheduleRepeatDaysPersistencePort;
-import com.kiero.schedule.application.service.ScheduleCommandService;
-import com.kiero.schedule.application.service.ScheduleQueryService;
-import com.kiero.schedule.domain.Schedule;
-import com.kiero.schedule.domain.ScheduleDetail;
-import com.kiero.schedule.domain.ScheduleRepeatDays;
-import com.kiero.schedule.domain.enums.DayOfWeek;
-import com.kiero.schedule.domain.enums.ScheduleColor;
-import com.kiero.schedule.domain.enums.ScheduleStatus;
-import com.kiero.schedule.domain.enums.StoneType;
-import com.kiero.schedule.application.service.resolver.TodayScheduleStatus;
-
-@ExtendWith(MockitoExtension.class)
-public class ScheduleServiceTest {
-
-	@Mock
-	ParentLoadPort parentLoadPort;
-	@Mock
-	ChildLoadPort childLoadPort;
-	@Mock
-	ParentChildAccessPort parentChildAccessPort;
-	@Mock
-	SchedulePersistencePort schedulePersistencePort;
-	@Mock
-	ScheduleRepeatDaysPersistencePort scheduleRepeatDaysPersistencePort;
-	@Mock
-	ScheduleDetailPersistencePort scheduleDetailPersistencePort;
-	@Mock
-	ScheduleEventPort scheduleEventPort;
-
-	@InjectMocks
-	ScheduleQueryService scheduleQueryService;
-
-	@InjectMocks
-	ScheduleCommandService scheduleCommandService;
-
-	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
-	LocalDate today = LocalDate.of(2026, 1, 15);
-
-	Clock fixedClock = Clock.fixed(
-		LocalDateTime.of(today, LocalTime.of(11, 30))
-			.atZone(ZoneId.of("Asia/Seoul"))
-			.toInstant(),
-		ZoneId.of("Asia/Seoul")
-	);
-
-	// =========================
-	// AddSchedule
-	// =========================
-	@Nested
-	@DisplayName("addSchedule")
-	class AddSchedule {
-
-		@Test
-		void 정상이면_저장하고_반복일정이면_scheduleRepeatDays_저장() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Parent parent = mock(Parent.class);
-			Child child = mock(Child.class);
-			Schedule savedSchedule = mock(Schedule.class);
-
-			ScheduleAddRequest req = new ScheduleAddRequest("첫번째 일정", true, LocalTime.of(11, 0), LocalTime.of(11, 30),
-				ScheduleColor.SCHEDULE1,
-				"MON, TUE", null);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
-
-			given(child.getId()).willReturn(childId);
-			given(scheduleRepeatDaysPersistencePort
-				.findSchedulesByChildIdAndDayOfWeeks(anyLong(), anyList()))
-				.willReturn(List.of());
-
-			given(scheduleDetailPersistencePort
-				.findAllByScheduleChildIdAndDateGreaterThanEqual(anyLong(), any(LocalDate.class)))
-				.willReturn(List.of());
-
-			given(schedulePersistencePort.save(any(Schedule.class))).willReturn(savedSchedule);
-
-			// when
-			scheduleCommandService.addSchedule(req, parentId, childId);
-
-			// then 1: 일정 저장이 호출됨
-			verify(schedulePersistencePort, times(1)).save(any(Schedule.class));
-
-			// then 2: 반복 일정이면 repeatDays 저장이 호출됨
-			verify(scheduleRepeatDaysPersistencePort, times(1)).saveAll(anyList());
-
-			// then 3: 일정 디테일 저장은 호출되지 않음
-			verify(scheduleDetailPersistencePort, never()).saveAll(anyList());
-		}
-
-		@Test
-		void 정상이면_저장하고_단일일정이면_scheduleDetail_저장() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Parent parent = mock(Parent.class);
-			Child child = mock(Child.class);
-			Schedule savedSchedule = mock(Schedule.class);
-
-			ScheduleAddRequest req = new ScheduleAddRequest("첫번째 일정", false, LocalTime.of(11, 0), LocalTime.of(11, 30),
-				ScheduleColor.SCHEDULE1,
-				null, "2026-01-16");
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
-
-			given(schedulePersistencePort.save(any(Schedule.class))).willReturn(savedSchedule);
-
-			given(child.getId()).willReturn(childId);
-			given(scheduleDetailPersistencePort
-				.findByDateInAndChildId(anyList(), eq(childId)))
-				.willReturn(List.of());
-
-			given(scheduleRepeatDaysPersistencePort
-				.findSchedulesByChildIdAndDayOfWeekIn(anyLong(), anyList()))
-				.willReturn(List.of());
-
-			// when
-			scheduleCommandService.addSchedule(req, parentId, childId);
-
-			// then
-			verify(schedulePersistencePort).save(any(Schedule.class));
-			verify(scheduleDetailPersistencePort).saveAll(anyList());
-			verify(scheduleRepeatDaysPersistencePort, never()).saveAll(any());
-		}
-
-		@Test
-		void 부모가_없으면_예외() {
-			// given
-			Long parentId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			ScheduleAddRequest req = new ScheduleAddRequest(null, null, null, null, null, null, null);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.empty());
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, null))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ParentErrorCode.PARENT_NOT_FOUND);
-		}
-
-		@Test
-		void 아이가_없으면_예외() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Parent parent = mock(Parent.class);
-
-			ScheduleAddRequest req = new ScheduleAddRequest(null, null, null, null, null, null, null);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ChildErrorCode.CHILD_NOT_FOUND);
-		}
-
-		@Test
-		void 자신의_아이가_아니면_접근제한() {
-			// given
-			Long parentId = 1L;
-			Long otherChildId = 100L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Parent parent = mock(Parent.class);
-			Child otherChild = mock(Child.class);
-
-			ScheduleAddRequest req = new ScheduleAddRequest(null, null, null, null, null, null, null);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(otherChild));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, otherChildId)).willReturn(false);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, otherChildId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
-		}
-
-		@Test
-		void 요청_데이터의_dayOfWeek_data_모두_입력되었으면_예외() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Parent parent = mock(Parent.class);
-			Child child = mock(Child.class);
-
-			ScheduleAddRequest req = new ScheduleAddRequest(null, true, null, null, null,
-				"MON, TUE", "2026-01-01, 2026-01-02");
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.DAY_OF_WEEK_XOR_DATE_REQUIRED);
-		}
-
-		@Test
-		void 반복일정인데_dayOfWeek가_입력되지_않았으면_예외() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Parent parent = mock(Parent.class);
-			Child child = mock(Child.class);
-
-			ScheduleAddRequest req = new ScheduleAddRequest(null, true, null, null, null, null, null);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE);
-		}
-
-		@Test
-		void 단일일정인데_date가_입력되지_않았으면_예외() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Parent parent = mock(Parent.class);
-			Child child = mock(Child.class);
-
-			ScheduleAddRequest req = new ScheduleAddRequest(null, false, null, null, null, null, null);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.DATE_NOT_NULLABLE_WHEN_IS_RECURRING_IS_FALSE);
-		}
-
-		@Test
-		void 반복일정일때_요청_데이터의_dayOfWeek_형식이_맞지않으면_예외() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Parent parent = mock(Parent.class);
-			Child child = mock(Child.class);
-
-			ScheduleAddRequest req = new ScheduleAddRequest(null, true, null, null, null, "월요일, TUE/ 수", null);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.INVALID_DAY_OF_WEEK);
-		}
-	}
-
-	// =========================
-	// CompleteNowSchedule
-	// =========================
-	@Nested
-	@DisplayName("completeNowSchedule")
-	class CompleteNowSchedule {
-		@Test
-		void 정상일때_VERIFIED로_변경되고_이벤트_발행() {
-			// given
-			Long childId = 1L;
-			Long scheduleDetailId = 10L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-			NowScheduleCompleteRequest req = new NowScheduleCompleteRequest("http://test-img.jpeg");
-
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			Schedule schedule = mock(Schedule.class);
-			Child child = mock(Child.class);
-
-			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(schedule.getChild()).willReturn(child);
-			given(child.getId()).willReturn(childId);
-
-			given(sd.getStoneUsedAt()).willReturn(null);
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
-
-			// when
-			scheduleCommandService.completeNowSchedule(childId, scheduleDetailId, req);
-
-			// then
-			verify(sd).changeScheduleStatus(ScheduleStatus.VERIFIED);
-			verify(sd).changeImageUrl("http://test-img.jpeg");
-
-			verify(scheduleEventPort, times(1)).publish(any(NowScheduleCompleteEvent.class));
-		}
-
-		@Test
-		void childId가_다르면_접근거부_예외() {
-			// given
-			Long childId = 1L;
-			Long otherChildId = 2L;
-			Long scheduleDetailId = 10L;
-
-			NowScheduleCompleteRequest req = new NowScheduleCompleteRequest("http://test-img.jpeg");
-
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			Schedule schedule = mock(Schedule.class);
-			Child child = mock(Child.class);
-
-			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(schedule.getChild()).willReturn(child);
-			given(child.getId()).willReturn(childId);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.completeNowSchedule(otherChildId, scheduleDetailId, req))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
-
-			verify(sd, never()).changeScheduleStatus(ScheduleStatus.VERIFIED);
-			verify(sd, never()).changeImageUrl(req.imageUrl());
-			verify(scheduleEventPort, never()).publish(any(NowScheduleCompleteEvent.class));
-		}
-
-		@Test
-		void 일정이_이미_VERIFIED면_인증완료_예외() {
-			// given
-			Long childId = 1L;
-			Long scheduleDetailId = 10L;
-
-			NowScheduleCompleteRequest req = new NowScheduleCompleteRequest("http://test-img.jpeg");
-
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			Schedule schedule = mock(Schedule.class);
-			Child child = mock(Child.class);
-
-			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(schedule.getChild()).willReturn(child);
-			given(child.getId()).willReturn(childId);
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.completeNowSchedule(childId, scheduleDetailId, req))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.SCHEDULE_ALREADY_COMPLETED);
-
-			verify(sd, never()).changeScheduleStatus(ScheduleStatus.VERIFIED);
-			verify(sd, never()).changeImageUrl(req.imageUrl());
-			verify(scheduleEventPort, never()).publish(any(NowScheduleCompleteEvent.class));
-		}
-
-		@Test
-		void 일정이_이미_COMPLETED면_인증완료_예외() {
-			// given
-			Long childId = 1L;
-			Long scheduleDetailId = 10L;
-
-			NowScheduleCompleteRequest req = new NowScheduleCompleteRequest("http://test-img.jpeg");
-
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			Schedule schedule = mock(Schedule.class);
-			Child child = mock(Child.class);
-
-			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(schedule.getChild()).willReturn(child);
-			given(child.getId()).willReturn(childId);
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.COMPLETED);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.completeNowSchedule(childId, scheduleDetailId, req))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.SCHEDULE_ALREADY_COMPLETED);
-
-			verify(sd, never()).changeScheduleStatus(ScheduleStatus.VERIFIED);
-			verify(sd, never()).changeImageUrl(req.imageUrl());
-			verify(scheduleEventPort, never()).publish(any(NowScheduleCompleteEvent.class));
-		}
-	}
-
-	// =========================
-	// FireLit
-	// =========================
-	@Nested
-	@DisplayName("fireLit")
-	class FireLit {
-
-		private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
-		/**
-		 * alreadyUsed 예외 케이스용: stoneUsedAt만 있으면 됨 (status/stoneType/schedule 전부 불필요)
-		 */
-		private ScheduleDetail mockDetailOnlyStoneUsedAt(LocalDateTime stoneUsedAt) {
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			given(sd.getStoneUsedAt()).willReturn(stoneUsedAt);
-			return sd;
-		}
-
-		/**
-		 * 정상 흐름용: filterTodayCreatedSchedules 통과를 위해 schedule.createdAt/startTime 필요
-		 * + status는 totalSchedule/gotStones 계산에 쓰이므로 필요
-		 * + stoneType은 VERIFIED/COMPLETED일 때만 실제로 호출되므로 해당 상태일 때만 스텁
-		 */
-		private ScheduleDetail mockDetailForNormalFlow(
-			LocalDate today,
-			ScheduleStatus status,
-			StoneType stoneTypeOrNull,
-			LocalDateTime stoneUsedAt
-		) {
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-
-			Schedule schedule = mock(Schedule.class);
-			given(schedule.getCreatedAt()).willReturn(today.atStartOfDay());
-			given(schedule.getStartTime()).willReturn(LocalTime.of(23, 59));
-			given(sd.getSchedule()).willReturn(schedule);
-
-			given(sd.getScheduleStatus()).willReturn(status);
-			given(sd.getStoneUsedAt()).willReturn(stoneUsedAt);
-
-			// stoneType은 VERIFIED/COMPLETED만 호출될 수 있으니 그때만 스텁
-			if (stoneTypeOrNull != null) {
-				given(sd.getStoneType()).willReturn(stoneTypeOrNull);
-			}
-
-			return sd;
-		}
-
-		@Test
-		void 정상일때_모든_scheduleDetail에_stoneUsedAt이_세팅되고_이벤트_발행() {
-			// given
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-			Child child = mock(Child.class);
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-
-			// PENDING은 stoneType 호출 안 될 수 있으니 null
-			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.PENDING, null, null);
-			// COMPLETED는 gotStones에 들어가므로 stoneType 필요
-			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.COMPLETED, StoneType.GRIT, null);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2));
-
-			// when
-			FireLitResponse response = scheduleCommandService.fireLit(childId);
-
-			// then 1: stoneUsedAt 세팅
-			verify(sd1).changeStoneUsedAt(any(LocalDateTime.class));
-			verify(sd2).changeStoneUsedAt(any(LocalDateTime.class));
-
-			// then 2: 이벤트 발행
-			verify(scheduleEventPort, times(1)).publish(any(FireLitEvent.class));
-
-			// then 3: VERIFIED or COMPLETED 일정에 대한 stone만 획득
-			assertThat(response.gotStones()).containsExactly(StoneType.GRIT);
-		}
-
-		@Test
-		void 스킵제외_전체일정이_완료면_코인10_지급되고_earnedCoinAmount가_10() {
-			// given
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-			Child child = mock(Child.class);
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-
-			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.VERIFIED, StoneType.GRIT, null);
-			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.COMPLETED, StoneType.COURAGE, null);
-			// SKIPPED는 stoneType 호출 안 될 수 있으니 null
-			ScheduleDetail skippedSd = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(
-				List.of(sd1, sd2, skippedSd));
-
-			// when
-			FireLitResponse response = scheduleCommandService.fireLit(childId);
-
-			// then 1: 코인 지급
-			verify(child, times(1)).addCoin(10);
-			assertThat(response.earnedCoinAmount()).isEqualTo(10);
-
-			// then 2: 이벤트 발행 amount 검증
-			ArgumentCaptor<FireLitEvent> captor = ArgumentCaptor.forClass(FireLitEvent.class);
-			verify(scheduleEventPort).publish(captor.capture());
-			assertThat(captor.getValue().amount()).isEqualTo(10);
-		}
-
-		@Test
-		void 스킵제외_하나라도_미완료면_코인이_지급되지_않고_이벤트_발행() {
-			// given
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-			Child child = mock(Child.class);
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-
-			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.PENDING, null, null);
-			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.COMPLETED, StoneType.COURAGE, null);
-			ScheduleDetail sd3 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2, sd3));
-
-			// when
-			FireLitResponse response = scheduleCommandService.fireLit(childId);
-
-			// then 1: 코인 미지급
-			verify(child, never()).addCoin(anyInt());
-			assertThat(response.earnedCoinAmount()).isEqualTo(0);
-
-			// then 2: 이벤트 발행 amount=0
-			ArgumentCaptor<FireLitEvent> captor = ArgumentCaptor.forClass(FireLitEvent.class);
-			verify(scheduleEventPort).publish(captor.capture());
-			assertThat(captor.getValue().amount()).isEqualTo(0);
-		}
-
-		@Test
-		void 스킵제외_일정이_없으면_코인이_지급되지_않고_이벤트_발행() {
-			// given
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-			Child child = mock(Child.class);
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-
-			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
-			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
-			ScheduleDetail sd3 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2, sd3));
-
-			// when
-			FireLitResponse response = scheduleCommandService.fireLit(childId);
-
-			// then 1: 코인 미지급
-			verify(child, never()).addCoin(anyInt());
-			assertThat(response.earnedCoinAmount()).isEqualTo(0);
-
-			// then 2: 이벤트 발행 amount=0
-			ArgumentCaptor<FireLitEvent> captor = ArgumentCaptor.forClass(FireLitEvent.class);
-			verify(scheduleEventPort).publish(captor.capture());
-			assertThat(captor.getValue().amount()).isEqualTo(0);
-		}
-
-		@Test
-		void 아이가_없으면_예외() {
-			// given
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.fireLit(childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ChildErrorCode.CHILD_NOT_FOUND);
-
-			verify(scheduleEventPort, never()).publish(any());
-		}
-
-		@Test
-		void 이미_불피우기_완료된_일정이_있으면_예외() {
-			// given
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Child child = mock(Child.class);
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-
-			// stoneUsedAt만 있으면 earliestStoneUsedAt != null 로 예외 발생
-			ScheduleDetail alreadyUsed = mockDetailOnlyStoneUsedAt(LocalDateTime.of(2026, 1, 14, 9, 0));
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(alreadyUsed));
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.fireLit(childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETE);
-
-			verify(scheduleEventPort, never()).publish(any());
-			verify(alreadyUsed, never()).changeStoneUsedAt(any());
-		}
-	}
-
-	// =========================
-	// getDefaultSchedule
-	// =========================
-	@Nested
-	@DisplayName("getDefaultSchedule")
-	class GetDefaultSchedule {
-		@Test
-		void 정상일때_기본설정값을_반환() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			Parent parent = mock(Parent.class);
-			Child child = mock(Child.class);
-			Schedule schedule = mock(Schedule.class);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
-
-			given(schedulePersistencePort.findFirstByChildIdOrderByCreatedAtDesc(childId)).willReturn(Optional.of(schedule));
-			given(schedule.getScheduleColor()).willReturn(ScheduleColor.SCHEDULE1);
-
-			// when
-			DefaultScheduleContentResponse response = scheduleQueryService.getDefaultSchedule(parentId, childId);
-
-			// then
-			assertThat(response.scheduleColor()).isEqualTo(ScheduleColor.SCHEDULE2);
-			assertThat(response.colorCode()).isEqualTo(ScheduleColor.SCHEDULE2.getColorCode());
-		}
-
-		@Test
-		void 부모가_없으면_예외() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.empty());
-
-			// when & then
-			assertThatThrownBy(() -> scheduleQueryService.getDefaultSchedule(parentId, childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ParentErrorCode.PARENT_NOT_FOUND);
-		}
-
-		@Test
-		void 아이가_없으면_예외() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			Parent parent = mock(Parent.class);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
-
-			// when & then
-			assertThatThrownBy(() -> scheduleQueryService.getDefaultSchedule(parentId, childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ChildErrorCode.CHILD_NOT_FOUND);
-		}
-
-		@Test
-		void 자신의_아이가_아니면_접근제한() {
-			// given
-			Long parentId = 1L;
-			Long otherChildId = 100L;
-
-			Parent parent = mock(Parent.class);
-			Child otherChild = mock(Child.class);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(otherChild));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, otherChildId)).willReturn(false);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleQueryService.getDefaultSchedule(parentId, otherChildId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
-		}
-	}
-
-	// =========================
-	// SkipNowSchedule
-	// =========================
-	@Nested
-	@DisplayName("skipNowSchedule")
-	class SkipNowSchedule {
-		@Test
-		void 정상이면_pending인_일정을_skipped로_변경() {
-			// given
-			Long childId = 1L;
-			Long scheduleDetailId = 10L;
-
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			Schedule schedule = mock(Schedule.class);
-			Child child = mock(Child.class);
-
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(schedule.getChild()).willReturn(child);
-			given(child.getId()).willReturn(childId);
-
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
-
-			// when
-			scheduleCommandService.skipNowSchedule(childId, scheduleDetailId);
-
-			// then
-			verify(sd).changeScheduleStatus(ScheduleStatus.SKIPPED);
-		}
-
-		@Test
-		void 정상이면_verified인_일정을_complete로_변경() {
-			// given
-			Long childId = 1L;
-			Long scheduleDetailId = 10L;
-
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			Schedule schedule = mock(Schedule.class);
-			Child child = mock(Child.class);
-
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(schedule.getChild()).willReturn(child);
-			given(child.getId()).willReturn(childId);
-
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
-
-			// when
-			scheduleCommandService.skipNowSchedule(childId, scheduleDetailId);
-
-			// then
-			verify(sd).changeScheduleStatus(ScheduleStatus.COMPLETED);
-		}
-
-		@Test
-		void 아이가_없으면_예외() {
-			// given
-			Long childId = 1L;
-			Long scheduleDetailId = 10L;
-
-			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.skipNowSchedule(childId, scheduleDetailId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ChildErrorCode.CHILD_NOT_FOUND);
-		}
-
-		@Test
-		void scheduleDetail이_존재하지_않으면_예외() {
-			// given
-			Long childId = 1L;
-			Long sdId = 10L;
-
-			Child child = mock(Child.class);
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(scheduleDetailPersistencePort.findById(sdId)).willReturn(Optional.empty());
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.skipNowSchedule(childId, sdId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.SCHEDULE_NOT_FOUND);
-		}
-
-		@Test
-		void childId가_다르면_접근거부_예외() {
-			// given
-			Long childId = 1L;
-			Long otherChildId = 2L;
-			Long scheduleDetailId = 10L;
-
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			Schedule schedule = mock(Schedule.class);
-			Child child = mock(Child.class);
-
-			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(child));
-			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(schedule.getChild()).willReturn(child);
-			given(child.getId()).willReturn(childId);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.skipNowSchedule(otherChildId, scheduleDetailId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
-
-			verify(sd, never()).changeScheduleStatus(any());
-		}
-
-		@Test
-		void 일정상태가_pending이거나_verified가_아니면_예외() {
-			// given
-			Long childId = 1L;
-			Long scheduleDetailId = 10L;
-
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			Schedule schedule = mock(Schedule.class);
-			Child child = mock(Child.class);
-
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(schedule.getChild()).willReturn(child);
-			given(child.getId()).willReturn(childId);
-
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleCommandService.skipNowSchedule(childId, scheduleDetailId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.SCHEDULE_COULD_NOT_BE_SKIPPED);
-		}
-	}
-
-	@Nested
-	@DisplayName("getSchedules")
-	class GetSchedules {
-		@Test
-		void 부모가_없으면_예외() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.empty());
-
-			// when & then
-			assertThatThrownBy(() -> scheduleQueryService.getSchedules(null, null, parentId, childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ParentErrorCode.PARENT_NOT_FOUND);
-		}
-
-		@Test
-		void 아이가_없으면_예외() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			Parent parent = mock(Parent.class);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
-
-			// when & then
-			assertThatThrownBy(() -> scheduleQueryService.getSchedules(null, null, parentId, childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ChildErrorCode.CHILD_NOT_FOUND);
-		}
-
-		@Test
-		void 자신의_아이가_아니면_접근제한() {
-			// given
-			Long parentId = 1L;
-			Long otherChildId = 100L;
-
-			Parent parent = mock(Parent.class);
-			Child otherChild = mock(Child.class);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(otherChild));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, otherChildId)).willReturn(false);
-
-			// when & then
-			assertThatThrownBy(() -> scheduleQueryService.getSchedules(null, null, parentId, otherChildId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
-		}
-
-		@Test
-		void startDate와_endDate의_순서가_유효하지_않으면_예외() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			LocalDate startDate = LocalDate.of(2026, 1, 1);
-			LocalDate endDate = LocalDate.of(2000, 1, 31);
-
-			Parent parent = mock(Parent.class);
-			Child child = mock(Child.class);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
-
-			// when & then
-			assertThatThrownBy(
-				() -> scheduleQueryService.getSchedules(startDate, endDate, parentId, childId))
-				.isInstanceOf(KieroException.class)
-				.extracting(e -> ((KieroException)e).getBaseCode())
-				.isEqualTo(ScheduleErrorCode.INVALID_DATE_DURATION);
-		}
-
-		@Test
-		void 정상이고_해당하는_일정이_없으면_빈_응답을_반환() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-
-			LocalDate startDate = LocalDate.of(2026, 1, 1);
-			LocalDate endDate = LocalDate.of(2026, 1, 31);
-
-			Parent parent = mock(Parent.class);
-			Child child = mock(Child.class);
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
-			given(schedulePersistencePort.findAllByChildId(childId)).willReturn(List.of());
-
-			// when
-			ScheduleTabResponse response = scheduleQueryService.getSchedules(startDate, endDate, parentId, childId);
-
-			// then
-			assertThat(response.recurringSchedules()).isEqualTo(List.of());
-			assertThat(response.normalSchedules()).isEqualTo(List.of());
-		}
-
-		@Test
-		void 정상이고_반복일정이_있으면_recurringScheduleDto_채우기() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleQueryService, "clock", fixedClock);
-
-			LocalDate startDate = LocalDate.of(2026, 1, 1);
-			LocalDate endDate = LocalDate.of(2026, 1, 31);
-
-			Parent parent = mock(Parent.class);
-			Child child = mock(Child.class);
-
-			Schedule schedule = mock(Schedule.class);
-			Long scheduleId = 100L;
-
-			ScheduleRepeatDays rdMon = mock(ScheduleRepeatDays.class);
-			ScheduleRepeatDays rdWed = mock(ScheduleRepeatDays.class);
-
-			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(2025, 12, 29, 10, 0));
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
-
-			given(schedulePersistencePort.findAllByChildId(childId)).willReturn(List.of(schedule));
-
-			given(schedule.getId()).willReturn(scheduleId);
-			given(schedule.isRecurring()).willReturn(true);
-
-			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
-			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 30));
-			given(schedule.getName()).willReturn("첫번째 일정");
-			given(schedule.getScheduleColor()).willReturn(ScheduleColor.SCHEDULE1);
-
-			// 불피우기 여부
-			given(scheduleDetailPersistencePort.existsStoneUsedToday(eq(List.of(scheduleId)), any(LocalDate.class)))
-				.willReturn(false);
-
-			// repeatDays -> scheduleId 매핑되도록 세팅
-			given(rdMon.getSchedule()).willReturn(schedule);
-			given(rdWed.getSchedule()).willReturn(schedule);
-			given(rdMon.getDayOfWeek()).willReturn(DayOfWeek.MON);
-			given(rdWed.getDayOfWeek()).willReturn(DayOfWeek.WED);
-
-			given(scheduleRepeatDaysPersistencePort.findAllByScheduleIdsIn(eq(List.of(scheduleId))))
-				.willReturn(List.of(rdMon, rdWed));
-
-			// when
-			ScheduleTabResponse response = scheduleQueryService.getSchedules(startDate, endDate, parentId, childId);
-
-			// then
-			assertThat(response.isFireLit()).isFalse();
-			assertThat(response.recurringSchedules()).hasSize(1);
-			assertThat(response.normalSchedules()).isEmpty();
-
-			RecurringScheduleDto dto = response.recurringSchedules().get(0);
-			assertThat(dto.startTime()).isEqualTo(LocalTime.of(11, 0));
-			assertThat(dto.endTime()).isEqualTo(LocalTime.of(11, 30));
-			assertThat(dto.name()).isEqualTo("첫번째 일정");
-			assertThat(dto.colorCode()).isEqualTo(ScheduleColor.SCHEDULE1.getColorCode());
-			assertThat(dto.dayOfWeek()).isEqualTo("MON, WED");
-
-			verify(scheduleDetailPersistencePort, never())
-				.findAllByScheduleIdInAndDateBetween(anyList(), any(LocalDate.class), any(LocalDate.class));
-		}
-
-		@Test
-		void 정상이고_기간에_해당하는_단일일정이_있으면_normalScheduleDto_채우기() {
-			// given
-			Long parentId = 1L;
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleQueryService, "clock", fixedClock);
-
-			LocalDate startDate = LocalDate.of(2026, 1, 1);
-			LocalDate endDate = LocalDate.of(2026, 1, 31);
-			LocalDate scheduleDate = LocalDate.of(2026, 1, 17);
-
-			Parent parent = mock(Parent.class);
-			Child child = mock(Child.class);
-
-			Schedule schedule = mock(Schedule.class);
-			ScheduleDetail scheduleDetail = mock(ScheduleDetail.class);
-			Long scheduleId = 100L;
-
-			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
-			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
-			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
-
-			given(schedulePersistencePort.findAllByChildId(childId)).willReturn(List.of(schedule));
-
-			given(schedule.getId()).willReturn(scheduleId);
-			given(schedule.isRecurring()).willReturn(false);
-
-			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
-			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 30));
-			given(schedule.getName()).willReturn("첫번째 일정");
-			given(schedule.getScheduleColor()).willReturn(ScheduleColor.SCHEDULE1);
-
-			// 불피우기 여부
-			given(scheduleDetailPersistencePort.existsStoneUsedToday(eq(List.of(scheduleId)), any(LocalDate.class)))
-				.willReturn(false);
-
-			given(scheduleDetail.getSchedule()).willReturn(schedule);
-			given(scheduleDetail.getDate()).willReturn(scheduleDate);
-
-			given(scheduleDetailPersistencePort.findAllByScheduleIdInAndDateBetween(List.of(scheduleId), startDate,
-				endDate)).willReturn(List.of(scheduleDetail));
-
-			// when
-			ScheduleTabResponse response = scheduleQueryService.getSchedules(startDate, endDate, parentId, childId);
-
-			// then
-			assertThat(response.isFireLit()).isFalse();
-			assertThat(response.recurringSchedules()).isEmpty();
-			assertThat(response.normalSchedules()).hasSize(1);
-
-			NormalScheduleDto dto = response.normalSchedules().get(0);
-			assertThat(dto.startTime()).isEqualTo(LocalTime.of(11, 0));
-			assertThat(dto.endTime()).isEqualTo(LocalTime.of(11, 30));
-			assertThat(dto.name()).isEqualTo("첫번째 일정");
-			assertThat(dto.colorCode()).isEqualTo(ScheduleColor.SCHEDULE1.getColorCode());
-			assertThat(dto.date()).isEqualTo(LocalDate.of(2026, 1, 17));
-
-			verify(scheduleRepeatDaysPersistencePort, never())
-				.findAllByScheduleIdsIn(anyList());
-		}
-	}
-
-	@Nested
-	@DisplayName("createTodayScheduleDetail")
-	class CreateTodayScheduleDetail {
-		@Test
-		void 정상이면_오늘의_반복일정_detail_생성() {
-			// given
-			LocalDate fixedDate = LocalDate.of(2026, 1, 16); // FRI
-			Clock clockFri = Clock.fixed(
-				fixedDate.atTime(11, 30).atZone(KST).toInstant(),
-				KST
-			);
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", clockFri);
-
-			given(scheduleRepeatDaysPersistencePort.findSchedulesToCreateTodayDetail(DayOfWeek.FRI, fixedDate))
-				.willReturn(List.of(mock(Schedule.class)));
-
-			// when
-			scheduleCommandService.createTodayScheduleDetail();
-
-			// then
-			ArgumentCaptor<List<ScheduleDetail>> captor = ArgumentCaptor.forClass(List.class);
-			verify(scheduleDetailPersistencePort).saveAll(captor.capture());
-			assertThat(captor.getValue()).hasSize(1);
-		}
-	}
-
-	@Nested
-	@DisplayName("getTodaySchedule")
-	class GetTodaySchedule {
-
-		@Test
-		void 오늘_일정이_없으면_빈_응답_반환() {
-			// given
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of());
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.scheduleDetailId()).isNull();
-			assertThat(response.scheduleOrder()).isEqualTo(0);
-			assertThat(response.totalSchedule()).isEqualTo(0);
-			assertThat(response.earnedStones()).isEqualTo(0);
-			assertThat(response.scheduleStatus()).isEqualTo(TodayScheduleStatus.NO_SCHEDULE);
-			assertThat(response.isSkippable()).isFalse();
-			assertThat(response.isNowScheduleVerified()).isFalse();
-		}
-
-		@Test
-		void 모든_일정이_SKIPPED면_totalSchedule은_0() {
-			// given
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-			ScheduleDetail sd1 = mock(ScheduleDetail.class);
-			ScheduleDetail sd2 = mock(ScheduleDetail.class);
-
-			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
-			given(sd2.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
-
-			Schedule schedule = mock(Schedule.class);
-			given(schedule.getCreatedAt()).willReturn(today.atStartOfDay());
-			given(schedule.getStartTime()).willReturn(LocalTime.of(23, 59));
-			given(sd1.getSchedule()).willReturn(schedule);
-			given(sd2.getSchedule()).willReturn(schedule);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
-				.willReturn(List.of(sd1, sd2));
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.scheduleDetailId()).isNull();
-			assertThat(response.scheduleOrder()).isEqualTo(0);
-			assertThat(response.totalSchedule()).isEqualTo(0);
-			assertThat(response.earnedStones()).isEqualTo(0);
-			assertThat(response.scheduleStatus()).isEqualTo(TodayScheduleStatus.NO_SCHEDULE);
-			assertThat(response.isSkippable()).isFalse();
-			assertThat(response.isNowScheduleVerified()).isFalse();
-		}
-
-		@Test
-		void 오늘_반복일정이_이미_detail이_있으면_중복_생성되지_않음() {
-			// given
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of());
-
-			// when
-			scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			verify(scheduleDetailPersistencePort, never()).saveAll(anyList());
-		}
-
-		@Test
-		void 오늘_생성되지_않은_일정은_필터에서_제외되지_않음() {
-			// given
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Schedule schedule = mock(Schedule.class);
-			given(schedule.getCreatedAt()).willReturn(today.minusDays(1).atStartOfDay());
-			given(schedule.getStartTime()).willReturn(LocalTime.of(9, 0));
-			given(schedule.getEndTime()).willReturn(LocalTime.of(10, 0));
-			given(schedule.getName()).willReturn("어제 생성된 일정");
-
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			given(sd.getSchedule()).willReturn(schedule);
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
-			given(sd.getStoneUsedAt()).willReturn(null);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
-
-
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.totalSchedule()).isEqualTo(1);
-		}
-
-		@Test
-		void createdAt이_startTime_이후면_제외() {
-			// given
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-			Schedule schedule = mock(Schedule.class);
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-
-
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
-			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(23, 59)));
-			given(schedule.getStartTime()).willReturn(LocalTime.of(0, 0));
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.totalSchedule()).isEqualTo(0);
-		}
-
-		@Test
-		void 불피우기_이후에_생성된_일정은_제외() {
-			// given
-			Long childId = 1L;
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-			Schedule schedule = mock(Schedule.class);
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-
-
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.COMPLETED);
-			given(schedule.getStartTime()).willReturn(LocalTime.of(23, 59));
-			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(12, 0)));
-			given(sd.getStoneUsedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.totalSchedule()).isEqualTo(0);
-		}
-
-		@Test
-		void 종료시간이_지났고_PENDING이면_FAILED로_변경() {
-			// given
-			Long childId = 1L;
-
-			Clock afterEndClock = Clock.fixed(
-				today.atTime(12, 0).atZone(KST).toInstant(),
-				KST
-			);
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", afterEndClock);
-			Schedule schedule = mock(Schedule.class);
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
-			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
-			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
-
-			// when
-			scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			verify(sd).changeScheduleStatus(ScheduleStatus.FAILED);
-		}
-
-		@Test
-		void 종료시간이_지났고_VERIFIED면_COMPLETED로_변경() {
-			// given
-			Long childId = 1L;
-
-			Clock afterEndClock = Clock.fixed(
-				today.atTime(12, 0).atZone(KST).toInstant(),
-				KST
-			);
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", afterEndClock);
-			Schedule schedule = mock(Schedule.class);
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
-			given(sd.getSchedule()).willReturn(schedule);
-			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
-			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
-			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
-
-			// when
-			scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			verify(sd).changeScheduleStatus(ScheduleStatus.COMPLETED);
-		}
-
-		@Test
-		void PENDING이_있으면_todoSchedule로_선택됨() {
-			// given
-			Long childId = 1L;
-			Long scheduleDetailId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Schedule schedule = mock(Schedule.class);
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
-
-			given(sd.getSchedule()).willReturn(schedule);
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
-			given(schedule.getName()).willReturn("테스트 일정");
-
-			given(sd.getId()).willReturn(scheduleDetailId);
-			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
-			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
-			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.scheduleDetailId()).isEqualTo(1L);
-		}
-
-		@Test
-		void VERIFIED만_있으면_todoSchedule로_선택됨() {
-			// given
-			Long childId = 1L;
-			Long scheduleDetailId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Schedule schedule = mock(Schedule.class);
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
-				.willReturn(List.of(sd));
-
-			given(sd.getSchedule()).willReturn(schedule);
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
-			given(sd.getId()).willReturn(scheduleDetailId);
-
-			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
-			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
-			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
-			given(schedule.getName()).willReturn("테스트 일정");
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.scheduleDetailId()).isEqualTo(scheduleDetailId);
-			assertThat(response.isNowScheduleVerified()).isTrue();
-		}
-
-		@Test
-		void todoSchedule이_없으면_null_반환() {
-			// given
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
-				.willReturn(List.of());
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.scheduleDetailId()).isNull();
-		}
-
-		@Test
-		void nextTodoSchedule이_있으면_isSkippable_true() {
-			// given
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Schedule s1 = mock(Schedule.class);
-			Schedule s2 = mock(Schedule.class);
-
-			ScheduleDetail sd1 = mock(ScheduleDetail.class);
-			ScheduleDetail sd2 = mock(ScheduleDetail.class);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2));
-			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
-			given(sd2.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
-			given(sd1.getSchedule()).willReturn(s1);
-			given(sd2.getSchedule()).willReturn(s2);
-
-			given(s1.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
-			given(s1.getStartTime()).willReturn(LocalTime.of(11, 0));
-			given(s1.getEndTime()).willReturn(LocalTime.of(11, 59));
-
-			given(s2.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
-			given(s2.getStartTime()).willReturn(LocalTime.of(11, 0));
-			given(s2.getEndTime()).willReturn(LocalTime.of(11, 59));
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.isSkippable()).isTrue();
-		}
-
-		@Test
-		void nextTodoSchedule이_없으면_isSkippable_false() {
-			// given
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Schedule s1 = mock(Schedule.class);
-
-			ScheduleDetail sd1 = mock(ScheduleDetail.class);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1));
-			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
-			given(sd1.getSchedule()).willReturn(s1);
-
-			given(s1.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
-			given(s1.getStartTime()).willReturn(LocalTime.of(11, 0));
-			given(s1.getEndTime()).willReturn(LocalTime.of(11, 59));
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.isSkippable()).isFalse();
-		}
-
-		@Test
-		void SKIPPED_제외_todoSchedule_계산() {
-			// given
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Schedule s1 = mock(Schedule.class);
-			Schedule s2 = mock(Schedule.class);
-
-			ScheduleDetail sd1 = mock(ScheduleDetail.class);
-			ScheduleDetail sd2 = mock(ScheduleDetail.class);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
-				.willReturn(List.of(sd1, sd2));
-
-			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
-			given(sd1.getSchedule()).willReturn(s1);
-			given(sd1.getStoneUsedAt()).willReturn(null);
-
-			given(sd2.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
-			given(sd2.getSchedule()).willReturn(s2);
-			given(sd2.getStoneUsedAt()).willReturn(null);
-
-			LocalDateTime createdAt = LocalDateTime.of(today, LocalTime.of(0, 0));
-			LocalTime startTime = LocalTime.of(11, 0);
-			LocalTime endTime = LocalTime.of(11, 59);
-
-			given(s1.getCreatedAt()).willReturn(createdAt);
-			given(s1.getStartTime()).willReturn(startTime);
-
-			given(s2.getCreatedAt()).willReturn(createdAt);
-			given(s2.getStartTime()).willReturn(startTime);
-			given(s2.getEndTime()).willReturn(endTime);
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.totalSchedule()).isEqualTo(1);
-		}
-
-		@Test
-		void VERIFIED_COMPLETED만_earnedStones로_계산() {
-			// given
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Schedule s1 = mock(Schedule.class);
-			Schedule s2 = mock(Schedule.class);
-
-			ScheduleDetail sd1 = mock(ScheduleDetail.class);
-			ScheduleDetail sd2 = mock(ScheduleDetail.class);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
-				.willReturn(List.of(sd1, sd2));
-
-			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
-			given(sd1.getSchedule()).willReturn(s1);
-			given(sd1.getStoneUsedAt()).willReturn(null);
-
-			given(sd2.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
-			given(sd2.getSchedule()).willReturn(s2);
-			given(sd2.getStoneUsedAt()).willReturn(null);
-
-			LocalDateTime createdAt = LocalDateTime.of(today, LocalTime.of(0, 0));
-			LocalTime startTime = LocalTime.of(11, 0);
-			LocalTime endTime = LocalTime.of(11, 59);
-
-			given(s1.getCreatedAt()).willReturn(createdAt);
-			given(s1.getStartTime()).willReturn(startTime);
-
-			given(s2.getCreatedAt()).willReturn(createdAt);
-			given(s2.getStartTime()).willReturn(startTime);
-			given(s2.getEndTime()).willReturn(endTime);
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.earnedStones()).isEqualTo(1);
-		}
-
-		@Test
-		void scheduleOrder는_filteredAllScheduleDetails_기준() {
-			// given
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Schedule s1 = mock(Schedule.class);
-			Schedule s2 = mock(Schedule.class);
-
-			ScheduleDetail sd1 = mock(ScheduleDetail.class);
-			ScheduleDetail sd2 = mock(ScheduleDetail.class);
-
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
-				.willReturn(List.of(sd1, sd2));
-
-			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
-			given(sd1.getSchedule()).willReturn(s1);
-			given(sd1.getStoneUsedAt()).willReturn(null);
-
-			given(sd2.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
-			given(sd2.getSchedule()).willReturn(s2);
-			given(sd2.getStoneUsedAt()).willReturn(null);
-
-			LocalDateTime createdAt = LocalDateTime.of(today, LocalTime.of(0, 0));
-			LocalTime startTime = LocalTime.of(11, 0);
-			LocalTime endTime = LocalTime.of(11, 59);
-
-			given(s1.getCreatedAt()).willReturn(createdAt);
-			given(s1.getStartTime()).willReturn(startTime);
-
-			given(s2.getCreatedAt()).willReturn(createdAt);
-			given(s2.getStartTime()).willReturn(startTime);
-			given(s2.getEndTime()).willReturn(endTime);
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.scheduleOrder()).isEqualTo(2);
-		}
-
-		@Test
-		void todoSchedule이_VERIFIED면_isNowScheduleVerified_true() {
-			// given
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Schedule schedule = mock(Schedule.class);
-
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
-			given(sd.getSchedule()).willReturn(schedule);
-
-			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
-			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
-			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.isNowScheduleVerified()).isTrue();
-		}
-
-		@Test
-		void todoSchedule이_PENDING면_isNowScheduleVerified_false() {
-			// given
-			Long childId = 1L;
-
-			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
-
-			Schedule schedule = mock(Schedule.class);
-
-			ScheduleDetail sd = mock(ScheduleDetail.class);
-			
-			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
-			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
-			given(sd.getSchedule()).willReturn(schedule);
-
-			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
-			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
-			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
-
-			// when
-			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
-
-			// then
-			assertThat(response.isNowScheduleVerified()).isFalse();
-		}
-
-	}
-}
+// package com.kiero.schedule.service;
+//
+// import static org.assertj.core.api.Assertions.*;
+// import static org.mockito.ArgumentMatchers.*;
+// import static org.mockito.BDDMockito.anyInt;
+// import static org.mockito.BDDMockito.eq;
+// import static org.mockito.BDDMockito.*;
+//
+// import java.time.Clock;
+// import java.time.LocalDate;
+// import java.time.LocalDateTime;
+// import java.time.LocalTime;
+// import java.time.ZoneId;
+// import java.util.List;
+// import java.util.Optional;
+//
+// import org.junit.jupiter.api.DisplayName;
+// import org.junit.jupiter.api.Nested;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.api.extension.ExtendWith;
+// import org.mockito.ArgumentCaptor;
+// import org.mockito.InjectMocks;
+// import org.mockito.Mock;
+// import org.mockito.junit.jupiter.MockitoExtension;
+// import org.springframework.test.util.ReflectionTestUtils;
+//
+// import com.kiero.child.application.exception.ChildErrorCode;
+// import com.kiero.child.application.port.out.ChildLoadPort;
+// import com.kiero.child.domain.Child;
+// import com.kiero.global.exception.KieroException;
+// import com.kiero.parent.application.exception.ParentErrorCode;
+// import com.kiero.parent.application.port.out.ParentChildAccessPort;
+// import com.kiero.parent.application.port.out.ParentLoadPort;
+// import com.kiero.parent.domain.Parent;
+// import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
+// import com.kiero.schedule.application.dto.FireLitEvent;
+// import com.kiero.schedule.application.dto.FireLitResponse;
+// import com.kiero.schedule.application.dto.NormalScheduleDto;
+// import com.kiero.schedule.application.dto.NowScheduleCompleteEvent;
+// import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
+// import com.kiero.schedule.application.dto.RecurringScheduleDto;
+// import com.kiero.schedule.application.dto.ScheduleAddRequest;
+// import com.kiero.schedule.application.dto.ScheduleTabResponse;
+// import com.kiero.schedule.application.dto.TodayScheduleResponse;
+// import com.kiero.schedule.application.exception.ScheduleErrorCode;
+// import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
+// import com.kiero.schedule.application.port.out.ScheduleEventPort;
+// import com.kiero.schedule.application.port.out.SchedulePersistencePort;
+// import com.kiero.schedule.application.port.out.ScheduleRepeatDaysPersistencePort;
+// import com.kiero.schedule.application.service.ScheduleCommandService;
+// import com.kiero.schedule.application.service.ScheduleQueryService;
+// import com.kiero.schedule.domain.Schedule;
+// import com.kiero.schedule.domain.ScheduleDetail;
+// import com.kiero.schedule.domain.ScheduleRepeatDays;
+// import com.kiero.schedule.domain.enums.DayOfWeek;
+// import com.kiero.schedule.domain.enums.ScheduleColor;
+// import com.kiero.schedule.domain.enums.ScheduleStatus;
+// import com.kiero.schedule.domain.enums.StoneType;
+// import com.kiero.schedule.application.service.resolver.TodayScheduleStatus;
+//
+// @ExtendWith(MockitoExtension.class)
+// public class ScheduleServiceTest {
+//
+// 	@Mock
+// 	ParentLoadPort parentLoadPort;
+// 	@Mock
+// 	ChildLoadPort childLoadPort;
+// 	@Mock
+// 	ParentChildAccessPort parentChildAccessPort;
+// 	@Mock
+// 	SchedulePersistencePort schedulePersistencePort;
+// 	@Mock
+// 	ScheduleRepeatDaysPersistencePort scheduleRepeatDaysPersistencePort;
+// 	@Mock
+// 	ScheduleDetailPersistencePort scheduleDetailPersistencePort;
+// 	@Mock
+// 	ScheduleEventPort scheduleEventPort;
+//
+// 	@InjectMocks
+// 	ScheduleQueryService scheduleQueryService;
+//
+// 	@InjectMocks
+// 	ScheduleCommandService scheduleCommandService;
+//
+// 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+//
+// 	LocalDate today = LocalDate.of(2026, 1, 15);
+//
+// 	Clock fixedClock = Clock.fixed(
+// 		LocalDateTime.of(today, LocalTime.of(11, 30))
+// 			.atZone(ZoneId.of("Asia/Seoul"))
+// 			.toInstant(),
+// 		ZoneId.of("Asia/Seoul")
+// 	);
+//
+// 	// =========================
+// 	// AddSchedule
+// 	// =========================
+// 	@Nested
+// 	@DisplayName("addSchedule")
+// 	class AddSchedule {
+//
+// 		@Test
+// 		void 정상이면_저장하고_반복일정이면_scheduleRepeatDays_저장() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child child = mock(Child.class);
+// 			Schedule savedSchedule = mock(Schedule.class);
+//
+// 			ScheduleAddRequest req = new ScheduleAddRequest("첫번째 일정", true, LocalTime.of(11, 0), LocalTime.of(11, 30),
+// 				ScheduleColor.SCHEDULE1,
+// 				"MON, TUE", null);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+//
+// 			given(child.getId()).willReturn(childId);
+// 			given(scheduleRepeatDaysPersistencePort
+// 				.findSchedulesByChildIdAndDayOfWeeks(anyLong(), anyList()))
+// 				.willReturn(List.of());
+//
+// 			given(scheduleDetailPersistencePort
+// 				.findAllByScheduleChildIdAndDateGreaterThanEqual(anyLong(), any(LocalDate.class)))
+// 				.willReturn(List.of());
+//
+// 			given(schedulePersistencePort.save(any(Schedule.class))).willReturn(savedSchedule);
+//
+// 			// when
+// 			scheduleCommandService.addSchedule(req, parentId, childId);
+//
+// 			// then 1: 일정 저장이 호출됨
+// 			verify(schedulePersistencePort, times(1)).save(any(Schedule.class));
+//
+// 			// then 2: 반복 일정이면 repeatDays 저장이 호출됨
+// 			verify(scheduleRepeatDaysPersistencePort, times(1)).saveAll(anyList());
+//
+// 			// then 3: 일정 디테일 저장은 호출되지 않음
+// 			verify(scheduleDetailPersistencePort, never()).saveAll(anyList());
+// 		}
+//
+// 		@Test
+// 		void 정상이면_저장하고_단일일정이면_scheduleDetail_저장() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child child = mock(Child.class);
+// 			Schedule savedSchedule = mock(Schedule.class);
+//
+// 			ScheduleAddRequest req = new ScheduleAddRequest("첫번째 일정", false, LocalTime.of(11, 0), LocalTime.of(11, 30),
+// 				ScheduleColor.SCHEDULE1,
+// 				null, "2026-01-16");
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+//
+// 			given(schedulePersistencePort.save(any(Schedule.class))).willReturn(savedSchedule);
+//
+// 			given(child.getId()).willReturn(childId);
+// 			given(scheduleDetailPersistencePort
+// 				.findByDateInAndChildId(anyList(), eq(childId)))
+// 				.willReturn(List.of());
+//
+// 			given(scheduleRepeatDaysPersistencePort
+// 				.findSchedulesByChildIdAndDayOfWeekIn(anyLong(), anyList()))
+// 				.willReturn(List.of());
+//
+// 			// when
+// 			scheduleCommandService.addSchedule(req, parentId, childId);
+//
+// 			// then
+// 			verify(schedulePersistencePort).save(any(Schedule.class));
+// 			verify(scheduleDetailPersistencePort).saveAll(anyList());
+// 			verify(scheduleRepeatDaysPersistencePort, never()).saveAll(any());
+// 		}
+//
+// 		@Test
+// 		void 부모가_없으면_예외() {
+// 			// given
+// 			Long parentId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			ScheduleAddRequest req = new ScheduleAddRequest(null, null, null, null, null, null, null);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.empty());
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, null))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ParentErrorCode.PARENT_NOT_FOUND);
+// 		}
+//
+// 		@Test
+// 		void 아이가_없으면_예외() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Parent parent = mock(Parent.class);
+//
+// 			ScheduleAddRequest req = new ScheduleAddRequest(null, null, null, null, null, null, null);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ChildErrorCode.CHILD_NOT_FOUND);
+// 		}
+//
+// 		@Test
+// 		void 자신의_아이가_아니면_접근제한() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long otherChildId = 100L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child otherChild = mock(Child.class);
+//
+// 			ScheduleAddRequest req = new ScheduleAddRequest(null, null, null, null, null, null, null);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(otherChild));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, otherChildId)).willReturn(false);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, otherChildId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+// 		}
+//
+// 		@Test
+// 		void 요청_데이터의_dayOfWeek_data_모두_입력되었으면_예외() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child child = mock(Child.class);
+//
+// 			ScheduleAddRequest req = new ScheduleAddRequest(null, true, null, null, null,
+// 				"MON, TUE", "2026-01-01, 2026-01-02");
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.DAY_OF_WEEK_XOR_DATE_REQUIRED);
+// 		}
+//
+// 		@Test
+// 		void 반복일정인데_dayOfWeek가_입력되지_않았으면_예외() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child child = mock(Child.class);
+//
+// 			ScheduleAddRequest req = new ScheduleAddRequest(null, true, null, null, null, null, null);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE);
+// 		}
+//
+// 		@Test
+// 		void 단일일정인데_date가_입력되지_않았으면_예외() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child child = mock(Child.class);
+//
+// 			ScheduleAddRequest req = new ScheduleAddRequest(null, false, null, null, null, null, null);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.DATE_NOT_NULLABLE_WHEN_IS_RECURRING_IS_FALSE);
+// 		}
+//
+// 		@Test
+// 		void 반복일정일때_요청_데이터의_dayOfWeek_형식이_맞지않으면_예외() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child child = mock(Child.class);
+//
+// 			ScheduleAddRequest req = new ScheduleAddRequest(null, true, null, null, null, "월요일, TUE/ 수", null);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.addSchedule(req, parentId, childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.INVALID_DAY_OF_WEEK);
+// 		}
+// 	}
+//
+// 	// =========================
+// 	// CompleteNowSchedule
+// 	// =========================
+// 	@Nested
+// 	@DisplayName("completeNowSchedule")
+// 	class CompleteNowSchedule {
+// 		@Test
+// 		void 정상일때_VERIFIED로_변경되고_이벤트_발행() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long scheduleDetailId = 10L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+// 			NowScheduleCompleteRequest req = new NowScheduleCompleteRequest("http://test-img.jpeg");
+//
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+// 			Schedule schedule = mock(Schedule.class);
+// 			Child child = mock(Child.class);
+//
+// 			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(schedule.getChild()).willReturn(child);
+// 			given(child.getId()).willReturn(childId);
+//
+// 			given(sd.getStoneUsedAt()).willReturn(null);
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
+//
+// 			// when
+// 			scheduleCommandService.completeNowSchedule(childId, scheduleDetailId, req);
+//
+// 			// then
+// 			verify(sd).changeScheduleStatus(ScheduleStatus.VERIFIED);
+// 			verify(sd).changeImageUrl("http://test-img.jpeg");
+//
+// 			verify(scheduleEventPort, times(1)).publish(any(NowScheduleCompleteEvent.class));
+// 		}
+//
+// 		@Test
+// 		void childId가_다르면_접근거부_예외() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long otherChildId = 2L;
+// 			Long scheduleDetailId = 10L;
+//
+// 			NowScheduleCompleteRequest req = new NowScheduleCompleteRequest("http://test-img.jpeg");
+//
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+// 			Schedule schedule = mock(Schedule.class);
+// 			Child child = mock(Child.class);
+//
+// 			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(schedule.getChild()).willReturn(child);
+// 			given(child.getId()).willReturn(childId);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.completeNowSchedule(otherChildId, scheduleDetailId, req))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
+//
+// 			verify(sd, never()).changeScheduleStatus(ScheduleStatus.VERIFIED);
+// 			verify(sd, never()).changeImageUrl(req.imageUrl());
+// 			verify(scheduleEventPort, never()).publish(any(NowScheduleCompleteEvent.class));
+// 		}
+//
+// 		@Test
+// 		void 일정이_이미_VERIFIED면_인증완료_예외() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long scheduleDetailId = 10L;
+//
+// 			NowScheduleCompleteRequest req = new NowScheduleCompleteRequest("http://test-img.jpeg");
+//
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+// 			Schedule schedule = mock(Schedule.class);
+// 			Child child = mock(Child.class);
+//
+// 			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(schedule.getChild()).willReturn(child);
+// 			given(child.getId()).willReturn(childId);
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.completeNowSchedule(childId, scheduleDetailId, req))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.SCHEDULE_ALREADY_COMPLETED);
+//
+// 			verify(sd, never()).changeScheduleStatus(ScheduleStatus.VERIFIED);
+// 			verify(sd, never()).changeImageUrl(req.imageUrl());
+// 			verify(scheduleEventPort, never()).publish(any(NowScheduleCompleteEvent.class));
+// 		}
+//
+// 		@Test
+// 		void 일정이_이미_COMPLETED면_인증완료_예외() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long scheduleDetailId = 10L;
+//
+// 			NowScheduleCompleteRequest req = new NowScheduleCompleteRequest("http://test-img.jpeg");
+//
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+// 			Schedule schedule = mock(Schedule.class);
+// 			Child child = mock(Child.class);
+//
+// 			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(schedule.getChild()).willReturn(child);
+// 			given(child.getId()).willReturn(childId);
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.COMPLETED);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.completeNowSchedule(childId, scheduleDetailId, req))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.SCHEDULE_ALREADY_COMPLETED);
+//
+// 			verify(sd, never()).changeScheduleStatus(ScheduleStatus.VERIFIED);
+// 			verify(sd, never()).changeImageUrl(req.imageUrl());
+// 			verify(scheduleEventPort, never()).publish(any(NowScheduleCompleteEvent.class));
+// 		}
+// 	}
+//
+// 	// =========================
+// 	// FireLit
+// 	// =========================
+// 	@Nested
+// 	@DisplayName("fireLit")
+// 	class FireLit {
+//
+// 		private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+//
+// 		/**
+// 		 * alreadyUsed 예외 케이스용: stoneUsedAt만 있으면 됨 (status/stoneType/schedule 전부 불필요)
+// 		 */
+// 		private ScheduleDetail mockDetailOnlyStoneUsedAt(LocalDateTime stoneUsedAt) {
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+// 			given(sd.getStoneUsedAt()).willReturn(stoneUsedAt);
+// 			return sd;
+// 		}
+//
+// 		/**
+// 		 * 정상 흐름용: filterTodayCreatedSchedules 통과를 위해 schedule.createdAt/startTime 필요
+// 		 * + status는 totalSchedule/gotStones 계산에 쓰이므로 필요
+// 		 * + stoneType은 VERIFIED/COMPLETED일 때만 실제로 호출되므로 해당 상태일 때만 스텁
+// 		 */
+// 		private ScheduleDetail mockDetailForNormalFlow(
+// 			LocalDate today,
+// 			ScheduleStatus status,
+// 			StoneType stoneTypeOrNull,
+// 			LocalDateTime stoneUsedAt
+// 		) {
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+//
+// 			Schedule schedule = mock(Schedule.class);
+// 			given(schedule.getCreatedAt()).willReturn(today.atStartOfDay());
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(23, 59));
+// 			given(sd.getSchedule()).willReturn(schedule);
+//
+// 			given(sd.getScheduleStatus()).willReturn(status);
+// 			given(sd.getStoneUsedAt()).willReturn(stoneUsedAt);
+//
+// 			// stoneType은 VERIFIED/COMPLETED만 호출될 수 있으니 그때만 스텁
+// 			if (stoneTypeOrNull != null) {
+// 				given(sd.getStoneType()).willReturn(stoneTypeOrNull);
+// 			}
+//
+// 			return sd;
+// 		}
+//
+// 		@Test
+// 		void 정상일때_모든_scheduleDetail에_stoneUsedAt이_세팅되고_이벤트_발행() {
+// 			// given
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+// 			Child child = mock(Child.class);
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+//
+// 			// PENDING은 stoneType 호출 안 될 수 있으니 null
+// 			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.PENDING, null, null);
+// 			// COMPLETED는 gotStones에 들어가므로 stoneType 필요
+// 			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.COMPLETED, StoneType.GRIT, null);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2));
+//
+// 			// when
+// 			FireLitResponse response = scheduleCommandService.fireLit(childId);
+//
+// 			// then 1: stoneUsedAt 세팅
+// 			verify(sd1).changeStoneUsedAt(any(LocalDateTime.class));
+// 			verify(sd2).changeStoneUsedAt(any(LocalDateTime.class));
+//
+// 			// then 2: 이벤트 발행
+// 			verify(scheduleEventPort, times(1)).publish(any(FireLitEvent.class));
+//
+// 			// then 3: VERIFIED or COMPLETED 일정에 대한 stone만 획득
+// 			assertThat(response.gotStones()).containsExactly(StoneType.GRIT);
+// 		}
+//
+// 		@Test
+// 		void 스킵제외_전체일정이_완료면_코인10_지급되고_earnedCoinAmount가_10() {
+// 			// given
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+// 			Child child = mock(Child.class);
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+//
+// 			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.VERIFIED, StoneType.GRIT, null);
+// 			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.COMPLETED, StoneType.COURAGE, null);
+// 			// SKIPPED는 stoneType 호출 안 될 수 있으니 null
+// 			ScheduleDetail skippedSd = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(
+// 				List.of(sd1, sd2, skippedSd));
+//
+// 			// when
+// 			FireLitResponse response = scheduleCommandService.fireLit(childId);
+//
+// 			// then 1: 코인 지급
+// 			verify(child, times(1)).addCoin(10);
+// 			assertThat(response.earnedCoinAmount()).isEqualTo(10);
+//
+// 			// then 2: 이벤트 발행 amount 검증
+// 			ArgumentCaptor<FireLitEvent> captor = ArgumentCaptor.forClass(FireLitEvent.class);
+// 			verify(scheduleEventPort).publish(captor.capture());
+// 			assertThat(captor.getValue().amount()).isEqualTo(10);
+// 		}
+//
+// 		@Test
+// 		void 스킵제외_하나라도_미완료면_코인이_지급되지_않고_이벤트_발행() {
+// 			// given
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+// 			Child child = mock(Child.class);
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+//
+// 			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.PENDING, null, null);
+// 			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.COMPLETED, StoneType.COURAGE, null);
+// 			ScheduleDetail sd3 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2, sd3));
+//
+// 			// when
+// 			FireLitResponse response = scheduleCommandService.fireLit(childId);
+//
+// 			// then 1: 코인 미지급
+// 			verify(child, never()).addCoin(anyInt());
+// 			assertThat(response.earnedCoinAmount()).isEqualTo(0);
+//
+// 			// then 2: 이벤트 발행 amount=0
+// 			ArgumentCaptor<FireLitEvent> captor = ArgumentCaptor.forClass(FireLitEvent.class);
+// 			verify(scheduleEventPort).publish(captor.capture());
+// 			assertThat(captor.getValue().amount()).isEqualTo(0);
+// 		}
+//
+// 		@Test
+// 		void 스킵제외_일정이_없으면_코인이_지급되지_않고_이벤트_발행() {
+// 			// given
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+// 			Child child = mock(Child.class);
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+//
+// 			ScheduleDetail sd1 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
+// 			ScheduleDetail sd2 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
+// 			ScheduleDetail sd3 = mockDetailForNormalFlow(today, ScheduleStatus.SKIPPED, null, null);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2, sd3));
+//
+// 			// when
+// 			FireLitResponse response = scheduleCommandService.fireLit(childId);
+//
+// 			// then 1: 코인 미지급
+// 			verify(child, never()).addCoin(anyInt());
+// 			assertThat(response.earnedCoinAmount()).isEqualTo(0);
+//
+// 			// then 2: 이벤트 발행 amount=0
+// 			ArgumentCaptor<FireLitEvent> captor = ArgumentCaptor.forClass(FireLitEvent.class);
+// 			verify(scheduleEventPort).publish(captor.capture());
+// 			assertThat(captor.getValue().amount()).isEqualTo(0);
+// 		}
+//
+// 		@Test
+// 		void 아이가_없으면_예외() {
+// 			// given
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.fireLit(childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ChildErrorCode.CHILD_NOT_FOUND);
+//
+// 			verify(scheduleEventPort, never()).publish(any());
+// 		}
+//
+// 		@Test
+// 		void 이미_불피우기_완료된_일정이_있으면_예외() {
+// 			// given
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Child child = mock(Child.class);
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+//
+// 			// stoneUsedAt만 있으면 earliestStoneUsedAt != null 로 예외 발생
+// 			ScheduleDetail alreadyUsed = mockDetailOnlyStoneUsedAt(LocalDateTime.of(2026, 1, 14, 9, 0));
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(alreadyUsed));
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.fireLit(childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETE);
+//
+// 			verify(scheduleEventPort, never()).publish(any());
+// 			verify(alreadyUsed, never()).changeStoneUsedAt(any());
+// 		}
+// 	}
+//
+// 	// =========================
+// 	// getDefaultSchedule
+// 	// =========================
+// 	@Nested
+// 	@DisplayName("getDefaultSchedule")
+// 	class GetDefaultSchedule {
+// 		@Test
+// 		void 정상일때_기본설정값을_반환() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child child = mock(Child.class);
+// 			Schedule schedule = mock(Schedule.class);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+//
+// 			given(schedulePersistencePort.findFirstByChildIdOrderByCreatedAtDesc(childId)).willReturn(Optional.of(schedule));
+// 			given(schedule.getScheduleColor()).willReturn(ScheduleColor.SCHEDULE1);
+//
+// 			// when
+// 			DefaultScheduleContentResponse response = scheduleQueryService.getDefaultSchedule(parentId, childId);
+//
+// 			// then
+// 			assertThat(response.scheduleColor()).isEqualTo(ScheduleColor.SCHEDULE2);
+// 			assertThat(response.colorCode()).isEqualTo(ScheduleColor.SCHEDULE2.getColorCode());
+// 		}
+//
+// 		@Test
+// 		void 부모가_없으면_예외() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.empty());
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleQueryService.getDefaultSchedule(parentId, childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ParentErrorCode.PARENT_NOT_FOUND);
+// 		}
+//
+// 		@Test
+// 		void 아이가_없으면_예외() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			Parent parent = mock(Parent.class);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleQueryService.getDefaultSchedule(parentId, childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ChildErrorCode.CHILD_NOT_FOUND);
+// 		}
+//
+// 		@Test
+// 		void 자신의_아이가_아니면_접근제한() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long otherChildId = 100L;
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child otherChild = mock(Child.class);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(otherChild));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, otherChildId)).willReturn(false);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleQueryService.getDefaultSchedule(parentId, otherChildId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+// 		}
+// 	}
+//
+// 	// =========================
+// 	// SkipNowSchedule
+// 	// =========================
+// 	@Nested
+// 	@DisplayName("skipNowSchedule")
+// 	class SkipNowSchedule {
+// 		@Test
+// 		void 정상이면_pending인_일정을_skipped로_변경() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long scheduleDetailId = 10L;
+//
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+// 			Schedule schedule = mock(Schedule.class);
+// 			Child child = mock(Child.class);
+//
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(schedule.getChild()).willReturn(child);
+// 			given(child.getId()).willReturn(childId);
+//
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
+//
+// 			// when
+// 			scheduleCommandService.skipNowSchedule(childId, scheduleDetailId);
+//
+// 			// then
+// 			verify(sd).changeScheduleStatus(ScheduleStatus.SKIPPED);
+// 		}
+//
+// 		@Test
+// 		void 정상이면_verified인_일정을_complete로_변경() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long scheduleDetailId = 10L;
+//
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+// 			Schedule schedule = mock(Schedule.class);
+// 			Child child = mock(Child.class);
+//
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(schedule.getChild()).willReturn(child);
+// 			given(child.getId()).willReturn(childId);
+//
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
+//
+// 			// when
+// 			scheduleCommandService.skipNowSchedule(childId, scheduleDetailId);
+//
+// 			// then
+// 			verify(sd).changeScheduleStatus(ScheduleStatus.COMPLETED);
+// 		}
+//
+// 		@Test
+// 		void 아이가_없으면_예외() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long scheduleDetailId = 10L;
+//
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.skipNowSchedule(childId, scheduleDetailId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ChildErrorCode.CHILD_NOT_FOUND);
+// 		}
+//
+// 		@Test
+// 		void scheduleDetail이_존재하지_않으면_예외() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long sdId = 10L;
+//
+// 			Child child = mock(Child.class);
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(scheduleDetailPersistencePort.findById(sdId)).willReturn(Optional.empty());
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.skipNowSchedule(childId, sdId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.SCHEDULE_NOT_FOUND);
+// 		}
+//
+// 		@Test
+// 		void childId가_다르면_접근거부_예외() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long otherChildId = 2L;
+// 			Long scheduleDetailId = 10L;
+//
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+// 			Schedule schedule = mock(Schedule.class);
+// 			Child child = mock(Child.class);
+//
+// 			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(child));
+// 			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(schedule.getChild()).willReturn(child);
+// 			given(child.getId()).willReturn(childId);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.skipNowSchedule(otherChildId, scheduleDetailId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
+//
+// 			verify(sd, never()).changeScheduleStatus(any());
+// 		}
+//
+// 		@Test
+// 		void 일정상태가_pending이거나_verified가_아니면_예외() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long scheduleDetailId = 10L;
+//
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+// 			Schedule schedule = mock(Schedule.class);
+// 			Child child = mock(Child.class);
+//
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(scheduleDetailPersistencePort.findById(scheduleDetailId)).willReturn(Optional.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(schedule.getChild()).willReturn(child);
+// 			given(child.getId()).willReturn(childId);
+//
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleCommandService.skipNowSchedule(childId, scheduleDetailId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.SCHEDULE_COULD_NOT_BE_SKIPPED);
+// 		}
+// 	}
+//
+// 	@Nested
+// 	@DisplayName("getSchedules")
+// 	class GetSchedules {
+// 		@Test
+// 		void 부모가_없으면_예외() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.empty());
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleQueryService.getSchedules(null, null, parentId, childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ParentErrorCode.PARENT_NOT_FOUND);
+// 		}
+//
+// 		@Test
+// 		void 아이가_없으면_예외() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			Parent parent = mock(Parent.class);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.empty());
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleQueryService.getSchedules(null, null, parentId, childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ChildErrorCode.CHILD_NOT_FOUND);
+// 		}
+//
+// 		@Test
+// 		void 자신의_아이가_아니면_접근제한() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long otherChildId = 100L;
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child otherChild = mock(Child.class);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(otherChildId)).willReturn(Optional.of(otherChild));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, otherChildId)).willReturn(false);
+//
+// 			// when & then
+// 			assertThatThrownBy(() -> scheduleQueryService.getSchedules(null, null, parentId, otherChildId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+// 		}
+//
+// 		@Test
+// 		void startDate와_endDate의_순서가_유효하지_않으면_예외() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			LocalDate startDate = LocalDate.of(2026, 1, 1);
+// 			LocalDate endDate = LocalDate.of(2000, 1, 31);
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child child = mock(Child.class);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+//
+// 			// when & then
+// 			assertThatThrownBy(
+// 				() -> scheduleQueryService.getSchedules(startDate, endDate, parentId, childId))
+// 				.isInstanceOf(KieroException.class)
+// 				.extracting(e -> ((KieroException)e).getBaseCode())
+// 				.isEqualTo(ScheduleErrorCode.INVALID_DATE_DURATION);
+// 		}
+//
+// 		@Test
+// 		void 정상이고_해당하는_일정이_없으면_빈_응답을_반환() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+//
+// 			LocalDate startDate = LocalDate.of(2026, 1, 1);
+// 			LocalDate endDate = LocalDate.of(2026, 1, 31);
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child child = mock(Child.class);
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+// 			given(schedulePersistencePort.findAllByChildId(childId)).willReturn(List.of());
+//
+// 			// when
+// 			ScheduleTabResponse response = scheduleQueryService.getSchedules(startDate, endDate, parentId, childId);
+//
+// 			// then
+// 			assertThat(response.recurringSchedules()).isEqualTo(List.of());
+// 			assertThat(response.normalSchedules()).isEqualTo(List.of());
+// 		}
+//
+// 		@Test
+// 		void 정상이고_반복일정이_있으면_recurringScheduleDto_채우기() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleQueryService, "clock", fixedClock);
+//
+// 			LocalDate startDate = LocalDate.of(2026, 1, 1);
+// 			LocalDate endDate = LocalDate.of(2026, 1, 31);
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child child = mock(Child.class);
+//
+// 			Schedule schedule = mock(Schedule.class);
+// 			Long scheduleId = 100L;
+//
+// 			ScheduleRepeatDays rdMon = mock(ScheduleRepeatDays.class);
+// 			ScheduleRepeatDays rdWed = mock(ScheduleRepeatDays.class);
+//
+// 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(2025, 12, 29, 10, 0));
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+//
+// 			given(schedulePersistencePort.findAllByChildId(childId)).willReturn(List.of(schedule));
+//
+// 			given(schedule.getId()).willReturn(scheduleId);
+// 			given(schedule.isRecurring()).willReturn(true);
+//
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
+// 			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 30));
+// 			given(schedule.getName()).willReturn("첫번째 일정");
+// 			given(schedule.getScheduleColor()).willReturn(ScheduleColor.SCHEDULE1);
+//
+// 			// 불피우기 여부
+// 			given(scheduleDetailPersistencePort.existsStoneUsedToday(eq(List.of(scheduleId)), any(LocalDate.class)))
+// 				.willReturn(false);
+//
+// 			// repeatDays -> scheduleId 매핑되도록 세팅
+// 			given(rdMon.getSchedule()).willReturn(schedule);
+// 			given(rdWed.getSchedule()).willReturn(schedule);
+// 			given(rdMon.getDayOfWeek()).willReturn(DayOfWeek.MON);
+// 			given(rdWed.getDayOfWeek()).willReturn(DayOfWeek.WED);
+//
+// 			given(scheduleRepeatDaysPersistencePort.findAllByScheduleIdsIn(eq(List.of(scheduleId))))
+// 				.willReturn(List.of(rdMon, rdWed));
+//
+// 			// when
+// 			ScheduleTabResponse response = scheduleQueryService.getSchedules(startDate, endDate, parentId, childId);
+//
+// 			// then
+// 			assertThat(response.isFireLit()).isFalse();
+// 			assertThat(response.recurringSchedules()).hasSize(1);
+// 			assertThat(response.normalSchedules()).isEmpty();
+//
+// 			RecurringScheduleDto dto = response.recurringSchedules().get(0);
+// 			assertThat(dto.startTime()).isEqualTo(LocalTime.of(11, 0));
+// 			assertThat(dto.endTime()).isEqualTo(LocalTime.of(11, 30));
+// 			assertThat(dto.name()).isEqualTo("첫번째 일정");
+// 			assertThat(dto.colorCode()).isEqualTo(ScheduleColor.SCHEDULE1.getColorCode());
+// 			assertThat(dto.dayOfWeek()).isEqualTo("MON, WED");
+//
+// 			verify(scheduleDetailPersistencePort, never())
+// 				.findAllByScheduleIdInAndDateBetween(anyList(), any(LocalDate.class), any(LocalDate.class));
+// 		}
+//
+// 		@Test
+// 		void 정상이고_기간에_해당하는_단일일정이_있으면_normalScheduleDto_채우기() {
+// 			// given
+// 			Long parentId = 1L;
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleQueryService, "clock", fixedClock);
+//
+// 			LocalDate startDate = LocalDate.of(2026, 1, 1);
+// 			LocalDate endDate = LocalDate.of(2026, 1, 31);
+// 			LocalDate scheduleDate = LocalDate.of(2026, 1, 17);
+//
+// 			Parent parent = mock(Parent.class);
+// 			Child child = mock(Child.class);
+//
+// 			Schedule schedule = mock(Schedule.class);
+// 			ScheduleDetail scheduleDetail = mock(ScheduleDetail.class);
+// 			Long scheduleId = 100L;
+//
+// 			given(parentLoadPort.findById(parentId)).willReturn(Optional.of(parent));
+// 			given(childLoadPort.findById(childId)).willReturn(Optional.of(child));
+// 			given(parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)).willReturn(true);
+//
+// 			given(schedulePersistencePort.findAllByChildId(childId)).willReturn(List.of(schedule));
+//
+// 			given(schedule.getId()).willReturn(scheduleId);
+// 			given(schedule.isRecurring()).willReturn(false);
+//
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
+// 			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 30));
+// 			given(schedule.getName()).willReturn("첫번째 일정");
+// 			given(schedule.getScheduleColor()).willReturn(ScheduleColor.SCHEDULE1);
+//
+// 			// 불피우기 여부
+// 			given(scheduleDetailPersistencePort.existsStoneUsedToday(eq(List.of(scheduleId)), any(LocalDate.class)))
+// 				.willReturn(false);
+//
+// 			given(scheduleDetail.getSchedule()).willReturn(schedule);
+// 			given(scheduleDetail.getDate()).willReturn(scheduleDate);
+//
+// 			given(scheduleDetailPersistencePort.findAllByScheduleIdInAndDateBetween(List.of(scheduleId), startDate,
+// 				endDate)).willReturn(List.of(scheduleDetail));
+//
+// 			// when
+// 			ScheduleTabResponse response = scheduleQueryService.getSchedules(startDate, endDate, parentId, childId);
+//
+// 			// then
+// 			assertThat(response.isFireLit()).isFalse();
+// 			assertThat(response.recurringSchedules()).isEmpty();
+// 			assertThat(response.normalSchedules()).hasSize(1);
+//
+// 			NormalScheduleDto dto = response.normalSchedules().get(0);
+// 			assertThat(dto.startTime()).isEqualTo(LocalTime.of(11, 0));
+// 			assertThat(dto.endTime()).isEqualTo(LocalTime.of(11, 30));
+// 			assertThat(dto.name()).isEqualTo("첫번째 일정");
+// 			assertThat(dto.colorCode()).isEqualTo(ScheduleColor.SCHEDULE1.getColorCode());
+// 			assertThat(dto.date()).isEqualTo(LocalDate.of(2026, 1, 17));
+//
+// 			verify(scheduleRepeatDaysPersistencePort, never())
+// 				.findAllByScheduleIdsIn(anyList());
+// 		}
+// 	}
+//
+// 	@Nested
+// 	@DisplayName("createTodayScheduleDetail")
+// 	class CreateTodayScheduleDetail {
+// 		@Test
+// 		void 정상이면_오늘의_반복일정_detail_생성() {
+// 			// given
+// 			LocalDate fixedDate = LocalDate.of(2026, 1, 16); // FRI
+// 			Clock clockFri = Clock.fixed(
+// 				fixedDate.atTime(11, 30).atZone(KST).toInstant(),
+// 				KST
+// 			);
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", clockFri);
+//
+// 			given(scheduleRepeatDaysPersistencePort.findSchedulesToCreateTodayDetail(DayOfWeek.FRI, fixedDate))
+// 				.willReturn(List.of(mock(Schedule.class)));
+//
+// 			// when
+// 			scheduleCommandService.createTodayScheduleDetail();
+//
+// 			// then
+// 			ArgumentCaptor<List<ScheduleDetail>> captor = ArgumentCaptor.forClass(List.class);
+// 			verify(scheduleDetailPersistencePort).saveAll(captor.capture());
+// 			assertThat(captor.getValue()).hasSize(1);
+// 		}
+// 	}
+//
+// 	@Nested
+// 	@DisplayName("getTodaySchedule")
+// 	class GetTodaySchedule {
+//
+// 		@Test
+// 		void 오늘_일정이_없으면_빈_응답_반환() {
+// 			// given
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of());
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.scheduleDetailId()).isNull();
+// 			assertThat(response.scheduleOrder()).isEqualTo(0);
+// 			assertThat(response.totalSchedule()).isEqualTo(0);
+// 			assertThat(response.earnedStones()).isEqualTo(0);
+// 			assertThat(response.scheduleStatus()).isEqualTo(TodayScheduleStatus.NO_SCHEDULE);
+// 			assertThat(response.isSkippable()).isFalse();
+// 			assertThat(response.isNowScheduleVerified()).isFalse();
+// 		}
+//
+// 		@Test
+// 		void 모든_일정이_SKIPPED면_totalSchedule은_0() {
+// 			// given
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+// 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
+// 			ScheduleDetail sd2 = mock(ScheduleDetail.class);
+//
+// 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
+// 			given(sd2.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
+//
+// 			Schedule schedule = mock(Schedule.class);
+// 			given(schedule.getCreatedAt()).willReturn(today.atStartOfDay());
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(23, 59));
+// 			given(sd1.getSchedule()).willReturn(schedule);
+// 			given(sd2.getSchedule()).willReturn(schedule);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
+// 				.willReturn(List.of(sd1, sd2));
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.scheduleDetailId()).isNull();
+// 			assertThat(response.scheduleOrder()).isEqualTo(0);
+// 			assertThat(response.totalSchedule()).isEqualTo(0);
+// 			assertThat(response.earnedStones()).isEqualTo(0);
+// 			assertThat(response.scheduleStatus()).isEqualTo(TodayScheduleStatus.NO_SCHEDULE);
+// 			assertThat(response.isSkippable()).isFalse();
+// 			assertThat(response.isNowScheduleVerified()).isFalse();
+// 		}
+//
+// 		@Test
+// 		void 오늘_반복일정이_이미_detail이_있으면_중복_생성되지_않음() {
+// 			// given
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of());
+//
+// 			// when
+// 			scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			verify(scheduleDetailPersistencePort, never()).saveAll(anyList());
+// 		}
+//
+// 		@Test
+// 		void 오늘_생성되지_않은_일정은_필터에서_제외되지_않음() {
+// 			// given
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Schedule schedule = mock(Schedule.class);
+// 			given(schedule.getCreatedAt()).willReturn(today.minusDays(1).atStartOfDay());
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(9, 0));
+// 			given(schedule.getEndTime()).willReturn(LocalTime.of(10, 0));
+// 			given(schedule.getName()).willReturn("어제 생성된 일정");
+//
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
+// 			given(sd.getStoneUsedAt()).willReturn(null);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+//
+//
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.totalSchedule()).isEqualTo(1);
+// 		}
+//
+// 		@Test
+// 		void createdAt이_startTime_이후면_제외() {
+// 			// given
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+// 			Schedule schedule = mock(Schedule.class);
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+//
+//
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
+// 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(23, 59)));
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(0, 0));
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.totalSchedule()).isEqualTo(0);
+// 		}
+//
+// 		@Test
+// 		void 불피우기_이후에_생성된_일정은_제외() {
+// 			// given
+// 			Long childId = 1L;
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+// 			Schedule schedule = mock(Schedule.class);
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+//
+//
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.COMPLETED);
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(23, 59));
+// 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(12, 0)));
+// 			given(sd.getStoneUsedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.totalSchedule()).isEqualTo(0);
+// 		}
+//
+// 		@Test
+// 		void 종료시간이_지났고_PENDING이면_FAILED로_변경() {
+// 			// given
+// 			Long childId = 1L;
+//
+// 			Clock afterEndClock = Clock.fixed(
+// 				today.atTime(12, 0).atZone(KST).toInstant(),
+// 				KST
+// 			);
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", afterEndClock);
+// 			Schedule schedule = mock(Schedule.class);
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+//
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
+// 			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
+//
+// 			// when
+// 			scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			verify(sd).changeScheduleStatus(ScheduleStatus.FAILED);
+// 		}
+//
+// 		@Test
+// 		void 종료시간이_지났고_VERIFIED면_COMPLETED로_변경() {
+// 			// given
+// 			Long childId = 1L;
+//
+// 			Clock afterEndClock = Clock.fixed(
+// 				today.atTime(12, 0).atZone(KST).toInstant(),
+// 				KST
+// 			);
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", afterEndClock);
+// 			Schedule schedule = mock(Schedule.class);
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+//
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
+// 			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
+//
+// 			// when
+// 			scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			verify(sd).changeScheduleStatus(ScheduleStatus.COMPLETED);
+// 		}
+//
+// 		@Test
+// 		void PENDING이_있으면_todoSchedule로_선택됨() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long scheduleDetailId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Schedule schedule = mock(Schedule.class);
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+//
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+//
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
+// 			given(schedule.getName()).willReturn("테스트 일정");
+//
+// 			given(sd.getId()).willReturn(scheduleDetailId);
+// 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
+// 			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.scheduleDetailId()).isEqualTo(1L);
+// 		}
+//
+// 		@Test
+// 		void VERIFIED만_있으면_todoSchedule로_선택됨() {
+// 			// given
+// 			Long childId = 1L;
+// 			Long scheduleDetailId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Schedule schedule = mock(Schedule.class);
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
+// 				.willReturn(List.of(sd));
+//
+// 			given(sd.getSchedule()).willReturn(schedule);
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
+// 			given(sd.getId()).willReturn(scheduleDetailId);
+//
+// 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
+// 			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
+// 			given(schedule.getName()).willReturn("테스트 일정");
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.scheduleDetailId()).isEqualTo(scheduleDetailId);
+// 			assertThat(response.isNowScheduleVerified()).isTrue();
+// 		}
+//
+// 		@Test
+// 		void todoSchedule이_없으면_null_반환() {
+// 			// given
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
+// 				.willReturn(List.of());
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.scheduleDetailId()).isNull();
+// 		}
+//
+// 		@Test
+// 		void nextTodoSchedule이_있으면_isSkippable_true() {
+// 			// given
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Schedule s1 = mock(Schedule.class);
+// 			Schedule s2 = mock(Schedule.class);
+//
+// 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
+// 			ScheduleDetail sd2 = mock(ScheduleDetail.class);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1, sd2));
+// 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
+// 			given(sd2.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
+// 			given(sd1.getSchedule()).willReturn(s1);
+// 			given(sd2.getSchedule()).willReturn(s2);
+//
+// 			given(s1.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
+// 			given(s1.getStartTime()).willReturn(LocalTime.of(11, 0));
+// 			given(s1.getEndTime()).willReturn(LocalTime.of(11, 59));
+//
+// 			given(s2.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
+// 			given(s2.getStartTime()).willReturn(LocalTime.of(11, 0));
+// 			given(s2.getEndTime()).willReturn(LocalTime.of(11, 59));
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.isSkippable()).isTrue();
+// 		}
+//
+// 		@Test
+// 		void nextTodoSchedule이_없으면_isSkippable_false() {
+// 			// given
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Schedule s1 = mock(Schedule.class);
+//
+// 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd1));
+// 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
+// 			given(sd1.getSchedule()).willReturn(s1);
+//
+// 			given(s1.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
+// 			given(s1.getStartTime()).willReturn(LocalTime.of(11, 0));
+// 			given(s1.getEndTime()).willReturn(LocalTime.of(11, 59));
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.isSkippable()).isFalse();
+// 		}
+//
+// 		@Test
+// 		void SKIPPED_제외_todoSchedule_계산() {
+// 			// given
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Schedule s1 = mock(Schedule.class);
+// 			Schedule s2 = mock(Schedule.class);
+//
+// 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
+// 			ScheduleDetail sd2 = mock(ScheduleDetail.class);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
+// 				.willReturn(List.of(sd1, sd2));
+//
+// 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
+// 			given(sd1.getSchedule()).willReturn(s1);
+// 			given(sd1.getStoneUsedAt()).willReturn(null);
+//
+// 			given(sd2.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
+// 			given(sd2.getSchedule()).willReturn(s2);
+// 			given(sd2.getStoneUsedAt()).willReturn(null);
+//
+// 			LocalDateTime createdAt = LocalDateTime.of(today, LocalTime.of(0, 0));
+// 			LocalTime startTime = LocalTime.of(11, 0);
+// 			LocalTime endTime = LocalTime.of(11, 59);
+//
+// 			given(s1.getCreatedAt()).willReturn(createdAt);
+// 			given(s1.getStartTime()).willReturn(startTime);
+//
+// 			given(s2.getCreatedAt()).willReturn(createdAt);
+// 			given(s2.getStartTime()).willReturn(startTime);
+// 			given(s2.getEndTime()).willReturn(endTime);
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.totalSchedule()).isEqualTo(1);
+// 		}
+//
+// 		@Test
+// 		void VERIFIED_COMPLETED만_earnedStones로_계산() {
+// 			// given
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Schedule s1 = mock(Schedule.class);
+// 			Schedule s2 = mock(Schedule.class);
+//
+// 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
+// 			ScheduleDetail sd2 = mock(ScheduleDetail.class);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
+// 				.willReturn(List.of(sd1, sd2));
+//
+// 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
+// 			given(sd1.getSchedule()).willReturn(s1);
+// 			given(sd1.getStoneUsedAt()).willReturn(null);
+//
+// 			given(sd2.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
+// 			given(sd2.getSchedule()).willReturn(s2);
+// 			given(sd2.getStoneUsedAt()).willReturn(null);
+//
+// 			LocalDateTime createdAt = LocalDateTime.of(today, LocalTime.of(0, 0));
+// 			LocalTime startTime = LocalTime.of(11, 0);
+// 			LocalTime endTime = LocalTime.of(11, 59);
+//
+// 			given(s1.getCreatedAt()).willReturn(createdAt);
+// 			given(s1.getStartTime()).willReturn(startTime);
+//
+// 			given(s2.getCreatedAt()).willReturn(createdAt);
+// 			given(s2.getStartTime()).willReturn(startTime);
+// 			given(s2.getEndTime()).willReturn(endTime);
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.earnedStones()).isEqualTo(1);
+// 		}
+//
+// 		@Test
+// 		void scheduleOrder는_filteredAllScheduleDetails_기준() {
+// 			// given
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Schedule s1 = mock(Schedule.class);
+// 			Schedule s2 = mock(Schedule.class);
+//
+// 			ScheduleDetail sd1 = mock(ScheduleDetail.class);
+// 			ScheduleDetail sd2 = mock(ScheduleDetail.class);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId))
+// 				.willReturn(List.of(sd1, sd2));
+//
+// 			given(sd1.getScheduleStatus()).willReturn(ScheduleStatus.SKIPPED);
+// 			given(sd1.getSchedule()).willReturn(s1);
+// 			given(sd1.getStoneUsedAt()).willReturn(null);
+//
+// 			given(sd2.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
+// 			given(sd2.getSchedule()).willReturn(s2);
+// 			given(sd2.getStoneUsedAt()).willReturn(null);
+//
+// 			LocalDateTime createdAt = LocalDateTime.of(today, LocalTime.of(0, 0));
+// 			LocalTime startTime = LocalTime.of(11, 0);
+// 			LocalTime endTime = LocalTime.of(11, 59);
+//
+// 			given(s1.getCreatedAt()).willReturn(createdAt);
+// 			given(s1.getStartTime()).willReturn(startTime);
+//
+// 			given(s2.getCreatedAt()).willReturn(createdAt);
+// 			given(s2.getStartTime()).willReturn(startTime);
+// 			given(s2.getEndTime()).willReturn(endTime);
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.scheduleOrder()).isEqualTo(2);
+// 		}
+//
+// 		@Test
+// 		void todoSchedule이_VERIFIED면_isNowScheduleVerified_true() {
+// 			// given
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Schedule schedule = mock(Schedule.class);
+//
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.VERIFIED);
+// 			given(sd.getSchedule()).willReturn(schedule);
+//
+// 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
+// 			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.isNowScheduleVerified()).isTrue();
+// 		}
+//
+// 		@Test
+// 		void todoSchedule이_PENDING면_isNowScheduleVerified_false() {
+// 			// given
+// 			Long childId = 1L;
+//
+// 			ReflectionTestUtils.setField(scheduleCommandService, "clock", fixedClock);
+//
+// 			Schedule schedule = mock(Schedule.class);
+//
+// 			ScheduleDetail sd = mock(ScheduleDetail.class);
+//
+// 			given(scheduleDetailPersistencePort.findByDateAndChildId(today, childId)).willReturn(List.of(sd));
+// 			given(sd.getScheduleStatus()).willReturn(ScheduleStatus.PENDING);
+// 			given(sd.getSchedule()).willReturn(schedule);
+//
+// 			given(schedule.getCreatedAt()).willReturn(LocalDateTime.of(today, LocalTime.of(0, 0)));
+// 			given(schedule.getStartTime()).willReturn(LocalTime.of(11, 0));
+// 			given(schedule.getEndTime()).willReturn(LocalTime.of(11, 59));
+//
+// 			// when
+// 			TodayScheduleResponse response = scheduleCommandService.getTodaySchedule(childId);
+//
+// 			// then
+// 			assertThat(response.isNowScheduleVerified()).isFalse();
+// 		}
+//
+// 	}
+// }
