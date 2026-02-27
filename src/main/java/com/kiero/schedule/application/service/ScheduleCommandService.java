@@ -99,7 +99,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
 			LocalDate repeatStartDate = repeatStartDateResolver(request.firstOrderDate(), dayOfWeeks, request.startTime(), today, now);
 
-			throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(), request.endTime(), child.getId(), null, repeatStartDate);
+			throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(), request.endTime(), child.getId(), null, repeatStartDate, null);
 
 			Schedule schedule = Schedule.create(
 				parent, child,
@@ -131,7 +131,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		} else {
 
-			throwExceptionWhenAddNormalScheduleIfDuplicated(request.startTime(), request.endTime(), request.dates(), child.getId());
+			throwExceptionWhenAddNormalScheduleIfDuplicated(request.startTime(), request.endTime(), request.dates(), child.getId(), null);
 
 			Schedule schedule = Schedule.create(
 				parent, child,
@@ -400,7 +400,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 
 				throwExceptionWhenAddNormalScheduleIfDuplicated(request.startTime(), request.endTime(), request.dates(),
-					childId);
+					childId, originalSchedule.getId());
 
 				// 새로운 schedule 생성 및 저장
 				Schedule newSchedule = Schedule.create(
@@ -451,7 +451,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				LocalDate repeatStartDate = repeatStartDateResolver(selectedDate, dayOfWeeks, request.startTime(), today, now);
 
 				throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(),
-					request.endTime(), childId, selectedDate, repeatStartDate);
+					request.endTime(), childId, selectedDate, repeatStartDate, originalSchedule.getId());
 
 				// 새로운 schedule 생성 및 저장
 				Schedule newSchedule = Schedule.create(
@@ -506,7 +506,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				LocalDate originalScheduleRepeatEndDate = repeatEndDateResolver(selectedDate, originalDayOfWeeks);
 
 				throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(),
-					request.endTime(), childId, selectedDate, newScheduleRepeatStartDate);
+					request.endTime(), childId, selectedDate, newScheduleRepeatStartDate, originalSchedule.getId());
 
 				originalSchedule.changeRepeatEndDate(originalScheduleRepeatEndDate);
 
@@ -564,7 +564,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				LocalDate originalScheduleRepeatEndDate = repeatEndDateResolver(selectedDate, dayOfWeeks);
 
 				throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(),
-					request.endTime(), childId, selectedDate, newScheduleRepeatStartDate);
+					request.endTime(), childId, selectedDate, newScheduleRepeatStartDate, originalSchedule.getId());
 
 				originalSchedule.changeRepeatEndDate(originalScheduleRepeatEndDate);
 
@@ -622,7 +622,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				if (!sameDays) throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_CANNOT_BE_MODIFIED);
 
 				throwExceptionWhenAddNormalScheduleIfDuplicated(request.startTime(), request.endTime(), selectedDate.toString(),
-					childId);
+					childId, originalSchedule.getId());
 
 				Schedule newSchedule = Schedule.create(
 					originalSchedule.getParent(),
@@ -669,7 +669,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				scheduleRepeatDaysPersistencePort.deleteAllByScheduleId(scheduleId);
 
 				throwExceptionWhenAddNormalScheduleIfDuplicated(request.startTime(), request.endTime(), request.dates(),
-					childId);
+					childId, originalSchedule.getId());
 
 				List<LocalDate> dates = dateParser(request.dates());
 
@@ -710,12 +710,13 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
-	private void throwExceptionWhenAddRecurringScheduleIfDuplicated(String dayOfWeek, LocalTime startTime, LocalTime endTime, Long childId, LocalDate selectedDate, LocalDate requestRepeatStartDate) {
+	private void throwExceptionWhenAddRecurringScheduleIfDuplicated(String dayOfWeek, LocalTime startTime, LocalTime endTime, Long childId, LocalDate selectedDate, LocalDate requestRepeatStartDate, Long excludeScheduleId) {
 		List<DayOfWeek> targetDays = dayOfWeekParser(dayOfWeek);
 		List<Schedule> existingRecurring = scheduleRepeatDaysPersistencePort.findSchedulesByChildIdAndDayOfWeeks(childId, targetDays);
 
 		// 기존의 반복일정과 충돌하는지 검사
 		boolean conflictWithRecurring = existingRecurring.stream()
+			.filter(s -> !s.getId().equals(excludeScheduleId))
 			.filter(s ->
 				s.getRepeatEndDate() == null
 					|| !s.getRepeatEndDate().isBefore(requestRepeatStartDate)
@@ -738,6 +739,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		boolean conflictWithNormal = normalsFromToday.stream()
 			.filter(sd -> targetDays.contains(DayOfWeek.from(sd.getDate().getDayOfWeek())))
 			.filter(sd -> !discardedKeys.contains(new DiscardKey(sd.getSchedule().getId(), sd.getDate())))
+			.filter(s -> !s.getId().equals(excludeScheduleId))
 			.filter(sd -> selectedDate == null || sd.getDate().isAfter(selectedDate))
 			.anyMatch(sd -> isTimeOverlapped(
 				startTime, endTime,
@@ -747,7 +749,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		if (conflictWithNormal) throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
 	}
 
-	public void throwExceptionWhenAddNormalScheduleIfDuplicated(LocalTime startTime, LocalTime endTime, String requestDates, Long childId) {
+	public void throwExceptionWhenAddNormalScheduleIfDuplicated(LocalTime startTime, LocalTime endTime, String requestDates, Long childId, Long excludeScheduleId) {
 		// 새로 추가하려는 일정이 단일일정일 때
 		List<LocalDate> dates = dateParser(requestDates);
 		List<ScheduleDetail> thatDayDetails = scheduleDetailPersistencePort.findByDateInAndChildId(dates, childId);
@@ -760,6 +762,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		// 기존의 단일일정과 충돌하는지 검사
 		boolean conflictWithNormal = thatDayDetails.stream()
 			.filter(sd -> !discardedKeys.contains(new DiscardKey(sd.getSchedule().getId(), sd.getDate())))
+			.filter(sd -> !sd.getSchedule().getId().equals(excludeScheduleId)) // 일정 추가 시에는 무시되는 필터, 일정 수정 시 자기 자신은 충돌검사에서 제외
 			.anyMatch(sd -> isTimeOverlapped(
 				startTime, endTime,
 				sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
@@ -776,6 +779,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 			boolean conflictWithRecurringOnThisDate = recurringThatDay.stream()
 				.filter(s -> !discardedKeys.contains(new DiscardKey(s.getId(), date)))
+				.filter(s -> !s.getId().equals(excludeScheduleId)) // 일정 추가 시에는 무시되는 필터, 일정 수정 시 자기 자신은 충돌검사에서 제외
 				.filter(s -> s.getRepeatStartDate() != null && !s.getRepeatStartDate().isAfter(date))
 				.filter(s -> s.getRepeatEndDate() == null || !s.getRepeatEndDate().isBefore(date))
 				.anyMatch(s -> isTimeOverlapped(startTime, endTime, s.getStartTime(), s.getEndTime()));
