@@ -42,7 +42,6 @@ import com.kiero.schedule.application.port.out.ScheduleRepeatDaysPersistencePort
 import com.kiero.schedule.application.service.resolver.ScheduleUpdateCase;
 import com.kiero.schedule.application.service.resolver.TodayScheduleStatus;
 import com.kiero.schedule.application.service.resolver.TodayScheduleStatusResolver;
-
 import com.kiero.schedule.domain.DiscardedSchedule;
 import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
