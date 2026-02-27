@@ -2,8 +2,6 @@ package com.kiero.invitation.domain;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
-import org.springframework.data.redis.core.index.Indexed;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,7 +16,6 @@ public class InviteCode {
     @Id
     private String code;
 
-    @Indexed
     private Long parentId;
 
     private String childLastName;
