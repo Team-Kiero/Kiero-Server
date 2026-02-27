@@ -82,11 +82,15 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 		boolean isFireLitToday = detailPort.existsStoneUsedToday(scheduleIds, LocalDate.now(clock));
 
-		List<Long> recurringIds = schedules.stream().filter(Schedule::isRecurring).map(Schedule::getId).toList();
+		List<Long> recurringIds = schedules.stream()
+			.filter(Schedule::isRecurring)
+			.filter(s -> s.getRepeatEndDate() == null || s.getRepeatEndDate().isAfter(s.getRepeatStartDate()))
+			.map(Schedule::getId).toList();
 		List<Long> normalIds = schedules.stream().filter(s -> !s.isRecurring()).map(Schedule::getId).toList();
 
 		List<RecurringScheduleDto> recurringDtos = List.of();
 		if (!recurringIds.isEmpty()) {
+
 			List<ScheduleRepeatDays> repeatDays = repeatDaysPort.findAllByScheduleIdsIn(recurringIds);
 
 			Map<Long, List<ScheduleRepeatDays>> repeatDaysByScheduleId = repeatDays.stream()
