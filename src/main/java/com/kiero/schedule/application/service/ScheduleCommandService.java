@@ -647,7 +647,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 						isEffectsToChildSchedule = true;
 					}
 				} else {
-					ScheduleDetail scheduleDetail = ScheduleDetail.create(selectedDate, null, null, ScheduleStatus.PENDING, null, newSchedule);
+					ScheduleDetail scheduleDetail = ScheduleDetail.create(selectedDate, null, null, ScheduleStatus.PENDING, null, saved);
 					scheduleDetailPersistencePort.save(scheduleDetail);
 				}
 
