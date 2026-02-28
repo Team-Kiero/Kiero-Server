@@ -379,8 +379,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		ScheduleUpdateCase scheduleUpdateCase = scheduleUpdateCaseResolver(originalSchedule, request);
 
-		log.info("scheduleUpdateCase: " + scheduleUpdateCase);
-
 		Long childId = originalSchedule.getChild().getId();
 
 		switch (scheduleUpdateCase) {
@@ -591,7 +589,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				Optional<ScheduleDetail> originalDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
 					originalSchedule.getId(), selectedDate);
 
-				log.info("now: {}, request startTime: {}", now, request.startTime());
 				if(originalDetail.isPresent()) {
 					originalDetail.get().changeSchedule(saved);
 					if (request.startTime().isAfter(now)) {
@@ -697,10 +694,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		// 아이의 오늘 일정에 영향이 있을 때만 이벤트 전송
 		if (isEffectsToChildSchedule) eventPort.publish(new ScheduleModifiedEvent(childId));
-
-		log.info("scheduleUpdateCase: {}, eventSend: {}", scheduleUpdateCase, isEffectsToChildSchedule);
 	}
 
+	@Override
+	@Transactional
 	public void deleteSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleDeleteRequest request) {
 
 		LocalDate today = LocalDate.now(clock);
@@ -728,7 +725,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		// 삭제하려는 일정이 반복일정일 경우
 		if (originalSchedule.isRecurring()) {
-			if (request.isIncludeFollowing() == null)
+			if (request == null || request.isIncludeFollowing() == null)
 				throw new KieroException(ScheduleErrorCode.IS_INCLUDE_FOLLOWING_IS_REQUIRED);
 
 			if (request.isIncludeFollowing()) { // 이후 일정을 포함하는 경우
