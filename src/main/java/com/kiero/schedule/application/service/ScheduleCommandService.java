@@ -751,7 +751,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		if (conflictWithNormal) throw new KieroException(ScheduleErrorCode.SCHEDULE_DUPLICATED);
 	}
 
-	public void throwExceptionWhenAddNormalScheduleIfDuplicated(LocalTime startTime, LocalTime endTime, String requestDates, Long childId, Long excludeScheduleId) {
+	private void throwExceptionWhenAddNormalScheduleIfDuplicated(LocalTime startTime, LocalTime endTime, String requestDates, Long childId, Long excludeScheduleId) {
 		// 새로 추가하려는 일정이 단일일정일 때
 		List<LocalDate> dates = dateParser(requestDates);
 		List<ScheduleDetail> thatDayDetails = scheduleDetailPersistencePort.findByDateInAndChildId(dates, childId);
