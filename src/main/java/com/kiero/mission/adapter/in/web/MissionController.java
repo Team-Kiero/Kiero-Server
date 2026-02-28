@@ -23,6 +23,8 @@ import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.mission.application.dto.MissionBulkCreateRequest;
 import com.kiero.mission.application.dto.MissionCreateRequest;
 import com.kiero.mission.application.dto.MissionResponse;
+import com.kiero.mission.application.dto.MissionUpdateRequest;
+import com.kiero.mission.application.dto.MissionUpdateResponse;
 import com.kiero.mission.application.dto.MissionSuggestionRequest;
 import com.kiero.mission.application.dto.MissionSuggestionResponse;
 import com.kiero.mission.application.dto.MissionUpdateRequest;
@@ -107,12 +109,12 @@ public class MissionController {
 
     @PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
     @PatchMapping("/missions/{missionId}")
-    public ResponseEntity<SuccessResponse<MissionResponse>> updateMission(
+    public ResponseEntity<SuccessResponse<MissionUpdateResponse>> updateMission(
             @CurrentMember CurrentAuth currentAuth,
             @PathVariable Long missionId,
             @Valid @RequestBody MissionUpdateRequest request
     ) {
-        MissionResponse response = missionCommandUseCase.updateMission(currentAuth.memberId(), missionId, request);
+        MissionUpdateResponse response = missionCommandUseCase.updateMission(currentAuth.memberId(), missionId, request);
 
         return ResponseEntity.ok()
                 .body(SuccessResponse.of(MissionSuccessCode.MISSION_UPDATED, response));

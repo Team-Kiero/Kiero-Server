@@ -40,7 +40,7 @@ public class SecurityConfig {
 					"/actuator/health",
 					"/api/v1/parents/login",
 					"/api/v1/parents/login/access-token",
-					"/api/v1/children/signup",
+					"/api/v1/children/login",
 					"/api/v1/tokens/reissue/*",
 					"/api/v1/tokens/subscribe-token"
 				).permitAll()

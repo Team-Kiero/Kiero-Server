@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.kiero.child.application.dto.ChildLoginResponse;
 import com.kiero.child.application.dto.ChildMeResponse;
-import com.kiero.child.application.dto.ChildSignupRequest;
+import com.kiero.child.application.dto.ChildLoginRequest;
 import com.kiero.child.application.exception.ChildSuccessCode;
+import com.kiero.child.application.port.in.ChildLoginUseCase;
 import com.kiero.child.application.port.in.ChildQueryUseCase;
-import com.kiero.child.application.port.in.ChildSignupUseCase;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
@@ -32,14 +32,14 @@ public class ChildController {
 
 	private static final String REFRESH_TOKEN = "refreshToken";
 	private static final int COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
-	private final ChildSignupUseCase childSignupUseCase;
+	private final ChildLoginUseCase childLoginUseCase;
 	private final ChildQueryUseCase childQueryUseCase;
 
-	@PostMapping("/signup")
-	public ResponseEntity<SuccessResponse<ChildLoginResponse>> signup(
-		@Valid @RequestBody ChildSignupRequest request
+	@PostMapping("/login")
+	public ResponseEntity<SuccessResponse<ChildLoginResponse>> login(
+		@Valid @RequestBody ChildLoginRequest request
 	) {
-		ChildLoginResponse response = childSignupUseCase.signup(request);
+		ChildLoginResponse response = childLoginUseCase.login(request);
 		ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN, response.refreshToken())
 			.maxAge(COOKIE_MAX_AGE)
 			.path("/")
@@ -48,10 +48,9 @@ public class ChildController {
 			.httpOnly(true)
 			.build();
 
-		return ResponseEntity
-			.status(ChildSuccessCode.SIGNUP_SUCCESS.getHttpStatus())
+		return ResponseEntity.ok()
 			.header(HttpHeaders.SET_COOKIE, cookie.toString())
-			.body(SuccessResponse.of(ChildSuccessCode.SIGNUP_SUCCESS, response));
+			.body(SuccessResponse.of(ChildSuccessCode.LOGIN_SUCCESS, response));
 	}
 
 	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
