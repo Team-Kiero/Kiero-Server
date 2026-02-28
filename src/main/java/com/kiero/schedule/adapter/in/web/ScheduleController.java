@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +21,7 @@ import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
+import com.kiero.schedule.application.dto.ScheduleDeleteRequest;
 import com.kiero.schedule.application.dto.ScheduleModifyRequest;
 import com.kiero.schedule.application.dto.ScheduleOccurrencesResponse;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
@@ -131,5 +133,18 @@ public class ScheduleController {
 		scheduleCommandUseCase.updateSchedule(currentAuth.memberId(), scheduleId, selectedDate, request);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_UPDATE_SUCCESS));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@DeleteMapping("/{scheduleId}")
+	public ResponseEntity<SuccessResponse<Void>> deleteSchedule(
+		@PathVariable("scheduleId") Long scheduleId,
+		@RequestParam("selectedDate") LocalDate selectedDate,
+		@RequestBody(required = false) ScheduleDeleteRequest request,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		scheduleCommandUseCase.deleteSchedule(currentAuth.memberId(), scheduleId, selectedDate, request);
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_DELETE_SUCCESS));
 	}
 }
