@@ -24,4 +24,6 @@ public interface SchedulePersistencePort {
 		LocalDate today
 	);
 
+	Optional<Schedule> findById(Long scheduleId);
+
 }

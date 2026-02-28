@@ -20,7 +20,8 @@ import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
-import com.kiero.schedule.application.dto.ScheduleTabResponse;
+import com.kiero.schedule.application.dto.ScheduleModifyRequest;
+import com.kiero.schedule.application.dto.ScheduleOccurrencesResponse;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleSuccessCode;
 import com.kiero.schedule.application.port.in.ScheduleCommandUseCase;
@@ -51,13 +52,14 @@ public class ScheduleController {
 
 	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@GetMapping("/{childId}")
-	public ResponseEntity<SuccessResponse<ScheduleTabResponse>> getSchedules(
+	public ResponseEntity<SuccessResponse<ScheduleOccurrencesResponse>> getSchedules(
 		@RequestParam LocalDate startDate,
 		@RequestParam LocalDate endDate,
 		@PathVariable Long childId,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		ScheduleTabResponse response = scheduleQueryUseCase.getSchedules(startDate, endDate, currentAuth.memberId(),
+		ScheduleOccurrencesResponse response = scheduleQueryUseCase.getSchedules(startDate, endDate,
+			currentAuth.memberId(),
 			childId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_TAB_GET_SUCCESS, response));
@@ -85,7 +87,7 @@ public class ScheduleController {
 	}
 
 	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
-	@PatchMapping("/{scheduleDetailId}")
+	@PatchMapping("/verify/{scheduleDetailId}")
 	public ResponseEntity<SuccessResponse<Void>> completeNowSchedule(
 		@Valid @RequestBody NowScheduleCompleteRequest request,
 		@PathVariable("scheduleDetailId") Long scheduleDetailId,
@@ -112,8 +114,22 @@ public class ScheduleController {
 		@PathVariable("childId") Long childId,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		DefaultScheduleContentResponse response = scheduleQueryUseCase.getDefaultSchedule(currentAuth.memberId(), childId);
+		DefaultScheduleContentResponse response = scheduleQueryUseCase.getDefaultSchedule(currentAuth.memberId(),
+			childId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.DEFAULT_CONTENT_GET_SUCCESS, response));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@PatchMapping("/{scheduleId}")
+	public ResponseEntity<SuccessResponse<Void>> updateSchedule(
+		@PathVariable("scheduleId") Long scheduleId,
+		@RequestParam("selectedDate") LocalDate selectedDate,
+		@RequestBody ScheduleModifyRequest request,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		scheduleCommandUseCase.updateSchedule(currentAuth.memberId(), scheduleId, selectedDate, request);
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_UPDATE_SUCCESS));
 	}
 }

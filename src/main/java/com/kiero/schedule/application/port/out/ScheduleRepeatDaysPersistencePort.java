@@ -13,10 +13,13 @@ public interface ScheduleRepeatDaysPersistencePort {
 
 	List<ScheduleRepeatDays> findAllByScheduleIdsIn(List<Long> scheduleIds);
 
+	List<DayOfWeek> findDayOfWeeksByScheduleId(Long scheduleId);
+
 	List<Schedule> findSchedulesToCreateTodayDetail(DayOfWeek dayOfWeek, LocalDate date);
 
 	List<Schedule> findSchedulesByChildIdAndDayOfWeeks(Long childId, List<DayOfWeek> dayOfWeeks);
 
 	List<Schedule> findSchedulesByChildIdAndDayOfWeekIn(Long childId, List<DayOfWeek> dayOfWeeks);
 
+	void deleteAllByScheduleId(Long scheduleId);
 }

@@ -2,9 +2,10 @@ package com.kiero.schedule.application.service;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -19,18 +20,20 @@ import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
-import com.kiero.schedule.application.dto.NormalScheduleDto;
-import com.kiero.schedule.application.dto.RecurringScheduleDto;
-import com.kiero.schedule.application.dto.ScheduleTabResponse;
+import com.kiero.schedule.application.dto.ScheduleOccurrenceDto;
+import com.kiero.schedule.application.dto.ScheduleOccurrencesResponse;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
 import com.kiero.schedule.application.port.in.ScheduleQueryUseCase;
+import com.kiero.schedule.application.port.out.DiscardedSchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
 import com.kiero.schedule.application.port.out.SchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleRepeatDaysPersistencePort;
 import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
 import com.kiero.schedule.domain.ScheduleRepeatDays;
+import com.kiero.schedule.domain.enums.DayOfWeek;
 import com.kiero.schedule.domain.enums.ScheduleColor;
+import com.kiero.schedule.domain.vo.DiscardKey;
 
 import lombok.RequiredArgsConstructor;
 
@@ -47,6 +50,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 	private final ScheduleDetailPersistencePort detailPort;
 
 	private final Clock clock;
+	private final DiscardedSchedulePersistencePort discardedSchedulePersistencePort;
 
 	@Override
 	@Transactional
@@ -63,7 +67,8 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 	@Override
 	@Transactional
-	public ScheduleTabResponse getSchedules(LocalDate startDate, LocalDate endDate, Long parentId, Long childId) {
+	public ScheduleOccurrencesResponse getSchedules(LocalDate startDate, LocalDate endDate, Long parentId,
+		Long childId) {
 		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
 
 		if (startDate.isAfter(endDate) || endDate.isBefore(startDate)) {
@@ -72,74 +77,116 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 		List<Schedule> schedules = schedulePort.findAllByChildId(childId);
 		if (schedules.isEmpty()) {
-			return ScheduleTabResponse.of(false, List.of(), List.of());
+			return ScheduleOccurrencesResponse.of(false, List.of());
 		}
 
 		List<Long> scheduleIds = schedules.stream().map(Schedule::getId).toList();
-
 		boolean isFireLitToday = detailPort.existsStoneUsedToday(scheduleIds, LocalDate.now(clock));
 
-		List<Long> recurringIds = schedules.stream().filter(Schedule::isRecurring).map(Schedule::getId).toList();
-		List<Long> normalIds = schedules.stream().filter(s -> !s.isRecurring()).map(Schedule::getId).toList();
+		// 반복일정 일회성 수정, 일회성 삭제 등으로 인해 무시되어야 하는 일정 집합
+		Set<DiscardKey> discardedKeys = discardedSchedulePersistencePort
+			.findAllByChildIdAndDateBetween(childId, startDate, endDate).stream()
+			.map(ds -> new DiscardKey(ds.getSchedule().getId(), ds.getDate()))
+			.collect(Collectors.toSet());
 
-		List<RecurringScheduleDto> recurringDtos = List.of();
+		// 반복일정 가져오기
+		List<Long> recurringIds = schedules.stream()
+			.filter(Schedule::isRecurring)
+			.map(Schedule::getId)
+			.toList();
+
+		Map<Long, List<DayOfWeek>> repeatDaysByScheduleId = Map.of();
 		if (!recurringIds.isEmpty()) {
 			List<ScheduleRepeatDays> repeatDays = repeatDaysPort.findAllByScheduleIdsIn(recurringIds);
 
-			Map<Long, List<ScheduleRepeatDays>> repeatDaysByScheduleId = repeatDays.stream()
-				.filter(rd -> {
-					Schedule schedule = rd.getSchedule();
-					LocalDate createdWeekStart = schedule.getCreatedAt().toLocalDate().with(java.time.DayOfWeek.MONDAY);
-					LocalDate queryWeekStart = startDate.with(java.time.DayOfWeek.MONDAY);
-					return !createdWeekStart.isAfter(queryWeekStart);
-				})
-				.collect(Collectors.groupingBy(rd -> rd.getSchedule().getId()));
-
-			recurringDtos = schedules.stream()
-				.filter(Schedule::isRecurring)
-				.map(schedule -> {
-					List<ScheduleRepeatDays> days = repeatDaysByScheduleId.getOrDefault(schedule.getId(), List.of());
-					if (days.isEmpty()) return null;
-
-					String dayOfWeek = days.stream()
-						.map(d -> d.getDayOfWeek().name())
-						.sorted()
-						.collect(Collectors.joining(", "));
-
-					return new RecurringScheduleDto(
-						schedule.getStartTime(),
-						schedule.getEndTime(),
-						schedule.getName(),
-						schedule.getScheduleColor().getColorCode(),
-						dayOfWeek
-					);
-				})
-				.filter(Objects::nonNull)
-				.toList();
+			repeatDaysByScheduleId = repeatDays.stream()
+				.collect(Collectors.groupingBy(
+					rd -> rd.getSchedule().getId(),
+					Collectors.mapping(ScheduleRepeatDays::getDayOfWeek, Collectors.toList())
+				));
 		}
 
-		List<NormalScheduleDto> normalDtos = List.of();
+		// 단일일정 가져오기
+		List<Long> normalIds = schedules.stream()
+			.filter(s -> !s.isRecurring())
+			.map(Schedule::getId)
+			.toList();
+
+		Map<Long, Schedule> scheduleById = schedules.stream().collect(Collectors.toMap(Schedule::getId, s -> s));
+
+		List<ScheduleOccurrenceDto> items = new java.util.ArrayList<>();
+
+		// 단일일정들 dto화
 		if (!normalIds.isEmpty()) {
-			List<ScheduleDetail> details = detailPort.findAllByScheduleIdInAndDateBetween(normalIds, startDate, endDate);
+			List<ScheduleDetail> details = detailPort.findAllByScheduleIdInAndDateBetween(normalIds, startDate,
+				endDate);
 
-			Map<Long, Schedule> scheduleById = schedules.stream()
-				.collect(Collectors.toMap(Schedule::getId, s -> s));
+			for (ScheduleDetail d : details) {
+				Schedule s = scheduleById.get(d.getSchedule().getId());
 
-			normalDtos = details.stream()
-				.map(detail -> {
-					Schedule schedule = scheduleById.get(detail.getSchedule().getId());
-					return new NormalScheduleDto(
-						schedule.getStartTime(),
-						schedule.getEndTime(),
-						schedule.getName(),
-						schedule.getScheduleColor().getColorCode(),
-						detail.getDate()
-					);
-				})
-				.toList();
+				// discarded 된 건 제외
+				if (discardedKeys.contains(new DiscardKey(s.getId(), d.getDate())))
+					continue;
+
+				items.add(new ScheduleOccurrenceDto(
+					s.getId(),
+					d.getDate(),
+					s.getStartTime(),
+					s.getEndTime(),
+					s.getName(),
+					s.getScheduleColor().getColorCode()
+				));
+			}
 		}
 
-		return ScheduleTabResponse.of(isFireLitToday, recurringDtos, normalDtos);
+		// 반복 일정 dto화
+		for (Schedule s : schedules) {
+			if (!s.isRecurring())
+				continue;
+
+			List<DayOfWeek> repeatDays = repeatDaysByScheduleId.getOrDefault(s.getId(), List.of());
+			if (repeatDays.isEmpty())
+				continue;
+
+			LocalDate repeatStart = s.getRepeatStartDate();
+			LocalDate repeatEnd = s.getRepeatEndDate();
+
+			for (LocalDate cursor = startDate; !cursor.isAfter(endDate); cursor = cursor.plusDays(1)) {
+
+				// 기간 조건
+				if (repeatStart != null && cursor.isBefore(repeatStart))
+					continue;
+				if (repeatEnd != null && cursor.isAfter(repeatEnd))
+					continue;
+
+				// 요일 조건
+				DayOfWeek cursorDow = DayOfWeek.from(cursor.getDayOfWeek());
+				if (!repeatDays.contains(cursorDow))
+					continue;
+
+				// discarded 제외
+				if (discardedKeys.contains(new DiscardKey(s.getId(), cursor)))
+					continue;
+
+				items.add(new ScheduleOccurrenceDto(
+					s.getId(),
+					cursor,
+					s.getStartTime(),
+					s.getEndTime(),
+					s.getName(),
+					s.getScheduleColor().getColorCode()
+				));
+			}
+		}
+
+		// date 순으로 정렬. 같은 date 내에서는 startTime, scheduleId 순으로 정렬
+		items.sort(
+			Comparator.comparing(ScheduleOccurrenceDto::date)
+				.thenComparing(ScheduleOccurrenceDto::startTime)
+				.thenComparing(ScheduleOccurrenceDto::scheduleId)
+		);
+
+		return ScheduleOccurrencesResponse.of(isFireLitToday, items);
 	}
 
 	private void checkIsExistsAndAccessibleByParentIdAndChildId(Long parentId, Long childId) {

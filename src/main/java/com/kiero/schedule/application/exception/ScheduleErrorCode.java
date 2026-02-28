@@ -23,16 +23,27 @@ public enum ScheduleErrorCode implements BaseCode {
 	INVALID_DATE_DURATION(HttpStatus.BAD_REQUEST, "시작 일자가 종료 일자의 이전 시점이어야 합니다."),
 	SCHEDULE_DUPLICATED(HttpStatus.BAD_REQUEST, "기존의 일정과 시간이 중복되는 일정은 추가할 수 없습니다."),
 	INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST, "입력된 일자가 형식에 맞지 않습니다."),
+	PAST_SCHEDULE_CANNOT_BE_MODIFIED(HttpStatus.BAD_REQUEST, "과거의 일정은 수정될 수 없습니다."),
+	DAY_OF_WEEK_CANNOT_BE_MODIFIED(HttpStatus.BAD_REQUEST, "'이후 일정 포함', '이번 일정만' 조건 선택 시 요일은 수정될 수 없습니다."),
 
 	/*
 	403 FORBIDDEN
 	 */
 	SCHEDULE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 일정에 접근할 권한이 없습니다."),
+	NOT_ALLOWED_TO_CHILD(HttpStatus.FORBIDDEN, "자신의 아이에만 접근할 수 있습니다."),
 
 	/*
 	404 NOT FOUND
 	 */
 	SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당하는 일정 데이터를 찾을 수 없습니다."),
+	CHILD_NOT_FOUND(HttpStatus.NOT_FOUND, "아이 정보를 찾을 수 없습니다."),
+	PARENT_NOT_FOUND(HttpStatus.NOT_FOUND, "부모 정보를 찾을 수 없습니다."),
+
+	/*
+	500 INTERNAL SERVER ERROR
+	 */
+	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "예기치 않은 서버 에러가 발생했습니다."),
+	SCHEDULE_UPDATE_CASE_CANNOT_RESOLVED(HttpStatus.INTERNAL_SERVER_ERROR, "일정 업데이트 유형 판단에 실패했습니다."),
 	;
 
 	private final HttpStatus httpStatus;

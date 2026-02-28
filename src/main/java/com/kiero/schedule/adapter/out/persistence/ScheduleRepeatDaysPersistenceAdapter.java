@@ -29,6 +29,11 @@ public class ScheduleRepeatDaysPersistenceAdapter implements ScheduleRepeatDaysP
 	}
 
 	@Override
+	public List<DayOfWeek> findDayOfWeeksByScheduleId(Long scheduleId) {
+		return scheduleRepeatDaysRepository.findDayOfWeeksByScheduleId(scheduleId);
+	}
+
+	@Override
 	public List<Schedule> findSchedulesToCreateTodayDetail(DayOfWeek dayOfWeek, LocalDate date) {
 		return scheduleRepeatDaysRepository.findSchedulesToCreateTodayDetail(dayOfWeek, date);
 	}
@@ -41,5 +46,10 @@ public class ScheduleRepeatDaysPersistenceAdapter implements ScheduleRepeatDaysP
 	@Override
 	public List<Schedule> findSchedulesByChildIdAndDayOfWeekIn(Long childId, List<DayOfWeek> dayOfWeeks) {
 		return scheduleRepeatDaysRepository.findSchedulesByChildIdAndDayOfWeekIn(childId, dayOfWeeks);
+	}
+
+	@Override
+	public void deleteAllByScheduleId(Long scheduleId) {
+		scheduleRepeatDaysRepository.deleteAllByScheduleId(scheduleId);
 	}
 }

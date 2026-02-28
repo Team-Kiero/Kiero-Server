@@ -12,7 +12,7 @@ public enum SseEventType {
 
 	// 자녀 이벤트
 	MISSION_CREATED("mission", "미션 생성"),
-	SCHEDULE_CREATED("schedule", "스케줄 생성"),
+	SCHEDULE_MODIFIED("schedule", "스케줄 변경"),
 	COUPON_CREATED("coupon", "쿠폰 생성"),
 
 	// 피드 이벤트 (부모에게 전송)
