@@ -20,6 +20,7 @@ public enum ScheduleSuccessCode implements BaseCode {
 	FIRE_LIT_SUCCESS(HttpStatus.OK, "마음의 불 피우기 요청이 성공하였습니다."),
 	DEFAULT_CONTENT_GET_SUCCESS(HttpStatus.OK, "일정 추가를 위한 기본 정보 조회가 성공하였습니다."),
 	SCHEDULE_UPDATE_SUCCESS(HttpStatus.OK, "일정이 성공적으로 수정되었습니다."),
+	SCHEDULE_DELETE_SUCCESS(HttpStatus.OK, "일정이 성공적으로 삭제되었습니다."),
 
 	/*
 	201 CREATED
