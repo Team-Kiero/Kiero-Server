@@ -10,10 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.kiero.child.application.dto.ChildJoinedEvent;
 import com.kiero.child.application.dto.ChildLoginResponse;
 import com.kiero.child.application.dto.ChildMeResponse;
-import com.kiero.child.application.dto.ChildSignupRequest;
+import com.kiero.child.application.dto.ChildLoginRequest;
 import com.kiero.child.application.exception.ChildErrorCode;
+import com.kiero.child.application.port.in.ChildLoginUseCase;
 import com.kiero.child.application.port.in.ChildQueryUseCase;
-import com.kiero.child.application.port.in.ChildSignupUseCase;
 import com.kiero.child.application.port.out.AuthGeneratePort;
 import com.kiero.child.application.port.out.ChildJoinedEventPort;
 import com.kiero.child.application.port.out.ChildLoadPort;
@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ChildService implements ChildSignupUseCase, ChildQueryUseCase {
+public class ChildService implements ChildLoginUseCase, ChildQueryUseCase {
 
 	private final InviteCodeUseCase inviteCodeUseCase;
 	private final ParentChildSaveUseCase parentChildSaveUseCase;
@@ -49,8 +49,8 @@ public class ChildService implements ChildSignupUseCase, ChildQueryUseCase {
 
 	@Override
 	@Transactional
-	public ChildLoginResponse signup(ChildSignupRequest request) {
-		log.info("Child signup started: inviteCode={}, childName={} {}",
+	public ChildLoginResponse login(ChildLoginRequest request) {
+		log.info("Child login started: inviteCode={}, childName={} {}",
 			request.inviteCode(), request.lastName(), request.firstName());
 
 		// 1. 초대 코드 검증 및 삭제 (분산 락으로 원자적 처리)
@@ -60,8 +60,6 @@ public class ChildService implements ChildSignupUseCase, ChildQueryUseCase {
 			request.firstName()
 		);
 
-		log.info("Invite code validated. Searching for parent with ID: {}", inviteCode.getParentId());
-
 		// 2. 부모 엔티티 조회
 		Parent parent = parentLoadPort.findById(inviteCode.getParentId())
 			.orElseThrow(() -> {
@@ -69,27 +67,24 @@ public class ChildService implements ChildSignupUseCase, ChildQueryUseCase {
 				return new KieroException(InvitationErrorCode.PARENT_NOT_FOUND);
 			});
 
-		log.info("Parent found: parentId={}, parentName={}", parent.getId(), parent.getName());
+		// 3. 해당 부모 하위에 동일 이름의 아이가 이미 존재하면 로그인, 없으면 신규 생성
+		Child child = childLoadPort.findByParentIdAndName(parent.getId(), request.lastName(), request.firstName())
+			.orElseGet(() -> {
+				Child newChild = Child.create(request.lastName(), request.firstName(), Role.CHILD);
+				Child savedChild = childSavePort.save(newChild);
 
-		// 3. 아이 엔티티 생성
-		Child child = Child.create(request.lastName(), request.firstName(), Role.CHILD);
-		Child savedChild = childSavePort.save(child);
+				ParentChild parentChild = ParentChild.create(parent, savedChild);
+				parentChildSaveUseCase.save(parentChild);
 
-		log.info("Child created: childId={}, childName={}", savedChild.getId(), savedChild.getFullName());
+				log.info("New child created: childId={}, childName={}", savedChild.getId(), savedChild.getFullName());
 
-		// 4. ParentChild 관계 생성
-		ParentChild parentChild = ParentChild.create(parent, savedChild);
-		parentChildSaveUseCase.save(parentChild);
+				return savedChild;
+			});
 
-		log.info("ParentChild relationship created: parentId={}, childId={}", parent.getId(), savedChild.getId());
+		// 4. 신규 가입 / 재로그인 모두 부모에게 SSE 알림 발행
+		childJoinedEventPort.publish(new ChildJoinedEvent(parent.getId(), child.getId()));
 
-		childJoinedEventPort.publish(new ChildJoinedEvent(
-			parent.getId(),
-			savedChild.getId()
-		));
-
-		// 5. 토큰 발급 및 로그인 응답 반환
-		return authGeneratePort.generateLoginResponse(savedChild);
+		return authGeneratePort.generateLoginResponse(child);
 	}
 
 	@Override

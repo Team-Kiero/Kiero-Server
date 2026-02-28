@@ -6,6 +6,7 @@ import com.kiero.mission.application.dto.MissionBulkCreateRequest;
 import com.kiero.mission.application.dto.MissionCreateRequest;
 import com.kiero.mission.application.dto.MissionResponse;
 import com.kiero.mission.application.dto.MissionUpdateRequest;
+import com.kiero.mission.application.dto.MissionUpdateResponse;
 
 public interface MissionCommandUseCase {
 	MissionResponse createMission(Long parentId, Long childId, MissionCreateRequest request);
@@ -14,7 +15,7 @@ public interface MissionCommandUseCase {
 
 	MissionResponse completeMission(Long childId, Long missionId);
 
-	MissionResponse updateMission(Long parentId, Long missionId, MissionUpdateRequest request);
+	MissionUpdateResponse updateMission(Long parentId, Long missionId, MissionUpdateRequest request);
 
 	void deleteMission(Long parentId, Long missionId);
 

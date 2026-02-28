@@ -18,6 +18,7 @@ import com.kiero.mission.application.dto.MissionCreateRequest;
 import com.kiero.mission.application.dto.MissionCreatedEvent;
 import com.kiero.mission.application.dto.MissionResponse;
 import com.kiero.mission.application.dto.MissionUpdateRequest;
+import com.kiero.mission.application.dto.MissionUpdateResponse;
 import com.kiero.mission.application.exception.MissionErrorCode;
 import com.kiero.mission.application.port.in.MissionCommandUseCase;
 import com.kiero.mission.application.port.out.MissionEventPort;
@@ -143,7 +144,7 @@ public class MissionCommandService implements MissionCommandUseCase {
 
 	@Override
 	@Transactional
-	public MissionResponse updateMission(Long parentId, Long missionId, MissionUpdateRequest request) {
+	public MissionUpdateResponse updateMission(Long parentId, Long missionId, MissionUpdateRequest request) {
 		Mission mission = missionPort.findById(missionId)
 			.orElseThrow(() -> new KieroException(MissionErrorCode.MISSION_NOT_FOUND));
 
@@ -157,7 +158,7 @@ public class MissionCommandService implements MissionCommandUseCase {
 
 		mission.update(request.name(), request.reward(), request.dueAt());
 
-		return MissionResponse.from(mission);
+		return MissionUpdateResponse.from(mission);
 	}
 
 	@Override
