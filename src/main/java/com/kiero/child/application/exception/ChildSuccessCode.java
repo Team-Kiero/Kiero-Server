@@ -13,12 +13,8 @@ public enum ChildSuccessCode implements BaseCode {
     /*
     200 OK
     */
+    LOGIN_SUCCESS(HttpStatus.OK, "로그인에 성공하였습니다."),
     GET_INFO_SUCCESS(HttpStatus.OK, "정보 조회에 성공하였습니다."),
-
-    /*
-    201 CREATED
-    */
-    SIGNUP_SUCCESS(HttpStatus.CREATED, "가입에 성공하였습니다."),
     ;
 
     private final HttpStatus httpStatus;

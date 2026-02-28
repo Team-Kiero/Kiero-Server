@@ -30,4 +30,9 @@ public class ChildPersistenceAdapter implements ChildSavePort, ChildLoadPort {
 	public Optional<Child> findByIdWithLock(Long childId) {
 		return childRepository.findByIdWithLock(childId);
 	}
+
+	@Override
+	public Optional<Child> findByParentIdAndName(Long parentId, String lastName, String firstName) {
+		return childRepository.findByParentIdAndName(parentId, lastName, firstName);
+	}
 }
