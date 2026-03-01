@@ -185,9 +185,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		List<ScheduleDetail> filteredPendingAndVerified = filterTodayCreatedSchedules(today, pendingAndVerified, earliestStoneUsedAt);
 		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails, earliestStoneUsedAt);
 
-		markPassedPendingSchedulesAsFailed(filteredPendingAndVerified);
-		markPassedVerifiedSchedulesAsCompleted(filteredPendingAndVerified);
-
 		List<ScheduleDetail> todo2 = findTodoScheduleAndNextTodoSchedule(filteredPendingAndVerified);
 		ScheduleDetail todo = todo2.size() > 0 ? todo2.get(0) : null;
 		ScheduleDetail nextTodo = todo2.size() > 1 ? todo2.get(1) : null;
@@ -957,20 +954,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				else return ScheduleUpdateCase.RecurringToRecurringExceptFollowing;
 			}
 		}
-	}
-
-	private void markPassedPendingSchedulesAsFailed(List<ScheduleDetail> scheduleDetails) {
-		LocalTime now = LocalTime.now(clock);
-		scheduleDetails.stream()
-			.filter(sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.PENDING)
-			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.FAILED));
-	}
-
-	private void markPassedVerifiedSchedulesAsCompleted(List<ScheduleDetail> scheduleDetails) {
-		LocalTime now = LocalTime.now(clock);
-		scheduleDetails.stream()
-			.filter(sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
-			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.COMPLETED));
 	}
 
 	private List<ScheduleDetail> findTodoScheduleAndNextTodoSchedule(List<ScheduleDetail> scheduleDetails) {

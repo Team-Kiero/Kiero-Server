@@ -1,6 +1,7 @@
 package com.kiero.schedule.adapter.out.persistence;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.kiero.schedule.application.dto.SseEventTarget;
 import com.kiero.schedule.domain.ScheduleDetail;
 
 @Repository
@@ -76,6 +78,50 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 	List<ScheduleDetail> findByDateInAndChildId(
 		@Param("dates") List<LocalDate> dates,
 		@Param("childId") Long childId
+	);
+
+	@Query("""
+		select distinct new com.kiero.schedule.application.dto.SseEventTarget(
+			sd.schedule.child.id,
+			sd.schedule.parent.id
+		)
+		from ScheduleDetail sd
+		where sd.date = :today
+		  and (
+			   sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.PENDING
+			or sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.VERIFIED
+		  )
+		  and sd.schedule.endTime < :now
+""")
+	List<SseEventTarget> findTargetsToMark(
+		@Param("today") LocalDate today,
+		@Param("now") LocalTime now
+	);
+
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("""
+        update ScheduleDetail sd
+           set sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.COMPLETED
+         where sd.date = :today
+           and sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.VERIFIED
+           and sd.schedule.endTime < :now
+    """)
+	void bulkMarkVerifiedAsCompleted(
+		@Param("today") LocalDate today,
+		@Param("now") LocalTime now
+	);
+
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("""
+        update ScheduleDetail sd
+           set sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.FAILED
+         where sd.date = :today
+           and sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.PENDING
+           and sd.schedule.endTime < :now
+    """)
+	void bulkMarkPendingAsFailed(
+		@Param("today") LocalDate today,
+		@Param("now") LocalTime now
 	);
 
 	List<ScheduleDetail> findAllByScheduleChildIdAndDateGreaterThanEqual(Long childId, LocalDate date);

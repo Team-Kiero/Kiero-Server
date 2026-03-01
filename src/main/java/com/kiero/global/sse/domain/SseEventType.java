@@ -19,7 +19,11 @@ public enum SseEventType {
 	MISSION_COMPLETED("feed", "미션 완료"),
 	COUPON_PURCHASED("feed", "쿠폰 구매"),
 	SCHEDULE_COMPLETED("feed", "스케줄 완료"),
-	FIRE_LIT("feed", "불 돌 사용");
+	FIRE_LIT("feed", "불 돌 사용"),
+
+	// 부모 + 자녀 이벤트
+	SCHEDULE_STATUS_UPDATED("schedule", "스케쥴 상태 업데이트"),
+	;
 
 	private final String eventName;
 	private final String description;
