@@ -29,6 +29,7 @@ import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteEvent;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
+import com.kiero.schedule.application.dto.ScheduleDeleteRequest;
 import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
 import com.kiero.schedule.application.dto.ScheduleModifyRequest;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
@@ -378,8 +379,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		ScheduleUpdateCase scheduleUpdateCase = scheduleUpdateCaseResolver(originalSchedule, request);
 
-		log.info("scheduleUpdateCase: " + scheduleUpdateCase);
-
 		Long childId = originalSchedule.getChild().getId();
 
 		switch (scheduleUpdateCase) {
@@ -590,7 +589,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				Optional<ScheduleDetail> originalDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
 					originalSchedule.getId(), selectedDate);
 
-				log.info("now: {}, request startTime: {}", now, request.startTime());
 				if(originalDetail.isPresent()) {
 					originalDetail.get().changeSchedule(saved);
 					if (request.startTime().isAfter(now)) {
@@ -696,9 +694,101 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		// 아이의 오늘 일정에 영향이 있을 때만 이벤트 전송
 		if (isEffectsToChildSchedule) eventPort.publish(new ScheduleModifiedEvent(childId));
-
-		log.info("scheduleUpdateCase: {}, eventSend: {}", scheduleUpdateCase, isEffectsToChildSchedule);
 	}
+
+	@Override
+	@Transactional
+	public void deleteSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleDeleteRequest request) {
+
+		LocalDate today = LocalDate.now(clock);
+		LocalTime now = LocalTime.now(clock);
+
+		if (selectedDate.isBefore(today)) {
+			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
+		}
+
+		Schedule originalSchedule = schedulePersistencePort.findById(scheduleId)
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
+
+		if (!parentId.equals(originalSchedule.getParent().getId())) {
+			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
+		}
+
+		Long childId = originalSchedule.getChild().getId();
+
+		Optional<ScheduleDetail> scheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
+
+		boolean isToday = selectedDate.isEqual(today);
+		boolean hasDetail = scheduleDetail.isPresent();
+		boolean isPending = hasDetail && scheduleDetail.get().getScheduleStatus() == ScheduleStatus.PENDING;
+		boolean isBeforeStart = originalSchedule.getStartTime().isAfter(now);
+
+		// 삭제하려는 일정이 반복일정일 경우
+		if (originalSchedule.isRecurring()) {
+			if (request == null || request.isIncludeFollowing() == null)
+				throw new KieroException(ScheduleErrorCode.IS_INCLUDE_FOLLOWING_IS_REQUIRED);
+
+			if (request.isIncludeFollowing()) { // 이후 일정을 포함하는 경우
+
+				// 기존 일정의 반복 종료일자 구하기
+				List<DayOfWeek> dayOfWeeks = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(
+					originalSchedule.getId());
+				LocalDate repeatEndDate = repeatEndDateResolver(selectedDate, dayOfWeeks);
+
+				if ( !isToday ) {
+					originalSchedule.changeRepeatEndDate(repeatEndDate);
+				}
+				else if ( hasDetail && isPending && isBeforeStart ) {
+					originalSchedule.changeRepeatEndDate(repeatEndDate);
+
+					scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
+
+					eventPort.publish(new ScheduleModifiedEvent(childId));
+					recalculateTodayStoneTypes(childId);
+				}
+				else {
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_DELETED);
+				}
+
+
+			} else { // 이후 일정을 포함하지 않는 경우
+				if ( !isToday ) {
+					DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
+					discardedSchedulePersistencePort.save(discardedSchedule);
+				}
+				else if ( hasDetail && isPending && isBeforeStart ) {
+					DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
+					discardedSchedulePersistencePort.save(discardedSchedule);
+
+					scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
+
+					eventPort.publish(new ScheduleModifiedEvent(childId));
+					recalculateTodayStoneTypes(childId);
+				}
+				else {
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_DELETED);
+				}
+			}
+		}
+
+		// 삭제하려는 일정이 단일일정일 경우
+		else {
+			if ( !isToday ) {
+				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
+			}
+			else if ( isPending && isBeforeStart ) {
+				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
+
+				eventPort.publish(new ScheduleModifiedEvent(childId));
+				recalculateTodayStoneTypes(childId);
+			}
+			else {
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_DELETED);
+			}
+
+		}
+	}
+
 
 	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates) {
 		if (isRecurring && (dayOfWeek == null || dayOfWeek.isEmpty())) {

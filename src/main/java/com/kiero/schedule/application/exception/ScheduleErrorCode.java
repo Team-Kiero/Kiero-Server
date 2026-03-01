@@ -25,7 +25,8 @@ public enum ScheduleErrorCode implements BaseCode {
 	INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST, "입력된 일자가 형식에 맞지 않습니다."),
 	PAST_SCHEDULE_CANNOT_BE_MODIFIED(HttpStatus.BAD_REQUEST, "과거의 일정은 수정될 수 없습니다."),
 	DAY_OF_WEEK_CANNOT_BE_MODIFIED(HttpStatus.BAD_REQUEST, "'이후 일정 포함', '이번 일정만' 조건 선택 시 요일은 수정될 수 없습니다."),
-
+	IS_INCLUDE_FOLLOWING_IS_REQUIRED(HttpStatus.BAD_REQUEST, "반복일정을 삭제할 경우, body에 '이후 일정 포함 여부'를 포함해야 합니다."),
+	SCHEDULE_CANNOT_BE_DELETED(HttpStatus.BAD_REQUEST, "아이가 이미 넘어가기, 인증 등의 행위를 수행하였거나 일정 시각이 지난 일정은 삭제할 수 없습니다."),
 	/*
 	403 FORBIDDEN
 	 */

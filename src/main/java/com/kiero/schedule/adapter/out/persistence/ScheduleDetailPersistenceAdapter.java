@@ -78,4 +78,9 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 		return scheduleDetailRepository.existsByScheduleIdAndDate(scheduleId, date);
 	}
 
+	@Override
+	public void deleteScheduleDetail(ScheduleDetail scheduleDetail) {
+		scheduleDetailRepository.delete(scheduleDetail);
+	}
+
 }

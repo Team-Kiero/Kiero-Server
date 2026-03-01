@@ -32,4 +32,6 @@ public interface ScheduleDetailPersistencePort {
 	Optional<ScheduleDetail> findByScheduleIdAndDate(Long scheduleId, LocalDate date);
 
 	boolean existsByScheduleIdAndDate(Long scheduleId, LocalDate date);
+
+	void deleteScheduleDetail(ScheduleDetail scheduleDetail);
 }
