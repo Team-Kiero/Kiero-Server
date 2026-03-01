@@ -22,6 +22,7 @@ import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
+import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 import com.kiero.schedule.application.dto.FireLitEvent;
@@ -32,6 +33,7 @@ import com.kiero.schedule.application.dto.ScheduleAddRequest;
 import com.kiero.schedule.application.dto.ScheduleDeleteRequest;
 import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
 import com.kiero.schedule.application.dto.ScheduleModifyRequest;
+import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
 import com.kiero.schedule.application.port.in.ScheduleCommandUseCase;
@@ -73,6 +75,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	private final ScheduleRepeatDaysPersistencePort scheduleRepeatDaysPersistencePort;
 	private final ScheduleDetailPersistencePort scheduleDetailPersistencePort;
 	private final DiscardedSchedulePersistencePort discardedSchedulePersistencePort;
+	private final ScheduleEventPort scheduleEventPort;
+	private final ParentChildLoadPort parentChildLoadPort;
 
 	@Override
 	@Transactional
@@ -255,6 +259,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		} else {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_COULD_NOT_BE_SKIPPED);
 		}
+
+		List<Long> parentIds = parentChildLoadPort.findParentsByChildId(childId).stream()
+				.map(Parent::getId)
+				.toList();
+
+		scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(childId, parentIds));
 	}
 
 	@Override
@@ -285,6 +295,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			scheduleDetail.getImageUrl(),
 			LocalDateTime.now(clock)
 		));
+
+		List<Long> parentIds = parentChildLoadPort.findParentsByChildId(childId).stream()
+			.map(Parent::getId)
+			.toList();
+
+		scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(childId, parentIds));
 	}
 
 	@Override
