@@ -99,6 +99,7 @@ public class SsePushEventListener {
 	public void handler(ScheduleStatusUpdatedEvent event) {
 		Map<String, Object> data = new LinkedHashMap<>();
 		data.put("eventType", SseEventType.SCHEDULE_STATUS_UPDATED.name());
+		data.put("childId", event.childId());
 
 		log.debug("자녀 및 부모 SSE 푸시 (스케줄 상태 변경): childId={}", event.childId());
 
