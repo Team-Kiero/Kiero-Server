@@ -9,9 +9,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.kiero.child.application.dto.ChildJoinedEvent;
 import com.kiero.coupon.application.dto.CouponCreatedEvent;
-import com.kiero.feed.domain.enums.EventType;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent;
-import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent.FeedItemInfo;
 import com.kiero.global.sse.application.port.in.SsePushUseCase;
 import com.kiero.global.sse.domain.SseEventType;
 import com.kiero.mission.application.dto.MissionCreatedEvent;
@@ -30,20 +28,13 @@ public class SsePushEventListener {
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(FeedItemsCreatedEvent event) {
-		for (FeedItemInfo item : event.items()) {
-			SseEventType sseEventType = mapToSseEventType(item.eventType());
-
 			Map<String, Object> data = new LinkedHashMap<>();
-			data.put("eventType", sseEventType.name());
-			data.put("feedItemId", item.feedItemId());
-			data.put("childId", item.childId());
-			data.put("occurredAt", item.occurredAt().toString());
-			data.put("metadata", item.metadata());
+			data.put("eventType", SseEventType.FEED_ITEM_CREATED.name());
+			data.put("childId", event.childId());
 
-			log.debug("부모 SSE 푸시 (피드): parentId={}, childId={}, feedItemId={}, eventType={}",
-				item.parentId(), item.childId(), item.feedItemId(), sseEventType);
-
-			ssePushUseCase.pushToParent(item.parentId(), sseEventType, data);
+		for (Long parentId : event.parentIds()) {
+			log.debug("부모 SSE 푸시 (피드): parentId={}, childId={}", parentId, event.childId());
+			ssePushUseCase.pushToParent(parentId, SseEventType.FEED_ITEM_CREATED, data);
 		}
 	}
 
@@ -108,14 +99,5 @@ public class SsePushEventListener {
 		for (Long parentId : event.parentIds()) {
 			ssePushUseCase.pushToParent(parentId, SseEventType.SCHEDULE_STATUS_UPDATED, data);
 		}
-	}
-
-	private SseEventType mapToSseEventType(EventType eventType) {
-		return switch (eventType) {
-			case MISSION -> SseEventType.MISSION_COMPLETED;
-			case SCHEDULE -> SseEventType.SCHEDULE_COMPLETED;
-			case COUPON -> SseEventType.COUPON_PURCHASED;
-			case COMPLETE -> SseEventType.FIRE_LIT;
-		};
 	}
 }
