@@ -11,7 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.kiero.schedule.application.dto.SseEventTarget;
 import com.kiero.schedule.domain.ScheduleDetail;
 
 @Repository
@@ -81,10 +80,7 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 	);
 
 	@Query("""
-		select distinct new com.kiero.schedule.application.dto.SseEventTarget(
-			sd.schedule.child.id,
-			sd.schedule.parent.id
-		)
+		select distinct sd.schedule.child.id
 		from ScheduleDetail sd
 		where sd.date = :today
 		  and (
@@ -93,7 +89,7 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 		  )
 		  and sd.schedule.endTime < :now
 """)
-	List<SseEventTarget> findTargetsToMark(
+	List<Long> findChildIdsToMark(
 		@Param("today") LocalDate today,
 		@Param("now") LocalTime now
 	);

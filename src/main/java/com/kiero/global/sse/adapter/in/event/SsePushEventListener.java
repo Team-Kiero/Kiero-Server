@@ -16,7 +16,7 @@ import com.kiero.global.sse.application.port.in.SsePushUseCase;
 import com.kiero.global.sse.domain.SseEventType;
 import com.kiero.mission.application.dto.MissionCreatedEvent;
 import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
-import com.kiero.schedule.application.dto.ScheduleStatusAutomaticallyUpdatedEvent;
+import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -96,14 +96,17 @@ public class SsePushEventListener {
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handler(ScheduleStatusAutomaticallyUpdatedEvent event) {
+	public void handler(ScheduleStatusUpdatedEvent event) {
 		Map<String, Object> data = new LinkedHashMap<>();
 		data.put("eventType", SseEventType.SCHEDULE_STATUS_UPDATED.name());
 
-		log.debug("자녀 및 부모 SSE 푸시 (스케줄 상태 변경): childId={}, parentId={}", event.target().childId(), event.target().parentId());
+		log.debug("자녀 및 부모 SSE 푸시 (스케줄 상태 변경): childId={}", event.childId());
 
-		ssePushUseCase.pushToChild(event.target().childId(), SseEventType.SCHEDULE_STATUS_UPDATED, data);
-		ssePushUseCase.pushToParent(event.target().parentId(), SseEventType.SCHEDULE_STATUS_UPDATED, data);
+		ssePushUseCase.pushToChild(event.childId(), SseEventType.SCHEDULE_STATUS_UPDATED, data);
+
+		for (Long parentId : event.parentIds()) {
+			ssePushUseCase.pushToParent(parentId, SseEventType.SCHEDULE_STATUS_UPDATED, data);
+		}
 	}
 
 	private SseEventType mapToSseEventType(EventType eventType) {

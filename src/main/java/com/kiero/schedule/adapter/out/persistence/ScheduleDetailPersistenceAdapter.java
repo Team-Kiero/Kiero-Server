@@ -7,7 +7,6 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
-import com.kiero.schedule.application.dto.SseEventTarget;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
 import com.kiero.schedule.domain.ScheduleDetail;
 
@@ -86,8 +85,8 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	}
 
 	@Override
-	public List<SseEventTarget> findChildIdsToMark(LocalDate today, LocalTime now) {
-		return scheduleDetailRepository.findTargetsToMark(today, now);
+	public List<Long> findChildIdsToMark(LocalDate today, LocalTime now) {
+		return scheduleDetailRepository.findChildIdsToMark(today, now);
 	}
 
 	@Override
