@@ -333,30 +333,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 	@Override
 	@Transactional
-	public void createTodayScheduleDetail() {
-		LocalDate today = LocalDate.now(clock);
-		DayOfWeek customDayOfWeek = DayOfWeek.valueOf(today.getDayOfWeek().name().substring(0, 3));
-
-		List<Schedule> schedules = scheduleRepeatDaysPersistencePort.findSchedulesToCreateTodayDetail(customDayOfWeek, today);
-
-		Set<Long> discardedSchedules = discardedSchedulePersistencePort.findAllByDate(today).stream()
-			.map(ds -> ds.getSchedule().getId())
-			.collect(Collectors.toSet());
-
-		List<ScheduleDetail> scheduleDetails = schedules.stream()
-			.filter(schedule -> !discardedSchedules.contains(schedule.getId()))
-			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
-			.toList();
-
-		scheduleDetailPersistencePort.saveAll(scheduleDetails);
-
-		List<ScheduleDetail> allScheduleDetails = scheduleDetailPersistencePort.findAllByDate(today);
-
-		calculateStoneTypePerScheduleDetail(allScheduleDetails);
-	}
-
-	@Override
-	@Transactional
 	public void updateSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleModifyRequest request) {
 
 		LocalDate today = LocalDate.now(clock);
@@ -789,6 +765,32 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
+	protected void calculateStoneTypePerScheduleDetail(List<ScheduleDetail> scheduleDetails) {
+
+		if (scheduleDetails.isEmpty()) return;
+
+		Map<Long, List<ScheduleDetail>> byChild = scheduleDetails.stream()
+			.collect(Collectors.groupingBy(sd -> sd.getSchedule().getChild().getId()));
+
+
+		for (List<ScheduleDetail> childDetails : byChild.values()) {
+			childDetails.sort(
+				Comparator
+					.comparing((ScheduleDetail sd) -> sd.getSchedule().getStartTime())
+					.thenComparing(sd -> sd.getSchedule().getId())
+			);
+
+			for (int i = 0; i < childDetails.size(); i++) {
+				ScheduleDetail sd = childDetails.get(i);
+
+				switch (i % 3) {
+					case 0 -> sd.changeStoneType(StoneType.COURAGE);
+					case 1 -> sd.changeStoneType(StoneType.GRIT);
+					case 2 -> sd.changeStoneType(StoneType.WISDOM);
+				}
+			}
+		}
+	}
 
 	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates) {
 		if (isRecurring && (dayOfWeek == null || dayOfWeek.isEmpty())) {
@@ -996,33 +998,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.toList();
 
 		scheduleDetailPersistencePort.saveAll(details);
-	}
-
-	private void calculateStoneTypePerScheduleDetail(List<ScheduleDetail> scheduleDetails) {
-
-		if (scheduleDetails.isEmpty()) return;
-
-		Map<Long, List<ScheduleDetail>> byChild = scheduleDetails.stream()
-			.collect(Collectors.groupingBy(sd -> sd.getSchedule().getChild().getId()));
-
-
-		for (List<ScheduleDetail> childDetails : byChild.values()) {
-			childDetails.sort(
-				Comparator
-					.comparing((ScheduleDetail sd) -> sd.getSchedule().getStartTime())
-					.thenComparing(sd -> sd.getSchedule().getId())
-			);
-
-			for (int i = 0; i < childDetails.size(); i++) {
-				ScheduleDetail sd = childDetails.get(i);
-
-				switch (i % 3) {
-					case 0 -> sd.changeStoneType(StoneType.COURAGE);
-					case 1 -> sd.changeStoneType(StoneType.GRIT);
-					case 2 -> sd.changeStoneType(StoneType.WISDOM);
-				}
-			}
-		}
 	}
 
 	private void recalculateTodayStoneTypes(Long childId) {

@@ -21,8 +21,6 @@ public interface ScheduleCommandUseCase {
 
 	FireLitResponse fireLit(Long childId);
 
-	void createTodayScheduleDetail();
-
 	void updateSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleModifyRequest request);
 
 	void deleteSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleDeleteRequest request);
