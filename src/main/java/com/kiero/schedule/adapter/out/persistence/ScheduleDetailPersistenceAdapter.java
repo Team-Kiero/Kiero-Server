@@ -46,8 +46,8 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	}
 
 	@Override
-	public boolean existsStoneUsedToday(List<Long> scheduleIds, LocalDate date) {
-		return scheduleDetailRepository.existsStoneUsedToday(scheduleIds, date);
+	public boolean existsStoneUsedTodayByChildIdAndDate(Long childId, LocalDate date) {
+		return scheduleDetailRepository.existsStoneUsedTodayByChildIdAndDate(childId, date);
 	}
 
 	@Override

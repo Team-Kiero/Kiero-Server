@@ -80,8 +80,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 			return ScheduleOccurrencesResponse.of(false, List.of());
 		}
 
-		List<Long> scheduleIds = schedules.stream().map(Schedule::getId).toList();
-		boolean isFireLitToday = detailPort.existsStoneUsedToday(scheduleIds, LocalDate.now(clock));
+		boolean isFireLitToday = detailPort.existsStoneUsedTodayByChildIdAndDate(childId, LocalDate.now(clock));
 
 		// 반복일정 일회성 수정, 일회성 삭제 등으로 인해 무시되어야 하는 일정 집합
 		Set<DiscardKey> discardedKeys = discardedSchedulePersistencePort
