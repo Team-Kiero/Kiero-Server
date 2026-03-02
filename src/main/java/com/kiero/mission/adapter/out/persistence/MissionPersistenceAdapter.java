@@ -52,4 +52,9 @@ public class MissionPersistenceAdapter implements MissionPersistencePort {
 		missionRepository.delete(mission);
 	}
 
+	@Override
+	public List<Mission> findAllByChildIdAndDueAt(Long childId, LocalDate date) {
+		return missionRepository.findAllByChildIdAndDueAt(childId, date);
+	}
+
 }

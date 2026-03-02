@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,9 +25,12 @@ import com.kiero.parent.application.dto.InviteCodeCreateRequest;
 import com.kiero.parent.application.dto.InviteCodeCreateResponse;
 import com.kiero.parent.application.dto.InviteStatusResponse;
 import com.kiero.parent.application.dto.ParentLoginResponse;
+import com.kiero.parent.application.dto.TodayProgressForParentResponse;
 import com.kiero.parent.application.exception.ParentSuccessCode;
 import com.kiero.parent.application.port.in.ParentChildQueryUseCase;
 import com.kiero.parent.application.port.in.ParentLoginUseCase;
+import com.kiero.parent.application.service.ScheduleMissionFacade;
+import com.kiero.schedule.application.exception.ScheduleSuccessCode;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -47,6 +51,7 @@ public class ParentController {
 	private final ParentLoginUseCase parentLoginUseCase;
 
 	private final InviteCodeUseCase inviteCodeUseCase;
+	private final ScheduleMissionFacade scheduleMissionFacade;
 
 	@PostMapping("/login")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> login(
@@ -136,5 +141,16 @@ public class ParentController {
 
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ParentSuccessCode.GET_CHILDREN_SUCCESS, children));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@GetMapping("/progress/{childId}")
+	public ResponseEntity<SuccessResponse<TodayProgressForParentResponse>> getChildTodayProgressForParent(
+		@PathVariable("childId") Long childId,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		TodayProgressForParentResponse response = scheduleMissionFacade.getProgress(currentAuth.memberId(), childId);
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.CHILD_PROGRESS_GET_SUCCESS, response));
 	}
 }

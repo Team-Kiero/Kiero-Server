@@ -21,4 +21,6 @@ public interface MissionPersistencePort {
 
 	void delete(Mission mission);
 
+	List<Mission> findAllByChildIdAndDueAt(Long childId, LocalDate date);
+
 }

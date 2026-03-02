@@ -30,4 +30,6 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
     @EntityGraph(attributePaths = {"child"})
     @Query("SELECT m FROM Mission m WHERE m.id = :missionId")
     Optional<Mission> findByIdWithLock(@Param("missionId") Long missionId);
+
+    List<Mission> findAllByChildIdAndDueAt(Long childId, LocalDate date);
 }

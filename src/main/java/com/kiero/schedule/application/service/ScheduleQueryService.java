@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kiero.child.application.exception.ChildErrorCode;
 import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
@@ -27,6 +26,7 @@ import com.kiero.schedule.application.dto.ScheduleOccurrenceDto;
 import com.kiero.schedule.application.dto.ScheduleOccurrencesResponse;
 import com.kiero.schedule.application.dto.ScheduleProgressForChildDto;
 import com.kiero.schedule.application.dto.ScheduleProgressForChildResponse;
+import com.kiero.schedule.application.dto.ScheduleProgressForParentDto;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
 import com.kiero.schedule.application.port.in.ScheduleQueryUseCase;
@@ -314,6 +314,52 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 			.toList();
 
 		return new ScheduleProgressForChildResponse(schedules.size(), schedules);
+	}
+
+	@Override
+	public ScheduleProgressForParentDto getScheduleTodayProgressForParent(Long parentId, Long childId) {
+		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
+
+		LocalDate today = LocalDate.now(clock);
+		LocalTime now = LocalTime.now(clock);
+
+		Set<DiscardKey> todayDiscardedKeys =
+			discardedSchedulePersistencePort.findAllByChildIdAndDateBetween(childId, today, today).stream()
+				.map(ds -> new DiscardKey(ds.getSchedule().getId(), ds.getDate()))
+				.collect(Collectors.toSet());
+
+		List<ScheduleDetail> scheduleDetails =
+			scheduleDetailPersistencePort.findByDateAndChildId(today, childId).stream()
+				.filter(sd -> !todayDiscardedKeys.contains(new DiscardKey(sd.getSchedule().getId(), sd.getDate())))
+				.toList();
+
+		// 오늘 일정이 존재하지 않을 경우
+		if (scheduleDetails.isEmpty()) { return new ScheduleProgressForParentDto(false, List.of()); }
+
+		// 당일 생성된 일정 중 유효한 일정만 필터링
+		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(scheduleDetails);
+		List<ScheduleDetail> filteredScheduleDetails = filterTodayCreatedSchedules(today, scheduleDetails, earliestStoneUsedAt);
+
+		boolean isFireLitToday =  filteredScheduleDetails.stream().anyMatch(sd -> sd.getStoneUsedAt() != null);
+
+		// 아이가 인증하지 않고 스킵한 일정을 제외하여 dto building
+		List<ScheduleProgressForParentDto.ScheduleDto> schedules = filteredScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.SKIPPED)
+			.map(sd -> {
+				boolean isOngoing = !now.isBefore(sd.getSchedule().getStartTime()) && now.isBefore(sd.getSchedule().getEndTime());
+
+				return new ScheduleProgressForParentDto.ScheduleDto(
+					sd.getSchedule().getName(),
+					sd.getSchedule().getStartTime(),
+					sd.getSchedule().getEndTime(),
+					isOngoing,
+					sd.getImageUrl(),
+					sd.getScheduleStatus()
+				);
+			})
+			.toList();
+
+		return new ScheduleProgressForParentDto(isFireLitToday, schedules);
 	}
 
 	// 당일 생성된 일정 중, startTime과 stone 사용 여부로 유효한 일정만 필터링하는 private method
