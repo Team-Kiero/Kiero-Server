@@ -21,7 +21,7 @@ public interface ScheduleDetailPersistencePort {
 	List<ScheduleDetail> findAllByScheduleIdInAndDateBetween(List<Long> scheduleIds, LocalDate startDate,
 		LocalDate endDate);
 
-	boolean existsStoneUsedToday(List<Long> scheduleIds, LocalDate date);
+	boolean existsStoneUsedTodayByChildIdAndDate(Long childId, LocalDate date);
 
 	List<ScheduleDetail> findAllByScheduleChildIdAndDateGreaterThanEqual(Long childId, LocalDate date);
 

@@ -32,12 +32,12 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 	@Query("""
 				select (count(sd) > 0)
 				from ScheduleDetail sd
-				where sd.schedule.id in :scheduleIds
+				where sd.schedule.child.id = :childId
 				  and sd.date = :date
 				  and sd.stoneUsedAt is not null
 		""")
-	boolean existsStoneUsedToday(
-		@Param("scheduleIds") List<Long> scheduleIds,
+	boolean existsStoneUsedTodayByChildIdAndDate(
+		@Param("childId") Long childId,
 		@Param("date") LocalDate date
 	);
 
