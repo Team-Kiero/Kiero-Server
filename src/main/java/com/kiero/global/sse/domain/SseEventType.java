@@ -17,7 +17,7 @@ public enum SseEventType {
 	COUPON_CREATED("coupon", "쿠폰 생성"),
 
 	// 부모 + 자녀 이벤트
-	SCHEDULE_STATUS_UPDATED("schedule", "스케쥴 상태 업데이트"),
+	SCHEDULE_STATUS_UPDATED("schedule", "일정 상태 업데이트"),
 	;
 
 	private final String eventName;

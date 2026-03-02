@@ -43,7 +43,7 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 	@Transactional
 	public void createTodayScheduleDetail() {
 		LocalDate today = LocalDate.now(clock);
-		DayOfWeek customDayOfWeek = DayOfWeek.valueOf(today.getDayOfWeek().name().substring(0, 3));
+		DayOfWeek customDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
 
 		List<Schedule> schedules = scheduleRepeatDaysPersistencePort.findSchedulesToCreateTodayDetail(customDayOfWeek, today);
 
