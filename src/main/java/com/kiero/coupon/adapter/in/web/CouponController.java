@@ -24,7 +24,6 @@ import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
 
 import jakarta.validation.Valid;
-
 import lombok.RequiredArgsConstructor;
 
 @RestController
