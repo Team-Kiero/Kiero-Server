@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
-import com.kiero.schedule.application.dto.ChildScheduleProgressResponse;
+import com.kiero.schedule.application.dto.ScheduleProgressForChildResponse;
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
@@ -151,10 +151,10 @@ public class ScheduleController {
 
 	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
 	@GetMapping("/progress")
-	public ResponseEntity<SuccessResponse<ChildScheduleProgressResponse>> getChildTodayProgressForChild(
+	public ResponseEntity<SuccessResponse<ScheduleProgressForChildResponse>> getChildTodayProgressForChild(
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		ChildScheduleProgressResponse response = scheduleQueryUseCase.getChildTodayProgressForChild(currentAuth.memberId());
+		ScheduleProgressForChildResponse response = scheduleQueryUseCase.getScheduleTodayProgressForChild(currentAuth.memberId());
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.CHILD_PROGRESS_GET_SUCCESS, response));
 	}

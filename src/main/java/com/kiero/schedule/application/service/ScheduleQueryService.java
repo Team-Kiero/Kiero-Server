@@ -22,10 +22,11 @@ import com.kiero.parent.application.exception.ParentErrorCode;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
-import com.kiero.schedule.application.dto.ChildScheduleProgressResponse;
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.ScheduleOccurrenceDto;
 import com.kiero.schedule.application.dto.ScheduleOccurrencesResponse;
+import com.kiero.schedule.application.dto.ScheduleProgressForChildDto;
+import com.kiero.schedule.application.dto.ScheduleProgressForChildResponse;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
 import com.kiero.schedule.application.port.in.ScheduleQueryUseCase;
@@ -43,7 +44,6 @@ import com.kiero.schedule.domain.enums.ScheduleColor;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.vo.DiscardKey;
 
-import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -61,7 +61,6 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 	private final Clock clock;
 	private final DiscardedSchedulePersistencePort discardedSchedulePersistencePort;
 	private final ScheduleDetailPersistencePort scheduleDetailPersistencePort;
-	private final Filter filter;
 
 	@Override
 	@Transactional
@@ -275,7 +274,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 	}
 
 	@Override
-	public ChildScheduleProgressResponse getChildTodayProgressForChild(Long childId) {
+	public ScheduleProgressForChildResponse getScheduleTodayProgressForChild(Long childId) {
 
 		LocalDate today = LocalDate.now(clock);
 		LocalTime now = LocalTime.now(clock);
@@ -291,19 +290,19 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 				.toList();
 
 		// 오늘 일정이 존재하지 않을 경우
-		if (scheduleDetails.isEmpty()) { return new ChildScheduleProgressResponse(0, List.of()); }
+		if (scheduleDetails.isEmpty()) { return new ScheduleProgressForChildResponse(0, List.of()); }
 
 		// 당일 생성된 일정 중 유효한 일정만 필터링
 		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(scheduleDetails);
 		List<ScheduleDetail> filteredScheduleDetails = filterTodayCreatedSchedules(today, scheduleDetails, earliestStoneUsedAt);
 
 		// 아이가 인증하지 않고 스킵한 일정을 제외하여 dto building
-		List<ChildScheduleProgressResponse.ScheduleDto> schedules = filteredScheduleDetails.stream()
+		List<ScheduleProgressForChildDto> schedules = filteredScheduleDetails.stream()
 			.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.SKIPPED)
 			.map(sd -> {
 				boolean isOngoing = !now.isBefore(sd.getSchedule().getStartTime()) && now.isBefore(sd.getSchedule().getEndTime());
 
-				return new ChildScheduleProgressResponse.ScheduleDto(
+				return new ScheduleProgressForChildDto(
 					sd.getSchedule().getName(),
 					sd.getSchedule().getStartTime(),
 					sd.getSchedule().getEndTime(),
@@ -314,7 +313,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 			})
 			.toList();
 
-		return new ChildScheduleProgressResponse(schedules.size(), schedules);
+		return new ScheduleProgressForChildResponse(schedules.size(), schedules);
 	}
 
 	// 당일 생성된 일정 중, startTime과 stone 사용 여부로 유효한 일정만 필터링하는 private method

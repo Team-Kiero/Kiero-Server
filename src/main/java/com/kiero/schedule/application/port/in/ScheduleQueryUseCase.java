@@ -2,7 +2,7 @@ package com.kiero.schedule.application.port.in;
 
 import java.time.LocalDate;
 
-import com.kiero.schedule.application.dto.ChildScheduleProgressResponse;
+import com.kiero.schedule.application.dto.ScheduleProgressForChildResponse;
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.ScheduleOccurrencesResponse;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
@@ -15,5 +15,5 @@ public interface ScheduleQueryUseCase {
 
 	DefaultScheduleContentResponse getDefaultSchedule(Long parentId, Long childId);
 
-	ChildScheduleProgressResponse getChildTodayProgressForChild(Long childId);
+	ScheduleProgressForChildResponse getScheduleTodayProgressForChild(Long childId);
 }
