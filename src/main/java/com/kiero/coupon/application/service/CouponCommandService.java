@@ -10,7 +10,7 @@ import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.coupon.application.dto.CouponCreateRequest;
 import com.kiero.coupon.application.dto.CouponCreatedEvent;
-import com.kiero.coupon.application.dto.CouponPurchaseEvent;
+import com.kiero.coupon.application.dto.CouponPurchaseEventForFeed;
 import com.kiero.coupon.application.dto.CouponResponse;
 import com.kiero.coupon.application.dto.CouponUpdateRequest;
 import com.kiero.coupon.application.exception.CouponErrorCode;
@@ -110,7 +110,7 @@ public class CouponCommandService implements CouponCommandUseCase {
 
 	  List<Parent> parents = parentChildLoadPort.findParentsByChildId(child.getId());
 
-    couponEventPort.publish(new CouponPurchaseEvent(
+    couponEventPort.publish(new CouponPurchaseEventForFeed(
 		parents,
         child.getId(),
         coupon.getName(),

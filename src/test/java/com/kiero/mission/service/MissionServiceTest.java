@@ -24,7 +24,7 @@ import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
 import com.kiero.mission.application.dto.MissionBulkCreateRequest;
-import com.kiero.mission.application.dto.MissionCompleteEvent;
+import com.kiero.mission.application.dto.MissionCompleteEventForFeed;
 import com.kiero.mission.application.dto.MissionCreateRequest;
 import com.kiero.mission.application.dto.MissionResponse;
 import com.kiero.mission.application.exception.MissionErrorCode;
@@ -120,11 +120,11 @@ public class MissionServiceTest {
 			assertThat(response.isCompleted()).isTrue();
 
 			// Then 4: 이벤트 발행 확인
-			ArgumentCaptor<MissionCompleteEvent> eventCaptor =
-				ArgumentCaptor.forClass(MissionCompleteEvent.class);
+			ArgumentCaptor<MissionCompleteEventForFeed> eventCaptor =
+				ArgumentCaptor.forClass(MissionCompleteEventForFeed.class);
 			verify(missionEventPort).publish(eventCaptor.capture());
 
-			MissionCompleteEvent publishedEvent = eventCaptor.getValue();
+			MissionCompleteEventForFeed publishedEvent = eventCaptor.getValue();
 			assertThat(publishedEvent.childId()).isEqualTo(childId);
 			assertThat(publishedEvent.amount()).isEqualTo(reward);
 			assertThat(publishedEvent.name()).isEqualTo("수학 숙제하기");

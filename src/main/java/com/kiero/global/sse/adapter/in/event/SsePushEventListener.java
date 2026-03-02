@@ -13,7 +13,7 @@ import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent;
 import com.kiero.global.sse.application.port.in.SsePushUseCase;
 import com.kiero.global.sse.domain.SseEventType;
 import com.kiero.mission.application.dto.MissionCreatedEvent;
-import com.kiero.mission.application.dto.TodayMissionCompleteEvent;
+import com.kiero.mission.application.dto.MissionCompleteEvent;
 import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
 import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
 
@@ -103,7 +103,7 @@ public class SsePushEventListener {
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handler(TodayMissionCompleteEvent event) {
+	public void handler(MissionCompleteEvent event) {
 		Map<String, Object> data = new LinkedHashMap<>();
 		data.put("eventType", SseEventType.TODAY_MISSION_COMPLETED.name());
 		data.put("childId", event.childId());

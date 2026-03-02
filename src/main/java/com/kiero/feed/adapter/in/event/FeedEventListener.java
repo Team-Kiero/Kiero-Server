@@ -6,12 +6,12 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.kiero.coupon.application.dto.CouponPurchaseEvent;
+import com.kiero.coupon.application.dto.CouponPurchaseEventForFeed;
 import com.kiero.feed.application.port.in.FeedCreateUseCase;
 import com.kiero.feed.domain.enums.EventType;
-import com.kiero.mission.application.dto.MissionCompleteEvent;
-import com.kiero.schedule.application.dto.FireLitEvent;
-import com.kiero.schedule.application.dto.NowScheduleCompleteEvent;
+import com.kiero.mission.application.dto.MissionCompleteEventForFeed;
+import com.kiero.schedule.application.dto.FireLitEventForFeed;
+import com.kiero.schedule.application.dto.NowScheduleCompleteEventForFeed;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,7 +23,7 @@ public class FeedEventListener {
 	private final ObjectMapper objectMapper;
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-	public void handle(NowScheduleCompleteEvent event) {
+	public void handle(NowScheduleCompleteEventForFeed event) {
 		ObjectNode metadata = objectMapper.createObjectNode();
 		metadata.put("content", event.name());
 		metadata.put("imageUrl", event.imageUrl());
@@ -40,7 +40,7 @@ public class FeedEventListener {
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-	public void handle(FireLitEvent event) {
+	public void handle(FireLitEventForFeed event) {
 		ObjectNode metadata = objectMapper.createObjectNode();
 		metadata.put("amount", event.amount());
 
@@ -56,7 +56,7 @@ public class FeedEventListener {
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-	public void handle(MissionCompleteEvent event) {
+	public void handle(MissionCompleteEventForFeed event) {
 		ObjectNode metadata = objectMapper.createObjectNode();
 		metadata.put("content", event.name());
 		metadata.put("amount", event.amount());
@@ -73,7 +73,7 @@ public class FeedEventListener {
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-	public void handle(CouponPurchaseEvent event) {
+	public void handle(CouponPurchaseEventForFeed event) {
 		ObjectNode metadata = objectMapper.createObjectNode();
 		metadata.put("content", event.name());
 		metadata.put("amount", event.amount());
