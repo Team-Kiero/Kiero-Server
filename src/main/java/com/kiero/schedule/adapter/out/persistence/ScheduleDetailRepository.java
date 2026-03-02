@@ -95,7 +95,7 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 			   sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.PENDING
 			or sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.VERIFIED
 		  )
-		  and s.endTime < :now
+		  and s.endTime <= :now
 """)
 	List<ScheduleUpdateEventTarget> findScheduleUpdateEventTargets(
 		@Param("today") LocalDate today,
