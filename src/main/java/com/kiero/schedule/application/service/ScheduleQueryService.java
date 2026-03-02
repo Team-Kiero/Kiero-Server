@@ -368,8 +368,8 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 				Schedule schedule = sd.getSchedule();
 				LocalDateTime createdAt = sd.getCreatedAt();
 
-				// 당일 생성된 일정이 아니거나, 스케쥴러가 생성한 반복일정의 scheduleDetail이라면(오전 8시 이전에 생성되었다면) 통과
-				if (!createdAt.toLocalDate().equals(today) || createdAt.isBefore(today.atTime(8, 0))) return true;
+				// 당일 생성된 일정이 아니면 통과
+				if (!createdAt.toLocalDate().equals(today)) return true;
 
 				// 일정의 생성 시각이 일정의 startTime보다 이후라면 통과하지 못함
 				if (createdAt.toLocalTime().isAfter(schedule.getStartTime())) return false;

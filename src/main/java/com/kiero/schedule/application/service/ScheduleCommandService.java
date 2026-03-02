@@ -358,7 +358,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				scheduleDetailPersistencePort.saveAll(details);
 
-				if (dates.contains(today) && request.startTime().isAfter(now) && !isFireLitToday) {
+				// 수정 이후 일정의 날짜에 오늘이 포함되고 유효하거나, 수정하려는
+				if ((dates.contains(today) && request.startTime().isAfter(now) && !isFireLitToday) || selectedDate.isEqual(today)) {
 					recalculateTodayStoneTypes(childId);
 					isEffectsToChildSchedule = true;
 				}
