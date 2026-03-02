@@ -7,13 +7,10 @@ import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
 import com.kiero.schedule.application.dto.ScheduleDeleteRequest;
 import com.kiero.schedule.application.dto.ScheduleModifyRequest;
-import com.kiero.schedule.application.dto.TodayScheduleResponse;
 
 public interface ScheduleCommandUseCase {
 
 	void addSchedule(ScheduleAddRequest request, Long parentId, Long childId);
-
-	TodayScheduleResponse getTodaySchedule(Long childId);
 
 	void skipNowSchedule(Long childId, Long scheduleDetailId);
 

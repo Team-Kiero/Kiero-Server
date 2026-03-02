@@ -4,8 +4,11 @@ import java.time.LocalDate;
 
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.ScheduleOccurrencesResponse;
+import com.kiero.schedule.application.dto.TodayScheduleResponse;
 
 public interface ScheduleQueryUseCase {
+
+	TodayScheduleResponse getTodaySchedule(Long childId);
 
 	ScheduleOccurrencesResponse getSchedules(LocalDate startDate, LocalDate endDate, Long parentId, Long childId);
 
