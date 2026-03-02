@@ -24,6 +24,7 @@ import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
+import com.kiero.schedule.application.dto.FireLitEvent;
 import com.kiero.schedule.application.dto.FireLitEventForFeed;
 import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteEventForFeed;
@@ -281,7 +282,11 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 
 		List<Parent> parents = parentChildLoadPort.findParentsByChildId(child.getId());
+		List<Long> parentIds = parents.stream()
+			.map(Parent::getId)
+			.toList();
 
+		eventPort.publish(new FireLitEvent(parentIds, child.getId()));
 		eventPort.publish(new FireLitEventForFeed(parents, child.getId(), earnedCoinAmount, LocalDateTime.now(clock)));
 		return FireLitResponse.of(gotStones, earnedCoinAmount);
 	}
