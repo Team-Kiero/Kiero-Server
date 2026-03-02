@@ -30,6 +30,7 @@ public class FeedEventListener {
 
 		feedCreateUseCase.createForParentsOfChild(
 			new FeedCreateUseCase.CreateFeedCommand(
+				event.parents(),
 				event.childId(),
 				event.occurredAt(),
 				EventType.SCHEDULE,
@@ -45,6 +46,7 @@ public class FeedEventListener {
 
 		feedCreateUseCase.createForParentsOfChild(
 			new FeedCreateUseCase.CreateFeedCommand(
+				event.parents(),
 				event.childId(),
 				event.occurredAt(),
 				EventType.COMPLETE,
@@ -61,6 +63,7 @@ public class FeedEventListener {
 
 		feedCreateUseCase.createForParentsOfChild(
 			new FeedCreateUseCase.CreateFeedCommand(
+				event.parents(),
 				event.childId(),
 				event.occurredAt(),
 				EventType.MISSION,
@@ -77,6 +80,7 @@ public class FeedEventListener {
 
 		feedCreateUseCase.createForParentsOfChild(
 			new FeedCreateUseCase.CreateFeedCommand(
+				event.parents(),
 				event.childId(),
 				event.occurredAt(),
 				EventType.COUPON,

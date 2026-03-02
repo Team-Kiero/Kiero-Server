@@ -227,16 +227,18 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		scheduleDetail.changeScheduleStatus(ScheduleStatus.VERIFIED);
 		scheduleDetail.changeImageUrl(request.imageUrl());
 
+		List<Parent> parents = parentChildLoadPort.findParentsByChildId(childId);
+		List<Long> parentIds = parents.stream()
+			.map(Parent::getId)
+			.toList();
+
 		eventPort.publish(new NowScheduleCompleteEvent(
+			parents,
 			scheduleDetail.getSchedule().getChild().getId(),
 			scheduleDetail.getSchedule().getName(),
 			scheduleDetail.getImageUrl(),
 			LocalDateTime.now(clock)
 		));
-
-		List<Long> parentIds = parentChildLoadPort.findParentsByChildId(childId).stream()
-			.map(Parent::getId)
-			.toList();
 
 		scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(childId, parentIds));
 	}
@@ -278,7 +280,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			earnedCoinAmount = ALL_SCHEDULE_SUCCESS_REWARD;
 		}
 
-		eventPort.publish(new FireLitEvent(child.getId(), earnedCoinAmount, LocalDateTime.now(clock)));
+		List<Parent> parents = parentChildLoadPort.findParentsByChildId(child.getId());
+
+		eventPort.publish(new FireLitEvent(parents, child.getId(), earnedCoinAmount, LocalDateTime.now(clock)));
 		return FireLitResponse.of(gotStones, earnedCoinAmount);
 	}
 
