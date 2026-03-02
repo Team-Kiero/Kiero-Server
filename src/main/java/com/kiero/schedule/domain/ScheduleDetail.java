@@ -15,6 +15,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -29,7 +30,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Table(name = ScheduleDetailTableConstants.TABLE_SCHEDULE_DETAIL)
+@Table(
+	name = ScheduleDetailTableConstants.TABLE_SCHEDULE_DETAIL,
+	indexes = {
+		@Index(
+			name = ScheduleDetailTableConstants.INDEX_DATE_STATUS,
+			columnList = ScheduleDetailTableConstants.COLUMN_DATE + ", " + ScheduleDetailTableConstants.COLUMN_SCHEDULE_STATUS
+		)
+	}
+)
 public class ScheduleDetail extends BaseTimeEntity {
 
 	@Id

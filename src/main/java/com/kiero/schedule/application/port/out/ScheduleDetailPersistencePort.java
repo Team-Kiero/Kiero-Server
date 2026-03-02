@@ -1,9 +1,11 @@
 package com.kiero.schedule.application.port.out;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.kiero.schedule.application.dto.ScheduleUpdateEventTarget;
 import com.kiero.schedule.domain.ScheduleDetail;
 
 public interface ScheduleDetailPersistencePort {
@@ -34,4 +36,11 @@ public interface ScheduleDetailPersistencePort {
 	boolean existsByScheduleIdAndDate(Long scheduleId, LocalDate date);
 
 	void deleteScheduleDetail(ScheduleDetail scheduleDetail);
+
+	List<ScheduleUpdateEventTarget> findScheduleUpdateEventTarget(LocalDate today, LocalTime now);
+
+	void bulkMarkPendingAsFailed(LocalDate today, LocalTime now);
+
+	void bulkMarkVerifiedAsCompleted(LocalDate today, LocalTime now);
+
 }

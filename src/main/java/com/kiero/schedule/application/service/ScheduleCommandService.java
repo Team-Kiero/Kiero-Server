@@ -22,6 +22,7 @@ import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
+import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 import com.kiero.schedule.application.dto.FireLitEvent;
@@ -32,6 +33,7 @@ import com.kiero.schedule.application.dto.ScheduleAddRequest;
 import com.kiero.schedule.application.dto.ScheduleDeleteRequest;
 import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
 import com.kiero.schedule.application.dto.ScheduleModifyRequest;
+import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
 import com.kiero.schedule.application.port.in.ScheduleCommandUseCase;
@@ -73,6 +75,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	private final ScheduleRepeatDaysPersistencePort scheduleRepeatDaysPersistencePort;
 	private final ScheduleDetailPersistencePort scheduleDetailPersistencePort;
 	private final DiscardedSchedulePersistencePort discardedSchedulePersistencePort;
+	private final ScheduleEventPort scheduleEventPort;
+	private final ParentChildLoadPort parentChildLoadPort;
 
 	@Override
 	@Transactional
@@ -185,9 +189,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		List<ScheduleDetail> filteredPendingAndVerified = filterTodayCreatedSchedules(today, pendingAndVerified, earliestStoneUsedAt);
 		List<ScheduleDetail> filteredAllScheduleDetails = filterTodayCreatedSchedules(today, allScheduleDetails, earliestStoneUsedAt);
 
-		markPassedPendingSchedulesAsFailed(filteredPendingAndVerified);
-		markPassedVerifiedSchedulesAsCompleted(filteredPendingAndVerified);
-
 		List<ScheduleDetail> todo2 = findTodoScheduleAndNextTodoSchedule(filteredPendingAndVerified);
 		ScheduleDetail todo = todo2.size() > 0 ? todo2.get(0) : null;
 		ScheduleDetail nextTodo = todo2.size() > 1 ? todo2.get(1) : null;
@@ -258,6 +259,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		} else {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_COULD_NOT_BE_SKIPPED);
 		}
+
+		List<Long> parentIds = parentChildLoadPort.findParentsByChildId(childId).stream()
+				.map(Parent::getId)
+				.toList();
+
+		scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(childId, parentIds));
 	}
 
 	@Override
@@ -288,6 +295,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			scheduleDetail.getImageUrl(),
 			LocalDateTime.now(clock)
 		));
+
+		List<Long> parentIds = parentChildLoadPort.findParentsByChildId(childId).stream()
+			.map(Parent::getId)
+			.toList();
+
+		scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(childId, parentIds));
 	}
 
 	@Override
@@ -329,30 +342,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		eventPort.publish(new FireLitEvent(child.getId(), earnedCoinAmount, LocalDateTime.now(clock)));
 		return FireLitResponse.of(gotStones, earnedCoinAmount);
-	}
-
-	@Override
-	@Transactional
-	public void createTodayScheduleDetail() {
-		LocalDate today = LocalDate.now(clock);
-		DayOfWeek customDayOfWeek = DayOfWeek.valueOf(today.getDayOfWeek().name().substring(0, 3));
-
-		List<Schedule> schedules = scheduleRepeatDaysPersistencePort.findSchedulesToCreateTodayDetail(customDayOfWeek, today);
-
-		Set<Long> discardedSchedules = discardedSchedulePersistencePort.findAllByDate(today).stream()
-			.map(ds -> ds.getSchedule().getId())
-			.collect(Collectors.toSet());
-
-		List<ScheduleDetail> scheduleDetails = schedules.stream()
-			.filter(schedule -> !discardedSchedules.contains(schedule.getId()))
-			.map(schedule -> ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, schedule))
-			.toList();
-
-		scheduleDetailPersistencePort.saveAll(scheduleDetails);
-
-		List<ScheduleDetail> allScheduleDetails = scheduleDetailPersistencePort.findAllByDate(today);
-
-		calculateStoneTypePerScheduleDetail(allScheduleDetails);
 	}
 
 	@Override
@@ -789,6 +778,32 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
+	protected void calculateStoneTypePerScheduleDetail(List<ScheduleDetail> scheduleDetails) {
+
+		if (scheduleDetails.isEmpty()) return;
+
+		Map<Long, List<ScheduleDetail>> byChild = scheduleDetails.stream()
+			.collect(Collectors.groupingBy(sd -> sd.getSchedule().getChild().getId()));
+
+
+		for (List<ScheduleDetail> childDetails : byChild.values()) {
+			childDetails.sort(
+				Comparator
+					.comparing((ScheduleDetail sd) -> sd.getSchedule().getStartTime())
+					.thenComparing(sd -> sd.getSchedule().getId())
+			);
+
+			for (int i = 0; i < childDetails.size(); i++) {
+				ScheduleDetail sd = childDetails.get(i);
+
+				switch (i % 3) {
+					case 0 -> sd.changeStoneType(StoneType.COURAGE);
+					case 1 -> sd.changeStoneType(StoneType.GRIT);
+					case 2 -> sd.changeStoneType(StoneType.WISDOM);
+				}
+			}
+		}
+	}
 
 	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates) {
 		if (isRecurring && (dayOfWeek == null || dayOfWeek.isEmpty())) {
@@ -957,20 +972,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
-	private void markPassedPendingSchedulesAsFailed(List<ScheduleDetail> scheduleDetails) {
-		LocalTime now = LocalTime.now(clock);
-		scheduleDetails.stream()
-			.filter(sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.PENDING)
-			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.FAILED));
-	}
-
-	private void markPassedVerifiedSchedulesAsCompleted(List<ScheduleDetail> scheduleDetails) {
-		LocalTime now = LocalTime.now(clock);
-		scheduleDetails.stream()
-			.filter(sd -> sd.getSchedule().getEndTime().isBefore(now) && sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
-			.forEach(sd -> sd.changeScheduleStatus(ScheduleStatus.COMPLETED));
-	}
-
 	private List<ScheduleDetail> findTodoScheduleAndNextTodoSchedule(List<ScheduleDetail> scheduleDetails) {
 		return scheduleDetails.stream()
 			.filter(sd -> sd.getScheduleStatus() == ScheduleStatus.PENDING || sd.getScheduleStatus() == ScheduleStatus.VERIFIED)
@@ -996,33 +997,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.toList();
 
 		scheduleDetailPersistencePort.saveAll(details);
-	}
-
-	private void calculateStoneTypePerScheduleDetail(List<ScheduleDetail> scheduleDetails) {
-
-		if (scheduleDetails.isEmpty()) return;
-
-		Map<Long, List<ScheduleDetail>> byChild = scheduleDetails.stream()
-			.collect(Collectors.groupingBy(sd -> sd.getSchedule().getChild().getId()));
-
-
-		for (List<ScheduleDetail> childDetails : byChild.values()) {
-			childDetails.sort(
-				Comparator
-					.comparing((ScheduleDetail sd) -> sd.getSchedule().getStartTime())
-					.thenComparing(sd -> sd.getSchedule().getId())
-			);
-
-			for (int i = 0; i < childDetails.size(); i++) {
-				ScheduleDetail sd = childDetails.get(i);
-
-				switch (i % 3) {
-					case 0 -> sd.changeStoneType(StoneType.COURAGE);
-					case 1 -> sd.changeStoneType(StoneType.GRIT);
-					case 2 -> sd.changeStoneType(StoneType.WISDOM);
-				}
-			}
-		}
 	}
 
 	private void recalculateTodayStoneTypes(Long childId) {

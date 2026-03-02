@@ -1,11 +1,13 @@
 package com.kiero.schedule.adapter.out.persistence;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
+import com.kiero.schedule.application.dto.ScheduleUpdateEventTarget;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
 import com.kiero.schedule.domain.ScheduleDetail;
 
@@ -81,6 +83,21 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	@Override
 	public void deleteScheduleDetail(ScheduleDetail scheduleDetail) {
 		scheduleDetailRepository.delete(scheduleDetail);
+	}
+
+	@Override
+	public List<ScheduleUpdateEventTarget> findScheduleUpdateEventTarget(LocalDate today, LocalTime now) {
+		return scheduleDetailRepository.findScheduleUpdateEventTargets(today, now);
+	}
+
+	@Override
+	public void bulkMarkPendingAsFailed(LocalDate today, LocalTime now) {
+		scheduleDetailRepository.bulkMarkPendingAsFailed(today, now);
+	}
+
+	@Override
+	public void bulkMarkVerifiedAsCompleted(LocalDate today, LocalTime now) {
+		scheduleDetailRepository.bulkMarkVerifiedAsCompleted(today, now);
 	}
 
 }
