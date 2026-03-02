@@ -19,6 +19,7 @@ import com.kiero.mission.application.dto.MissionCreatedEvent;
 import com.kiero.mission.application.dto.MissionResponse;
 import com.kiero.mission.application.dto.MissionUpdateRequest;
 import com.kiero.mission.application.dto.MissionUpdateResponse;
+import com.kiero.mission.application.dto.TodayMissionCompleteEvent;
 import com.kiero.mission.application.exception.MissionErrorCode;
 import com.kiero.mission.application.port.in.MissionCommandUseCase;
 import com.kiero.mission.application.port.out.MissionEventPort;
@@ -132,6 +133,9 @@ public class MissionCommandService implements MissionCommandUseCase {
 		child.addCoin(mission.getReward());
 
 		List<Parent> parents = parentChildLoadPort.findParentsByChildId(child.getId());
+		List<Long> parentIds = parents.stream()
+			.map(Parent::getId)
+			.toList();
 
 		eventPort.publish(new MissionCompleteEvent(
 			parents,
@@ -140,6 +144,10 @@ public class MissionCommandService implements MissionCommandUseCase {
 			mission.getName(),
 			LocalDateTime.now()
 		));
+
+		if (mission.getDueAt().isEqual(LocalDate.now())) {
+			eventPort.publish(new TodayMissionCompleteEvent(parentIds, childId));
+		}
 
 		log.info("Mission completed: missionId={}, childId={}, reward={}, newCoinAmount={}",
 			missionId, childId, mission.getReward(), child.getCoinAmount());

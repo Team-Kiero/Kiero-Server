@@ -10,6 +10,7 @@ public enum SseEventType {
 	// 부모 이벤트
 	CHILD_JOINED("invite", "자녀 가입 완료"),
 	FEED_ITEM_CREATED("feed", "피드 아이템 생성"),
+	TODAY_MISSION_COMPLETED("mission", "오늘의 미션 단일 완료"),
 
 	// 자녀 이벤트
 	MISSION_CREATED("mission", "미션 생성"),
