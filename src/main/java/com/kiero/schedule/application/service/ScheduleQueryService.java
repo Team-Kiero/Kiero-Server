@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
-import com.kiero.parent.application.exception.ParentErrorCode;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
@@ -54,20 +53,20 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 	private final ChildLoadPort childLoadPort;
 	private final ParentChildAccessPort parentChildAccessPort;
 
-	private final SchedulePersistencePort schedulePort;
-	private final ScheduleRepeatDaysPersistencePort repeatDaysPort;
-	private final ScheduleDetailPersistencePort detailPort;
-
-	private final Clock clock;
+	private final SchedulePersistencePort schedulePersistencePort;
+	private final ScheduleRepeatDaysPersistencePort scheduleRepeatDaysPersistencePort;
 	private final DiscardedSchedulePersistencePort discardedSchedulePersistencePort;
 	private final ScheduleDetailPersistencePort scheduleDetailPersistencePort;
+
+
+	private final Clock clock;
 
 	@Override
 	@Transactional
 	public DefaultScheduleContentResponse getDefaultSchedule(Long parentId, Long childId) {
 		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
 
-		ScheduleColor nextColor = schedulePort.findFirstByChildIdOrderByCreatedAtDesc(childId)
+		ScheduleColor nextColor = schedulePersistencePort.findFirstByChildIdOrderByCreatedAtDesc(childId)
 			.map(Schedule::getScheduleColor)
 			.map(ScheduleColor::next)
 			.orElse(ScheduleColor.SCHEDULE1);
@@ -85,12 +84,12 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
 		}
 
-		List<Schedule> schedules = schedulePort.findAllByChildId(childId);
+		List<Schedule> schedules = schedulePersistencePort.findAllByChildId(childId);
 		if (schedules.isEmpty()) {
 			return ScheduleOccurrencesResponse.of(false, List.of());
 		}
 
-		boolean isFireLitToday = detailPort.existsStoneUsedTodayByChildIdAndDate(childId, LocalDate.now(clock));
+		boolean isFireLitToday = scheduleDetailPersistencePort.existsStoneUsedTodayByChildIdAndDate(childId, LocalDate.now(clock));
 
 		// 반복일정 일회성 수정, 일회성 삭제 등으로 인해 무시되어야 하는 일정 집합
 		Set<DiscardKey> discardedKeys = discardedSchedulePersistencePort
@@ -106,7 +105,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 		Map<Long, List<DayOfWeek>> repeatDaysByScheduleId = Map.of();
 		if (!recurringIds.isEmpty()) {
-			List<ScheduleRepeatDays> repeatDays = repeatDaysPort.findAllByScheduleIdsIn(recurringIds);
+			List<ScheduleRepeatDays> repeatDays = scheduleRepeatDaysPersistencePort.findAllByScheduleIdsIn(recurringIds);
 
 			repeatDaysByScheduleId = repeatDays.stream()
 				.collect(Collectors.groupingBy(
@@ -127,7 +126,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 		// 단일일정들 dto화
 		if (!normalIds.isEmpty()) {
-			List<ScheduleDetail> details = detailPort.findAllByScheduleIdInAndDateBetween(normalIds, startDate,
+			List<ScheduleDetail> details = scheduleDetailPersistencePort.findAllByScheduleIdInAndDateBetween(normalIds, startDate,
 				endDate);
 
 			for (ScheduleDetail d : details) {
@@ -398,12 +397,12 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 	private void checkIsExistsAndAccessibleByParentIdAndChildId(Long parentId, Long childId) {
 		Parent parent = parentLoadPort.findById(parentId)
-			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.PARENT_NOT_FOUND));
 		Child child = childLoadPort.findById(childId)
-			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.CHILD_NOT_FOUND));
 
 		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
-			throw new KieroException(ParentErrorCode.NOT_ALLOWED_TO_CHILD);
+			throw new KieroException(ScheduleErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
 	}
 }
