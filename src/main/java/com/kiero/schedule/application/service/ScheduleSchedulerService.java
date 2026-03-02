@@ -4,15 +4,15 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kiero.parent.application.port.out.ParentChildLoadPort;
-import com.kiero.parent.domain.Parent;
 import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
+import com.kiero.schedule.application.dto.ScheduleUpdateEventTarget;
 import com.kiero.schedule.application.port.in.ScheduleSchedulerUseCase;
 import com.kiero.schedule.application.port.out.DiscardedSchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
@@ -24,7 +24,9 @@ import com.kiero.schedule.domain.enums.DayOfWeek;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
@@ -37,7 +39,6 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 	private final ScheduleEventPort scheduleEventPort;
 
 	private final ScheduleCommandService scheduleCommandService;
-	private final ParentChildLoadPort parentChildLoadPort;
 
 	@Override
 	@Transactional
@@ -66,19 +67,20 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 	@Override
 	@Transactional
 	public void bulkMarkAndPushEventIfUpdateExists(LocalDate today, LocalTime now) {
-		List<Long> childIds = scheduleDetailPersistencePort.findChildIdsToMark(today, now);
+		List<ScheduleUpdateEventTarget> targets = scheduleDetailPersistencePort.findScheduleUpdateEventTarget(today, now);
 
-		if (!childIds.isEmpty()) {
+		if (!targets.isEmpty()) {
 			scheduleDetailPersistencePort.bulkMarkPendingAsFailed(today, now);
 			scheduleDetailPersistencePort.bulkMarkVerifiedAsCompleted(today, now);
 
-			for (Long childId : childIds) {
+			Map<Long, List<Long>> parentIdsByChildId = targets.stream()
+				.collect(Collectors.groupingBy(
+					ScheduleUpdateEventTarget::childId,
+					Collectors.mapping(ScheduleUpdateEventTarget::parentId, Collectors.toList())
+				));
 
-				List<Long> parentIds = parentChildLoadPort.findParentsByChildId(childId).stream()
-					.map(Parent::getId)
-					.toList();
-
-				scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(childId, parentIds));
+			for (var entry : parentIdsByChildId.entrySet()) {
+				scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(entry.getKey(), entry.getValue()));
 			}
 		}
 	}

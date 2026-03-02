@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.kiero.schedule.application.dto.ScheduleUpdateEventTarget;
 import com.kiero.schedule.domain.ScheduleDetail;
 
 @Repository
@@ -80,16 +81,23 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 	);
 
 	@Query("""
-		select distinct sd.schedule.child.id
+		select distinct new com.kiero.schedule.application.dto.ScheduleUpdateEventTarget(
+			c.id,
+			p.id
+		)
 		from ScheduleDetail sd
+		join sd.schedule s
+		join s.child c
+		join ParentChild pc on pc.child.id = c.id
+		join pc.parent p
 		where sd.date = :today
 		  and (
 			   sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.PENDING
 			or sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.VERIFIED
 		  )
-		  and sd.schedule.endTime < :now
+		  and s.endTime < :now
 """)
-	List<Long> findChildIdsToMark(
+	List<ScheduleUpdateEventTarget> findScheduleUpdateEventTargets(
 		@Param("today") LocalDate today,
 		@Param("now") LocalTime now
 	);
