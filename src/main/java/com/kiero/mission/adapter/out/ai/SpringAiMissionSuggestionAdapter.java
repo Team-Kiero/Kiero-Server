@@ -1,11 +1,9 @@
 package com.kiero.mission.adapter.out.ai;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 
@@ -74,13 +72,12 @@ public class SpringAiMissionSuggestionAdapter implements MissionSuggestionAiPort
 
 	@Override
 	public List<AiGeneratedMission> generate(String noticeText, String today, String dayOfWeek, String calendarRef) {
-		PromptTemplate promptTemplate = new PromptTemplate(MISSION_SUGGESTION_PROMPT);
-		Prompt prompt = promptTemplate.create(Map.of(
-			"noticeText", noticeText,
-			"today", today,
-			"dayOfWeek", dayOfWeek,
-			"calendarRef", calendarRef
-		));
+		String rendered = MISSION_SUGGESTION_PROMPT
+			.replace("{noticeText}", noticeText)
+			.replace("{today}", today)
+			.replace("{dayOfWeek}", dayOfWeek)
+			.replace("{calendarRef}", calendarRef);
+		Prompt prompt = new Prompt(rendered);
 
 		return chatClient.prompt(prompt)
 			.call()
