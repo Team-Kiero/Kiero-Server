@@ -1,6 +1,7 @@
 package com.kiero.coupon.application.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,7 +10,7 @@ import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.coupon.application.dto.CouponCreateRequest;
 import com.kiero.coupon.application.dto.CouponCreatedEvent;
-import com.kiero.coupon.application.dto.CouponPurchaseEvent;
+import com.kiero.coupon.application.dto.CouponPurchaseEventForFeed;
 import com.kiero.coupon.application.dto.CouponResponse;
 import com.kiero.coupon.application.dto.CouponUpdateRequest;
 import com.kiero.coupon.application.exception.CouponErrorCode;
@@ -20,6 +21,7 @@ import com.kiero.coupon.application.port.out.CouponPersistencePort;
 import com.kiero.coupon.domain.Coupon;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
+import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 
@@ -35,6 +37,7 @@ public class CouponCommandService implements CouponCommandUseCase {
 	private final CouponLoadPort couponLoadPort;
 	private final CouponPersistencePort couponPersistencePort;
 	private final CouponEventPort couponEventPort;
+	private final ParentChildLoadPort parentChildLoadPort;
 
 	@Override
 	@Transactional
@@ -105,7 +108,10 @@ public class CouponCommandService implements CouponCommandUseCase {
 
     child.deductCoin(coupon.getPrice());
 
-    couponEventPort.publish(new CouponPurchaseEvent(
+	  List<Parent> parents = parentChildLoadPort.findParentsByChildId(child.getId());
+
+    couponEventPort.publish(new CouponPurchaseEventForFeed(
+		parents,
         child.getId(),
         coupon.getName(),
         coupon.getPrice(),

@@ -13,12 +13,13 @@ import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
 import com.kiero.mission.application.dto.MissionBulkCreateRequest;
-import com.kiero.mission.application.dto.MissionCompleteEvent;
+import com.kiero.mission.application.dto.MissionCompleteEventForFeed;
 import com.kiero.mission.application.dto.MissionCreateRequest;
 import com.kiero.mission.application.dto.MissionCreatedEvent;
 import com.kiero.mission.application.dto.MissionResponse;
 import com.kiero.mission.application.dto.MissionUpdateRequest;
 import com.kiero.mission.application.dto.MissionUpdateResponse;
+import com.kiero.mission.application.dto.MissionCompleteEvent;
 import com.kiero.mission.application.exception.MissionErrorCode;
 import com.kiero.mission.application.port.in.MissionCommandUseCase;
 import com.kiero.mission.application.port.out.MissionEventPort;
@@ -26,6 +27,7 @@ import com.kiero.mission.application.port.out.MissionPersistencePort;
 import com.kiero.mission.domain.Mission;
 import com.kiero.parent.application.exception.ParentErrorCode;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
+import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 
@@ -44,6 +46,7 @@ public class MissionCommandService implements MissionCommandUseCase {
 	private final ParentLoadPort parentLoadPort;
 	private final ParentChildAccessPort parentChildAccessPort;
 	private final ChildLoadPort childLoadPort;
+	private final ParentChildLoadPort parentChildLoadPort;
 
 	@Override
 	@Transactional
@@ -129,12 +132,22 @@ public class MissionCommandService implements MissionCommandUseCase {
 		mission.complete();
 		child.addCoin(mission.getReward());
 
-		eventPort.publish(new MissionCompleteEvent(
+		List<Parent> parents = parentChildLoadPort.findParentsByChildId(child.getId());
+		List<Long> parentIds = parents.stream()
+			.map(Parent::getId)
+			.toList();
+
+		eventPort.publish(new MissionCompleteEventForFeed(
+			parents,
 			child.getId(),
 			mission.getReward(),
 			mission.getName(),
 			LocalDateTime.now()
 		));
+
+		if (mission.getDueAt().isEqual(LocalDate.now())) {
+			eventPort.publish(new MissionCompleteEvent(parentIds, childId));
+		}
 
 		log.info("Mission completed: missionId={}, childId={}, reward={}, newCoinAmount={}",
 			missionId, childId, mission.getReward(), child.getCoinAmount());

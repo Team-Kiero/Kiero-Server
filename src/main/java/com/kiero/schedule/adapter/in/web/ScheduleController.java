@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
+import com.kiero.schedule.application.dto.ScheduleProgressForChildResponse;
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
@@ -72,7 +73,7 @@ public class ScheduleController {
 	public ResponseEntity<SuccessResponse<TodayScheduleResponse>> updateAndGetTodaySchedule(
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		TodayScheduleResponse response = scheduleCommandUseCase.getTodaySchedule(currentAuth.memberId());
+		TodayScheduleResponse response = scheduleQueryUseCase.getTodaySchedule(currentAuth.memberId());
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.TODAY_SCHEDULE_GET_SUCCESS, response));
 	}
@@ -146,5 +147,15 @@ public class ScheduleController {
 		scheduleCommandUseCase.deleteSchedule(currentAuth.memberId(), scheduleId, selectedDate, request);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_DELETE_SUCCESS));
+	}
+
+	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
+	@GetMapping("/progress")
+	public ResponseEntity<SuccessResponse<ScheduleProgressForChildResponse>> getChildTodayProgressForChild(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		ScheduleProgressForChildResponse response = scheduleQueryUseCase.getScheduleTodayProgressForChild(currentAuth.memberId());
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.CHILD_PROGRESS_GET_SUCCESS, response));
 	}
 }

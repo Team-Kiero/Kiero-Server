@@ -1,10 +1,9 @@
 package com.kiero.schedule.application.dto;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 public record FireLitEvent(
-	Long childId,
-	Integer amount,
-	LocalDateTime occurredAt
+	List<Long> parentIds,
+	Long childId
 ) {
 }

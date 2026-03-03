@@ -4,7 +4,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import com.kiero.coupon.application.dto.CouponCreatedEvent;
-import com.kiero.coupon.application.dto.CouponPurchaseEvent;
+import com.kiero.coupon.application.dto.CouponPurchaseEventForFeed;
 import com.kiero.coupon.application.port.out.CouponEventPort;
 
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class CouponEventPublisherAdapter implements CouponEventPort {
 	}
 
 	@Override
-	public void publish(CouponPurchaseEvent event) {
+	public void publish(CouponPurchaseEventForFeed event) {
 		publisher.publishEvent(event);
 	}
 }

@@ -1,11 +1,9 @@
 package com.kiero.mission.application.dto;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 public record MissionCompleteEvent(
-	Long childId,
-	Integer amount,
-	String name,
-	LocalDateTime occurredAt
+	List<Long> parentIds,
+	Long childId
 ) {
 }

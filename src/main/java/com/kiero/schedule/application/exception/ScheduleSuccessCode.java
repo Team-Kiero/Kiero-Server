@@ -21,6 +21,7 @@ public enum ScheduleSuccessCode implements BaseCode {
 	DEFAULT_CONTENT_GET_SUCCESS(HttpStatus.OK, "일정 추가를 위한 기본 정보 조회가 성공하였습니다."),
 	SCHEDULE_UPDATE_SUCCESS(HttpStatus.OK, "일정이 성공적으로 수정되었습니다."),
 	SCHEDULE_DELETE_SUCCESS(HttpStatus.OK, "일정이 성공적으로 삭제되었습니다."),
+	CHILD_PROGRESS_GET_SUCCESS(HttpStatus.OK, "아이의 오늘의 현황이 조회되었습니다."),
 
 	/*
 	201 CREATED

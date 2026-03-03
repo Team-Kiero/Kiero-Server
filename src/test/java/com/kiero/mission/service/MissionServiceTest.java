@@ -24,7 +24,7 @@ import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
 import com.kiero.mission.application.dto.MissionBulkCreateRequest;
-import com.kiero.mission.application.dto.MissionCompleteEvent;
+import com.kiero.mission.application.dto.MissionCompleteEventForFeed;
 import com.kiero.mission.application.dto.MissionCreateRequest;
 import com.kiero.mission.application.dto.MissionResponse;
 import com.kiero.mission.application.exception.MissionErrorCode;
@@ -34,6 +34,7 @@ import com.kiero.mission.application.service.MissionCommandService;
 import com.kiero.mission.domain.Mission;
 import com.kiero.parent.application.exception.ParentErrorCode;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
+import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 
@@ -50,6 +51,8 @@ public class MissionServiceTest {
 	ParentChildAccessPort ParentChildAccessPort;
 	@Mock
 	MissionEventPort missionEventPort;
+	@Mock
+	ParentChildLoadPort parentChildLoadPort;
 
 	@InjectMocks
 	MissionCommandService missionCommandService;
@@ -100,6 +103,8 @@ public class MissionServiceTest {
 			int initialCoin = child.getCoinAmount();
 			int reward = mission.getReward();
 
+			given(parentChildLoadPort.findParentsByChildId(childId))
+				.willReturn(List.of());
 			given(missionPersistencePort.findByIdWithLock(missionId))
 				.willReturn(Optional.of(mission));
 			given(childLoadPort.findByIdWithLock(childId))
@@ -120,11 +125,11 @@ public class MissionServiceTest {
 			assertThat(response.isCompleted()).isTrue();
 
 			// Then 4: 이벤트 발행 확인
-			ArgumentCaptor<MissionCompleteEvent> eventCaptor =
-				ArgumentCaptor.forClass(MissionCompleteEvent.class);
+			ArgumentCaptor<MissionCompleteEventForFeed> eventCaptor =
+				ArgumentCaptor.forClass(MissionCompleteEventForFeed.class);
 			verify(missionEventPort).publish(eventCaptor.capture());
 
-			MissionCompleteEvent publishedEvent = eventCaptor.getValue();
+			MissionCompleteEventForFeed publishedEvent = eventCaptor.getValue();
 			assertThat(publishedEvent.childId()).isEqualTo(childId);
 			assertThat(publishedEvent.amount()).isEqualTo(reward);
 			assertThat(publishedEvent.name()).isEqualTo("수학 숙제하기");

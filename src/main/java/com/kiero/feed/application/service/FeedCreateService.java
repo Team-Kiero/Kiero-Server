@@ -35,12 +35,8 @@ public class FeedCreateService implements FeedCreateUseCase {
 	public void createForParentsOfChild(CreateFeedCommand command) {
 
 		Child childRef = entityManager.getReference(Child.class, command.childId());
-		List<Parent> parents = parentChildLoadPort.findParentsByChildId(command.childId());
-		List<Long> parentIds = parents.stream()
-			.map(Parent::getId)
-			.toList();
 
-		List<FeedItem> feedItems = parents.stream()
+		List<FeedItem> feedItems = command.parents().stream()
 			.map(parent -> FeedItem.create(
 				parent,
 				childRef,
@@ -51,6 +47,10 @@ public class FeedCreateService implements FeedCreateUseCase {
 			.toList();
 
 		feedItemCommandPort.saveAll(feedItems);
+
+		List<Long> parentIds = command.parents().stream()
+			.map(Parent::getId)
+			.toList();
 
 		publisher.publishEvent(new FeedItemsCreatedEvent(childRef.getId(), parentIds));
 	}
