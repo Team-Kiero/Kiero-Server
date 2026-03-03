@@ -34,6 +34,7 @@ import com.kiero.mission.application.service.MissionCommandService;
 import com.kiero.mission.domain.Mission;
 import com.kiero.parent.application.exception.ParentErrorCode;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
+import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 
@@ -50,6 +51,8 @@ public class MissionServiceTest {
 	ParentChildAccessPort ParentChildAccessPort;
 	@Mock
 	MissionEventPort missionEventPort;
+	@Mock
+	ParentChildLoadPort parentChildLoadPort;
 
 	@InjectMocks
 	MissionCommandService missionCommandService;
@@ -100,6 +103,8 @@ public class MissionServiceTest {
 			int initialCoin = child.getCoinAmount();
 			int reward = mission.getReward();
 
+			given(parentChildLoadPort.findParentsByChildId(childId))
+				.willReturn(List.of());
 			given(missionPersistencePort.findByIdWithLock(missionId))
 				.willReturn(Optional.of(mission));
 			given(childLoadPort.findByIdWithLock(childId))
