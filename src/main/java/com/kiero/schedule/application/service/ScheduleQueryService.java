@@ -139,6 +139,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 				items.add(new ScheduleOccurrenceDto(
 					s.getId(),
 					d.getDate(),
+					List.of(),
 					s.getStartTime(),
 					s.getEndTime(),
 					s.getName(),
@@ -179,6 +180,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 				items.add(new ScheduleOccurrenceDto(
 					s.getId(),
 					cursor,
+					repeatDays,
 					s.getStartTime(),
 					s.getEndTime(),
 					s.getName(),
