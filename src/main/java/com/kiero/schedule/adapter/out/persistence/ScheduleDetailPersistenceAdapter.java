@@ -100,4 +100,9 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 		scheduleDetailRepository.bulkMarkVerifiedAsCompleted(today, now);
 	}
 
+	@Override
+	public boolean existsByDateAndChildIdAfterEndTime(LocalDate today, Long childId, LocalTime endTime) {
+		return scheduleDetailRepository.existsByDateAndChildIdAfterEndTime(today, childId, endTime);
+	}
+
 }

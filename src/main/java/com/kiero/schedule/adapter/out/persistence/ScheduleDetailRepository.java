@@ -128,6 +128,17 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 		@Param("now") LocalTime now
 	);
 
+	@Query("""
+		select (count(sd) > 0)
+		from ScheduleDetail  sd
+		join sd.schedule s
+		where sd.date = :date
+		  and s.child.id = :childId
+		  and s.startTime >= :endTime
+		  and sd.scheduleStatus <> com.kiero.schedule.domain.enums.ScheduleStatus.PENDING
+""")
+	boolean existsByDateAndChildIdAfterEndTime(LocalDate date, Long childId, LocalTime endTime);
+
 	List<ScheduleDetail> findAllByScheduleChildIdAndDateGreaterThanEqual(Long childId, LocalDate date);
 
 	@Modifying
