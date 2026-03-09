@@ -98,6 +98,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		// 오늘 아이의 불피우기 완료 여부
 		boolean isFireLitToday = scheduleDetailPersistencePort.existsStoneUsedTodayByChildIdAndDate(childId, LocalDate.now(clock));
 
+		// 요청한 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
+		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, request.endTime());
+
 		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
 
 		if (request.isRecurring()) {
@@ -125,12 +128,13 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.toList();
 			scheduleRepeatDaysPersistencePort.saveAll(repeatDays);
 
-			// 추가된 일정의 요일에 오늘이 포함되고 일정 시작 시간이 현재 이후며, 아이가 오늘 불피우기를 하지 않았다면
+			// 추가된 일정의 요일에 오늘이 포함되고 일정 시작 시간이 현재 이후며, 아이가 오늘 불피우기를 하지 않았고 아이가 미리 수행한 일정이 없다면
 			// 1) 추가된 일정의 scheduleDetail 생성
 			// 2) 오늘 일정들의 stoneType 재계산
 			// 3) 이벤트를 발행하도록 설정
 			DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
-			if (dayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now) && !isFireLitToday) {
+
+			if (dayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
 
 				ScheduleDetail scheduleDetail = ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, saved);
 				scheduleDetailPersistencePort.save(scheduleDetail);
@@ -164,10 +168,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.toList();
 			scheduleDetailPersistencePort.saveAll(details);
 
-			// 추가된 일정의 요일에 오늘이 포함되고 일정 시작 시간이 현재 이후며, 아이가 오늘 불피우기를 하지 않았다면
+			// 추가된 일정의 요일에 오늘이 포함되고 일정 시작 시간이 현재 이후며, 아이가 오늘 불피우기를 하지 않았고 아이가 미리 수행한 일정이 없다면
 			// 1) 오늘 일정들의 stoneType 재계산
 			// 2) 이벤트를 발행하도록 설정
-			if (dates.contains(today) && request.startTime().isAfter(now) && !isFireLitToday) {
+			if (dates.contains(today) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
 				recalculateTodayStoneTypes(childId);
 				isEffectsToChildSchedule = true;
 			}
@@ -320,6 +324,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		// 오늘 아이의 불피우기 완료 여부
 		boolean isFireLitToday = scheduleDetailPersistencePort.existsStoneUsedTodayByChildIdAndDate(childId, LocalDate.now(clock));
 
+		// 요청한 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
+		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, request.endTime());
+
 		switch (scheduleUpdateCase) {
 
 			/*
@@ -363,8 +370,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				scheduleDetailPersistencePort.saveAll(details);
 
-				// 수정 이후 일정의 날짜에 오늘이 포함되고 유효하거나, 수정하려는
-				if ((dates.contains(today) && request.startTime().isAfter(now) && !isFireLitToday) || selectedDate.isEqual(today)) {
+				// 수정 이후 일정의 날짜에 오늘이 포함되고 유효하거나, 원본 일정이 오늘이었다면
+				if ((dates.contains(today) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) || selectedDate.isEqual(today)) {
 					recalculateTodayStoneTypes(childId);
 					isEffectsToChildSchedule = true;
 				}
@@ -413,11 +420,11 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
 
-				// 추가된 일정의 요일에 오늘이 포함되고 일정 시작 시간이 현재 이후며, 아이가 오늘 불피우기를 하지 않았다면
+				// 추가된 일정의 요일에 오늘이 포함되고 일정 시작 시간이 현재 이후며, 아이가 오늘 불피우기를 하지 않았고 아이가 미리 수행한 일정이 없다면
 				// 1) 추가된 일정의 scheduleDetail 생성
 				// 2) 오늘 일정들의 stoneType 재계산
 				// 3) 이벤트를 발행하도록 설정
-				if (dayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now) && !isFireLitToday) {
+				if (dayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
 
 					ScheduleDetail scheduleDetail = ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, saved);
 					scheduleDetailPersistencePort.save(scheduleDetail);
@@ -476,11 +483,11 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
 
-				// 추가된 일정의 요일에 오늘이 포함되고 일정 시작 시간이 현재 이후며, 아이가 오늘 불피우기를 하지 않았다면
+				// 추가된 일정의 요일에 오늘이 포함되고 일정 시작 시간이 현재 이후며, 아이가 오늘 불피우기를 하지 않았고 아이가 미리 수행한 일정이 없다면
 				// 1) 추가된 일정의 scheduleDetail 생성
 				// 2) 오늘 일정들의 stoneType 재계산
 				// 3) 이벤트를 발행하도록 설정
-				if (requestDayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now) && !isFireLitToday) {
+				if (requestDayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
 
 					ScheduleDetail scheduleDetail = ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, saved);
 					scheduleDetailPersistencePort.save(scheduleDetail);
@@ -543,7 +550,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				if(originalDetail.isPresent()) {
 					originalDetail.get().changeSchedule(saved);
-					if (request.startTime().isAfter(now) && !isFireLitToday) {
+					if (request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
 						recalculateTodayStoneTypes(childId);
 						isEffectsToChildSchedule = true;
 					}
@@ -592,7 +599,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				if(originalDetail.isPresent()) {
 					originalDetail.get().changeSchedule(saved);
-					if (request.startTime().isAfter(now) && !isFireLitToday) {
+					if (request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
 						recalculateTodayStoneTypes(childId);
 						isEffectsToChildSchedule = true;
 					}
@@ -635,7 +642,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				scheduleDetailPersistencePort.saveAll(scheduleDetails);
 
-				if (dates.contains(today) && request.startTime().isAfter(now) && !isFireLitToday) {
+				if (dates.contains(today) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
 					recalculateTodayStoneTypes(childId);
 					isEffectsToChildSchedule = true;
 				}

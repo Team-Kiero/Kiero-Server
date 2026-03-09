@@ -91,6 +91,8 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 		boolean isFireLitToday = scheduleDetailPersistencePort.existsStoneUsedTodayByChildIdAndDate(childId, LocalDate.now(clock));
 
+		LocalDate today = LocalDate.now(clock);
+
 		// 반복일정 일회성 수정, 일회성 삭제 등으로 인해 무시되어야 하는 일정 집합
 		Set<DiscardKey> discardedKeys = discardedSchedulePersistencePort
 			.findAllByChildIdAndDateBetween(childId, startDate, endDate).stream()
@@ -124,6 +126,16 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 		List<ScheduleOccurrenceDto> items = new java.util.ArrayList<>();
 
+		// 오늘 일정들의 scheduleDetail 가져오기
+		Map<Long, ScheduleDetail> todayScheduleDetailByScheduleId = Map.of();
+		if (!today.isBefore(startDate) && !today.isAfter(endDate)) {
+			todayScheduleDetailByScheduleId = scheduleDetailPersistencePort.findByDateAndChildId(today, childId).stream()
+				.collect(Collectors.toMap(
+					sd -> sd.getSchedule().getId(),
+					sd -> sd
+				));
+		}
+
 		// 단일일정들 dto화
 		if (!normalIds.isEmpty()) {
 			List<ScheduleDetail> details = scheduleDetailPersistencePort.findAllByScheduleIdInAndDateBetween(normalIds, startDate,
@@ -131,6 +143,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 			for (ScheduleDetail d : details) {
 				Schedule s = scheduleById.get(d.getSchedule().getId());
+				ScheduleStatus todayScheduleStatus = d.getDate().isEqual(today) ? d.getScheduleStatus() : null;
 
 				// discarded 된 건 제외
 				if (discardedKeys.contains(new DiscardKey(s.getId(), d.getDate())))
@@ -140,6 +153,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 					s.getId(),
 					d.getDate(),
 					List.of(),
+					todayScheduleStatus,
 					s.getStartTime(),
 					s.getEndTime(),
 					s.getName(),
@@ -177,10 +191,17 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 				if (discardedKeys.contains(new DiscardKey(s.getId(), cursor)))
 					continue;
 
+				ScheduleStatus todayScheduleStatus = null;
+				if (cursor.isEqual(today)) {
+					ScheduleDetail todayDetail = todayScheduleDetailByScheduleId.get(s.getId());
+					todayScheduleStatus = todayDetail != null ? todayDetail.getScheduleStatus() : null;
+				}
+
 				items.add(new ScheduleOccurrenceDto(
 					s.getId(),
 					cursor,
 					repeatDays,
+					todayScheduleStatus,
 					s.getStartTime(),
 					s.getEndTime(),
 					s.getName(),

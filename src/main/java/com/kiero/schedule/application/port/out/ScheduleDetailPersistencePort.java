@@ -43,4 +43,6 @@ public interface ScheduleDetailPersistencePort {
 
 	void bulkMarkVerifiedAsCompleted(LocalDate today, LocalTime now);
 
+	boolean existsByDateAndChildIdAfterEndTime(LocalDate date, Long childId, LocalTime endTime);
+
 }
