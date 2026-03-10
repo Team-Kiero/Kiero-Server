@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class FeedCreateService implements FeedCreateUseCase {
+public class FeedCommandService implements FeedCreateUseCase {
 
 	@PersistenceContext
 	private final EntityManager entityManager;
