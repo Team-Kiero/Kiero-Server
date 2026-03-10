@@ -80,6 +80,6 @@ public class FeedItem extends BaseTimeEntity {
 	}
 
 	public void markAsRead() {
-		this.isRead = true;
+		if (!this.isRead) { this.isRead = true; }
 	}
 }
