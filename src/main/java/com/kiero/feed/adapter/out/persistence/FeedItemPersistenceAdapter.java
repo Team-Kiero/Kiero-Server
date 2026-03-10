@@ -2,6 +2,7 @@ package com.kiero.feed.adapter.out.persistence;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 import com.kiero.feed.application.port.out.FeedItemCommandPort;
 import com.kiero.feed.application.port.out.FeedItemQueryPort;
 import com.kiero.feed.domain.FeedItem;
+import com.kiero.feed.domain.enums.EventType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -48,5 +50,10 @@ public class FeedItemPersistenceAdapter implements FeedItemCommandPort, FeedItem
 	@Override
 	public void markAllAsRead(List<Long> itemIds) {
 		feedItemRepository.markAllAsRead(itemIds);
+	}
+
+	@Override
+	public Optional<FeedItem> findByParentIdAndScheduleDetailIdAndEventType(Long parentId, Long scheduleDetailId, EventType eventType) {
+		return feedItemRepository.findByParentIdAndScheduleDetailIdAndEventType(parentId, String.valueOf(scheduleDetailId), eventType.name());
 	}
 }

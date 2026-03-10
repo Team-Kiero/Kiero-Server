@@ -2,6 +2,7 @@ package com.kiero.feed.adapter.out.persistence;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -58,4 +59,17 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		@Param("itemIds") List<Long> itemIds
 	);
 
+	@Query(value = """
+	SELECT *
+	FROM feed_item f
+	WHERE f.parent_id = :parentId
+	  AND f.event_type = :eventType
+	  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.scheduleDetailId')) = :scheduleDetailId
+	LIMIT 1
+	""", nativeQuery = true)
+	Optional<FeedItem> findByParentIdAndScheduleDetailIdAndEventType(
+		@Param("parentId") Long parentId,
+		@Param("scheduleDetailId") String scheduleDetailId,
+		@Param("eventType") String eventType
+	);
 }

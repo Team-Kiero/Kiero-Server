@@ -16,11 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
+import com.kiero.feed.application.port.in.FeedReadUseCase;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
+import com.kiero.schedule.application.dto.ScheduleDetailImageResponse;
 import com.kiero.schedule.application.dto.ScheduleOccurrenceDto;
 import com.kiero.schedule.application.dto.ScheduleOccurrencesResponse;
 import com.kiero.schedule.application.dto.ScheduleProgressForChildDto;
@@ -60,6 +62,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 
 	private final Clock clock;
+	private final FeedReadUseCase feedReadUseCase;
 
 	@Override
 	@Transactional
@@ -382,6 +385,22 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 			.toList();
 
 		return new ScheduleProgressForParentDto(isFireLitToday, schedules);
+	}
+
+	@Override
+	@Transactional
+	public ScheduleDetailImageResponse getScheduleVerifyImage(Long scheduleDetailId, Long parentId) {
+		ScheduleDetail scheduleDetail = scheduleDetailPersistencePort.findById(scheduleDetailId)
+			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
+
+		if (!Objects.equals(scheduleDetail.getSchedule().getParent().getId(), parentId)) {
+			throw new KieroException(ScheduleErrorCode.NOT_ALLOWED_TO_CHILD);
+		}
+
+		ScheduleDetailImageResponse response = new  ScheduleDetailImageResponse(scheduleDetail.getImageUrl());
+		feedReadUseCase.markAsRead(parentId, scheduleDetailId);
+
+		return response;
 	}
 
 	// 당일 생성된 일정 중, startTime과 stone 사용 여부로 유효한 일정만 필터링하는 private method

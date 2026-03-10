@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
+import com.kiero.schedule.application.dto.ScheduleDetailImageResponse;
 import com.kiero.schedule.application.dto.ScheduleProgressForChildResponse;
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.FireLitResponse;
@@ -157,5 +158,16 @@ public class ScheduleController {
 		ScheduleProgressForChildResponse response = scheduleQueryUseCase.getScheduleTodayProgressForChild(currentAuth.memberId());
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.CHILD_PROGRESS_GET_SUCCESS, response));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@PatchMapping("/{scheduleDetailId}/image")
+	public ResponseEntity<SuccessResponse<ScheduleDetailImageResponse>> getScheduleVerifyImage(
+		@PathVariable Long scheduleDetailId,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		ScheduleDetailImageResponse response = scheduleQueryUseCase.getScheduleVerifyImage(scheduleDetailId, currentAuth.memberId());
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_IMAGE_GET_SUCCESS, response));
 	}
 }
