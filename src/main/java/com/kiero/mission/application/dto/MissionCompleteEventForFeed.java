@@ -8,6 +8,7 @@ import com.kiero.parent.domain.Parent;
 public record MissionCompleteEventForFeed(
 	List<Parent> parents,
 	Long childId,
+	Long missionId,
 	Integer amount,
 	String name,
 	LocalDateTime occurredAt

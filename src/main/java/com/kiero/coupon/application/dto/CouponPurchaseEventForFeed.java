@@ -8,6 +8,7 @@ import com.kiero.parent.domain.Parent;
 public record CouponPurchaseEventForFeed(
 	List<Parent> parents,
 	Long childId,
+	Long couponId,
 	String name,
 	Integer amount,
 	LocalDateTime occurredAt

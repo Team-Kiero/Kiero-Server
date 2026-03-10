@@ -140,6 +140,7 @@ public class MissionCommandService implements MissionCommandUseCase {
 		eventPort.publish(new MissionCompleteEventForFeed(
 			parents,
 			child.getId(),
+			mission.getId(),
 			mission.getReward(),
 			mission.getName(),
 			LocalDateTime.now()

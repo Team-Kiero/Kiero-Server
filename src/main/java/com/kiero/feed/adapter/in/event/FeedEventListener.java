@@ -25,6 +25,7 @@ public class FeedEventListener {
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
 	public void handle(NowScheduleCompleteEventForFeed event) {
 		ObjectNode metadata = objectMapper.createObjectNode();
+		metadata.put("scheduleDetailId", event.scheduleDetailId());
 		metadata.put("content", event.name());
 		metadata.put("imageUrl", event.imageUrl());
 
@@ -58,6 +59,7 @@ public class FeedEventListener {
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
 	public void handle(MissionCompleteEventForFeed event) {
 		ObjectNode metadata = objectMapper.createObjectNode();
+		metadata.put("missionId", event.name());
 		metadata.put("content", event.name());
 		metadata.put("amount", event.amount());
 
@@ -75,6 +77,7 @@ public class FeedEventListener {
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
 	public void handle(CouponPurchaseEventForFeed event) {
 		ObjectNode metadata = objectMapper.createObjectNode();
+		metadata.put("couponId", event.couponId());
 		metadata.put("content", event.name());
 		metadata.put("amount", event.amount());
 
