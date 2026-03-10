@@ -31,14 +31,20 @@ public class FeedQueryService implements FeedQueryUseCase {
 	private final ParentChildAccessPort parentChildAccessPort;
 	private final ChildLoadPort childLoadPort;
 
+	private final FeedCommandService feedCommandService;
+
 	@Override
-	@Transactional(readOnly = true)
+	@Transactional
 	public FeedGetResponse getFeed(Long parentId, Long childId, Integer size, String cursor) {
 
 		Child child = childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
 		isParentChildValid(parentId, childId);
+
+		// 읽지 않은 피드 알림들 읽음 처리
+		List<Long> unreadItemIds = feedItemQueryPort.findUnreadItemIdsByParentIdAndChildId(parentId, childId);
+		feedCommandService.markAllAsRead(unreadItemIds);
 
 		FeedCursor feedCursor = FeedCursor.parse(cursor);
 

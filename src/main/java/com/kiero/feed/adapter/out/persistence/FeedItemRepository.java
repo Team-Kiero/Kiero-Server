@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -32,6 +33,29 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		@Param("cursorOccurredAt") LocalDateTime cursorOccurredAt,
 		@Param("cursorId") Long cursorId,
 		Pageable pageable
+	);
+
+	@Query("""
+		select f.id
+		from FeedItem f
+		where f.isRead = false
+		and f.child.id = :childId
+		and f.parent.id = :parentId
+		""")
+	List<Long> findUnreadItemIdsByParentIdAndChildId(
+		@Param("parentId") Long parentId,
+		@Param("childId") Long childId
+	);
+
+
+	@Modifying(clearAutomatically = true)
+	@Query("""
+		update FeedItem f
+		set f.isRead = true
+		where f.id in :itemIds
+		""")
+	void markAllAsRead(
+		@Param("itemIds") List<Long> itemIds
 	);
 
 }

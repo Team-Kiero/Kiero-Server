@@ -6,4 +6,5 @@ import com.kiero.feed.domain.FeedItem;
 
 public interface FeedItemCommandPort {
 	List<FeedItem> saveAll(List<FeedItem> items);
+	void markAllAsRead(List<Long> itemIds);
 }

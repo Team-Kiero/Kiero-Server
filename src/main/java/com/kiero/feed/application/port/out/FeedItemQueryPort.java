@@ -16,4 +16,6 @@ public interface FeedItemQueryPort {
 		Long cursorId,
 		Pageable pageable
 	);
+
+	List<Long> findUnreadItemIdsByParentIdAndChildId(Long parentId, Long childId);
 }

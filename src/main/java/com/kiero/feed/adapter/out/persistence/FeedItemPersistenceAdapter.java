@@ -39,4 +39,14 @@ public class FeedItemPersistenceAdapter implements FeedItemCommandPort, FeedItem
 			pageable
 		);
 	}
+
+	@Override
+	public List<Long> findUnreadItemIdsByParentIdAndChildId(Long parentId, Long childId) {
+		return feedItemRepository.findUnreadItemIdsByParentIdAndChildId(parentId, childId);
+	}
+
+	@Override
+	public void markAllAsRead(List<Long> itemIds) {
+		feedItemRepository.markAllAsRead(itemIds);
+	}
 }

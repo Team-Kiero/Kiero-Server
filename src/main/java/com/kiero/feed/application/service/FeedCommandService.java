@@ -11,7 +11,6 @@ import com.kiero.feed.application.port.in.FeedCreateUseCase;
 import com.kiero.feed.application.port.out.FeedItemCommandPort;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent;
-import com.kiero.parent.application.port.out.ParentChildLoadPort;
 import com.kiero.parent.domain.Parent;
 
 import jakarta.persistence.EntityManager;
@@ -24,8 +23,6 @@ public class FeedCommandService implements FeedCreateUseCase {
 
 	@PersistenceContext
 	private final EntityManager entityManager;
-
-	private final ParentChildLoadPort parentChildLoadPort;
 
 	private final FeedItemCommandPort feedItemCommandPort;
 	private final ApplicationEventPublisher publisher;
@@ -53,5 +50,11 @@ public class FeedCommandService implements FeedCreateUseCase {
 			.toList();
 
 		publisher.publishEvent(new FeedItemsCreatedEvent(childRef.getId(), parentIds));
+	}
+
+	@Transactional
+	protected void markAllAsRead(List<Long> unreadItemIds) {
+		if (unreadItemIds == null || unreadItemIds.isEmpty()) return;
+		feedItemCommandPort.markAllAsRead(unreadItemIds);
 	}
 }
