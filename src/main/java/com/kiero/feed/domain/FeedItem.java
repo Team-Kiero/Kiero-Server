@@ -51,6 +51,9 @@ public class FeedItem extends BaseTimeEntity {
 	@Column(name = FeedItemTableConstants.COLUMN_METADATA, columnDefinition = "json", nullable = false)
 	private JsonNode metadata;
 
+	@Column(name = FeedItemTableConstants.COLUMN_IS_READ, nullable = false)
+	private boolean isRead;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = FeedItemTableConstants.COLUMN_PARENT_ID, nullable = false)
 	private Parent parent;
@@ -72,6 +75,7 @@ public class FeedItem extends BaseTimeEntity {
 			.occurredAt(occurredAt)
 			.eventType(eventType)
 			.metadata(metadata)
+			.isRead(false)
 			.build();
 	}
 }
