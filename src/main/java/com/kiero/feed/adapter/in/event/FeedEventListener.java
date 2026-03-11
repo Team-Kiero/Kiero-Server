@@ -59,7 +59,7 @@ public class FeedEventListener {
 	@TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
 	public void handle(MissionCompleteEventForFeed event) {
 		ObjectNode metadata = objectMapper.createObjectNode();
-		metadata.put("missionId", event.name());
+		metadata.put("missionId", event.missionId());
 		metadata.put("content", event.name());
 		metadata.put("amount", event.amount());
 

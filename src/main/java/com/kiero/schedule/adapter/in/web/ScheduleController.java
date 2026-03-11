@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kiero.feed.application.port.in.FeedReadUseCase;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
@@ -41,6 +42,8 @@ public class ScheduleController {
 
 	private final ScheduleCommandUseCase scheduleCommandUseCase;
 	private final ScheduleQueryUseCase scheduleQueryUseCase;
+
+	private final FeedReadUseCase feedReadUseCase;
 
 	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@PostMapping("/{childId}")
@@ -167,6 +170,7 @@ public class ScheduleController {
 		@CurrentMember CurrentAuth currentAuth
 	) {
 		ScheduleDetailImageResponse response = scheduleQueryUseCase.getScheduleVerifyImage(scheduleDetailId, currentAuth.memberId());
+		feedReadUseCase.markAsRead(currentAuth.memberId(), scheduleDetailId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_IMAGE_GET_SUCCESS, response));
 	}

@@ -62,7 +62,6 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 
 	private final Clock clock;
-	private final FeedReadUseCase feedReadUseCase;
 
 	@Override
 	@Transactional
@@ -397,10 +396,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 			throw new KieroException(ScheduleErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
 
-		ScheduleDetailImageResponse response = new  ScheduleDetailImageResponse(scheduleDetail.getImageUrl());
-		feedReadUseCase.markAsRead(parentId, scheduleDetailId);
-
-		return response;
+		return new  ScheduleDetailImageResponse(scheduleDetail.getImageUrl());
 	}
 
 	// 당일 생성된 일정 중, startTime과 stone 사용 여부로 유효한 일정만 필터링하는 private method
