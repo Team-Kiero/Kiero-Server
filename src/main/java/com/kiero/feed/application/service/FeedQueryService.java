@@ -12,6 +12,7 @@ import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.feed.application.dto.FeedCursor;
 import com.kiero.feed.application.dto.FeedGetResponse;
+import com.kiero.feed.application.dto.FeedHasUnreadResponse;
 import com.kiero.feed.application.dto.FeedItemDto;
 import com.kiero.feed.application.port.in.FeedQueryUseCase;
 import com.kiero.feed.application.port.out.FeedItemQueryPort;
@@ -31,14 +32,20 @@ public class FeedQueryService implements FeedQueryUseCase {
 	private final ParentChildAccessPort parentChildAccessPort;
 	private final ChildLoadPort childLoadPort;
 
+	private final FeedCommandService feedCommandService;
+
 	@Override
-	@Transactional(readOnly = true)
-	public FeedGetResponse getFeed(Long parentId, Long childId, Integer size, String cursor) {
+	@Transactional
+	public FeedGetResponse getFeedAndMarkAsRead(Long parentId, Long childId, Integer size, String cursor) {
 
 		Child child = childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 
 		isParentChildValid(parentId, childId);
+
+		// 읽지 않은 피드 알림들 읽음 처리
+		List<Long> unreadItemIds = feedItemQueryPort.findUnreadItemIdsByParentIdAndChildId(parentId, childId);
+		feedCommandService.markAllAsRead(unreadItemIds);
 
 		FeedCursor feedCursor = FeedCursor.parse(cursor);
 
@@ -69,6 +76,19 @@ public class FeedQueryService implements FeedQueryUseCase {
 		}
 
 		return new FeedGetResponse(child.getFirstName(), items, nextCursor);
+	}
+
+	public FeedHasUnreadResponse getHasUnread(Long parentId) {
+		List<FeedItem> unreadFeedItem = feedItemQueryPort.findUnreadFeedItem(parentId);
+
+		boolean hasUnread = !unreadFeedItem.isEmpty();
+
+		List<Long> childIds = unreadFeedItem.stream()
+			.map(feedItem -> feedItem.getChild().getId())
+			.distinct()
+			.toList();
+
+		return new FeedHasUnreadResponse(hasUnread, childIds);
 	}
 
 	private void isParentChildValid(Long parentId, Long childId) {

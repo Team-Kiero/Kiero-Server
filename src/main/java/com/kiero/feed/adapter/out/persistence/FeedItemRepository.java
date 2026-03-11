@@ -2,9 +2,11 @@ package com.kiero.feed.adapter.out.persistence;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -34,4 +36,50 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		Pageable pageable
 	);
 
+	@Query("""
+		select f.id
+		from FeedItem f
+		where f.isRead = false
+		and f.child.id = :childId
+		and f.parent.id = :parentId
+		""")
+	List<Long> findUnreadItemIdsByParentIdAndChildId(
+		@Param("parentId") Long parentId,
+		@Param("childId") Long childId
+	);
+
+
+	@Modifying(clearAutomatically = true)
+	@Query("""
+		update FeedItem f
+		set f.isRead = true
+		where f.id in :itemIds
+		""")
+	void markAllAsRead(
+		@Param("itemIds") List<Long> itemIds
+	);
+
+	@Query(value = """
+		SELECT *
+		FROM feed_item f
+		WHERE f.parent_id = :parentId
+		  AND f.event_type = :eventType
+		  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.scheduleDetailId')) = :scheduleDetailId
+		LIMIT 1
+	""", nativeQuery = true)
+	Optional<FeedItem> findByParentIdAndScheduleDetailIdAndEventType(
+		@Param("parentId") Long parentId,
+		@Param("scheduleDetailId") String scheduleDetailId,
+		@Param("eventType") String eventType
+	);
+
+	@Query("""
+		select f
+		from FeedItem f
+		where f.parent.id = :parentId
+		and f.isRead = false
+""")
+	List<FeedItem> findUnreadFeedItemByParentId(
+		@Param("parentId") Long parentId
+	);
 }

@@ -8,6 +8,7 @@ import com.kiero.parent.domain.Parent;
 public record NowScheduleCompleteEventForFeed(
 	List<Parent> parents,
 	Long childId,
+	Long scheduleDetailId,
 	String name,
 	String imageUrl,
 	LocalDateTime occurredAt

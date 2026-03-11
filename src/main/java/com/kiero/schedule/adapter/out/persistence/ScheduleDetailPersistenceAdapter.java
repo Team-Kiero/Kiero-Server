@@ -105,4 +105,9 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 		return scheduleDetailRepository.existsByDateAndChildIdAfterEndTime(today, childId, endTime);
 	}
 
+	@Override
+	public Optional<ScheduleDetail> findByIdWithSchedule(Long scheduleDetailId) {
+		return scheduleDetailRepository.findByIdWithSchedule(scheduleDetailId);
+	}
+
 }

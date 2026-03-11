@@ -10,11 +10,11 @@ public record ScheduleProgressForParentDto(
 	List<ScheduleDto> schedules
 ) {
 	public record ScheduleDto(
+		Long scheduleDetailId,
 		String name,
 		LocalTime startTime,
 		LocalTime endTime,
 		boolean isOngoing,
-		String imageUrl,
 		ScheduleStatus status
 	) {}
 }

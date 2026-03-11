@@ -240,6 +240,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		eventPort.publish(new NowScheduleCompleteEventForFeed(
 			parents,
 			scheduleDetail.getSchedule().getChild().getId(),
+			scheduleDetail.getId(),
 			scheduleDetail.getSchedule().getName(),
 			scheduleDetail.getImageUrl(),
 			LocalDateTime.now(clock)

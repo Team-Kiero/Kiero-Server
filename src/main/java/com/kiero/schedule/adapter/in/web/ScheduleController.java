@@ -14,17 +14,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kiero.feed.application.port.in.FeedReadUseCase;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
-import com.kiero.schedule.application.dto.ScheduleProgressForChildResponse;
 import com.kiero.schedule.application.dto.DefaultScheduleContentResponse;
 import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
 import com.kiero.schedule.application.dto.ScheduleDeleteRequest;
+import com.kiero.schedule.application.dto.ScheduleDetailImageResponse;
 import com.kiero.schedule.application.dto.ScheduleModifyRequest;
 import com.kiero.schedule.application.dto.ScheduleOccurrencesResponse;
+import com.kiero.schedule.application.dto.ScheduleProgressForChildResponse;
 import com.kiero.schedule.application.dto.TodayScheduleResponse;
 import com.kiero.schedule.application.exception.ScheduleSuccessCode;
 import com.kiero.schedule.application.port.in.ScheduleCommandUseCase;
@@ -40,6 +42,8 @@ public class ScheduleController {
 
 	private final ScheduleCommandUseCase scheduleCommandUseCase;
 	private final ScheduleQueryUseCase scheduleQueryUseCase;
+
+	private final FeedReadUseCase feedReadUseCase;
 
 	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@PostMapping("/{childId}")
@@ -157,5 +161,17 @@ public class ScheduleController {
 		ScheduleProgressForChildResponse response = scheduleQueryUseCase.getScheduleTodayProgressForChild(currentAuth.memberId());
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.CHILD_PROGRESS_GET_SUCCESS, response));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@PatchMapping("/{scheduleDetailId}/image")
+	public ResponseEntity<SuccessResponse<ScheduleDetailImageResponse>> getScheduleVerifyImage(
+		@PathVariable Long scheduleDetailId,
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		ScheduleDetailImageResponse response = scheduleQueryUseCase.getScheduleVerifyImage(scheduleDetailId, currentAuth.memberId());
+		feedReadUseCase.markAsRead(currentAuth.memberId(), scheduleDetailId);
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_IMAGE_GET_SUCCESS, response));
 	}
 }
