@@ -36,7 +36,7 @@ public class FeedQueryService implements FeedQueryUseCase {
 
 	@Override
 	@Transactional
-	public FeedGetResponse getFeed(Long parentId, Long childId, Integer size, String cursor) {
+	public FeedGetResponse getFeedAndMarkAsRead(Long parentId, Long childId, Integer size, String cursor) {
 
 		Child child = childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
