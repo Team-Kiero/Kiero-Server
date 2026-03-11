@@ -45,4 +45,5 @@ public interface ScheduleDetailPersistencePort {
 
 	boolean existsByDateAndChildIdAfterEndTime(LocalDate date, Long childId, LocalTime endTime);
 
+	Optional<ScheduleDetail> findByIdWithSchedule(Long scheduleDetailId);
 }

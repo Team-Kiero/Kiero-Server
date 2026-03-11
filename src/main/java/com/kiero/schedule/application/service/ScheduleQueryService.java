@@ -388,10 +388,12 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 	@Override
 	@Transactional
 	public ScheduleDetailImageResponse getScheduleVerifyImage(Long scheduleDetailId, Long parentId) {
-		ScheduleDetail scheduleDetail = scheduleDetailPersistencePort.findById(scheduleDetailId)
+		ScheduleDetail scheduleDetail = scheduleDetailPersistencePort.findByIdWithSchedule(scheduleDetailId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
 
-		if (!Objects.equals(scheduleDetail.getSchedule().getParent().getId(), parentId)) {
+		Long childId = scheduleDetail.getSchedule().getChild().getId();
+
+		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
 			throw new KieroException(ScheduleErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
 

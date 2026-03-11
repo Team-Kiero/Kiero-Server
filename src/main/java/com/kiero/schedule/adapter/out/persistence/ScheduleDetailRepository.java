@@ -147,4 +147,13 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 	Optional<ScheduleDetail> findByScheduleIdAndDate(Long scheduleId, LocalDate date);
 
 	boolean existsByScheduleIdAndDate(Long scheduleId, LocalDate date);
+
+	@Query("""
+		select sd
+		from ScheduleDetail sd
+		join fetch sd.schedule s
+		join fetch s.child c
+		where sd.id = :scheduleDetailId
+		""")
+	Optional<ScheduleDetail> findByIdWithSchedule(Long scheduleDetailId);
 }
