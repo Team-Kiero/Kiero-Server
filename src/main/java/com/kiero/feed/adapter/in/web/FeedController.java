@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kiero.feed.application.dto.FeedGetResponse;
+import com.kiero.feed.application.dto.FeedHasUnreadResponse;
 import com.kiero.feed.application.exception.FeedSuccessCode;
 import com.kiero.feed.application.port.in.FeedQueryUseCase;
 import com.kiero.global.auth.annotation.CurrentMember;
@@ -35,5 +36,15 @@ public class FeedController {
 		FeedGetResponse response = feedQueryUseCase.getFeed(currentAuth.memberId(), childId, size, cursor);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(FeedSuccessCode.FEED_GET_SUCCESS, response));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@GetMapping("/unread")
+	public ResponseEntity<SuccessResponse<FeedHasUnreadResponse>> getHasUnread(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		FeedHasUnreadResponse response = feedQueryUseCase.getHasUnread(currentAuth.memberId());
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(FeedSuccessCode.FEED_HAS_UNREAD_GET_SUCCESS, response));
 	}
 }

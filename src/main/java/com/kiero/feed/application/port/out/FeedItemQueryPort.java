@@ -22,4 +22,6 @@ public interface FeedItemQueryPort {
 	List<Long> findUnreadItemIdsByParentIdAndChildId(Long parentId, Long childId);
 
 	Optional<FeedItem> findByParentIdAndScheduleDetailIdAndEventType(Long parentId, Long scheduleDetailId, EventType eventType);
+
+	List<FeedItem> findUnreadFeedItem(Long parentId);
 }

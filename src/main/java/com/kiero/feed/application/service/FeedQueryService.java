@@ -12,6 +12,7 @@ import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.feed.application.dto.FeedCursor;
 import com.kiero.feed.application.dto.FeedGetResponse;
+import com.kiero.feed.application.dto.FeedHasUnreadResponse;
 import com.kiero.feed.application.dto.FeedItemDto;
 import com.kiero.feed.application.port.in.FeedQueryUseCase;
 import com.kiero.feed.application.port.out.FeedItemQueryPort;
@@ -75,6 +76,19 @@ public class FeedQueryService implements FeedQueryUseCase {
 		}
 
 		return new FeedGetResponse(child.getFirstName(), items, nextCursor);
+	}
+
+	public FeedHasUnreadResponse getHasUnread(Long parentId) {
+		List<FeedItem> unreadFeedItem = feedItemQueryPort.findUnreadFeedItem(parentId);
+
+		boolean hasUnread = !unreadFeedItem.isEmpty();
+
+		List<Long> childIds = unreadFeedItem.stream()
+			.map(feedItem -> feedItem.getChild().getId())
+			.distinct()
+			.toList();
+
+		return new FeedHasUnreadResponse(hasUnread, childIds);
 	}
 
 	private void isParentChildValid(Long parentId, Long childId) {

@@ -56,4 +56,9 @@ public class FeedItemPersistenceAdapter implements FeedItemCommandPort, FeedItem
 	public Optional<FeedItem> findByParentIdAndScheduleDetailIdAndEventType(Long parentId, Long scheduleDetailId, EventType eventType) {
 		return feedItemRepository.findByParentIdAndScheduleDetailIdAndEventType(parentId, String.valueOf(scheduleDetailId), eventType.name());
 	}
+
+	@Override
+	public List<FeedItem> findUnreadFeedItem(Long parentId) {
+		return feedItemRepository.findUnreadFeedItemByParentId(parentId);
+	}
 }

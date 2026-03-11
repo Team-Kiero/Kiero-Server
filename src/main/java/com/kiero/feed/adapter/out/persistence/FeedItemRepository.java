@@ -60,16 +60,26 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 	);
 
 	@Query(value = """
-	SELECT *
-	FROM feed_item f
-	WHERE f.parent_id = :parentId
-	  AND f.event_type = :eventType
-	  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.scheduleDetailId')) = :scheduleDetailId
-	LIMIT 1
+		SELECT *
+		FROM feed_item f
+		WHERE f.parent_id = :parentId
+		  AND f.event_type = :eventType
+		  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.scheduleDetailId')) = :scheduleDetailId
+		LIMIT 1
 	""", nativeQuery = true)
 	Optional<FeedItem> findByParentIdAndScheduleDetailIdAndEventType(
 		@Param("parentId") Long parentId,
 		@Param("scheduleDetailId") String scheduleDetailId,
 		@Param("eventType") String eventType
+	);
+
+	@Query("""
+		select f
+		from FeedItem f
+		where f.parent.id = :parentId
+		and f.isRead = false
+""")
+	List<FeedItem> findUnreadFeedItemByParentId(
+		@Param("parentId") Long parentId
 	);
 }
