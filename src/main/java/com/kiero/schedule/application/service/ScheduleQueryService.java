@@ -374,11 +374,11 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 				boolean isOngoing = !now.isBefore(sd.getSchedule().getStartTime()) && now.isBefore(sd.getSchedule().getEndTime());
 
 				return new ScheduleProgressForParentDto.ScheduleDto(
+					sd.getId(),
 					sd.getSchedule().getName(),
 					sd.getSchedule().getStartTime(),
 					sd.getSchedule().getEndTime(),
 					isOngoing,
-					sd.getImageUrl(),
 					sd.getScheduleStatus()
 				);
 			})
