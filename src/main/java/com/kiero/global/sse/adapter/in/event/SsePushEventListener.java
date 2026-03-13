@@ -14,7 +14,6 @@ import com.kiero.global.sse.application.port.in.SsePushUseCase;
 import com.kiero.global.sse.domain.SseEventType;
 import com.kiero.mission.application.dto.MissionCompleteEvent;
 import com.kiero.mission.application.dto.MissionCreatedEvent;
-import com.kiero.schedule.application.dto.DateChangedEvent;
 import com.kiero.schedule.application.dto.FireLitEvent;
 import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
 import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
@@ -126,21 +125,6 @@ public class SsePushEventListener {
 		for (Long parentId : event.parentIds()) {
 			log.debug("부모 SSE 푸시 (오늘의 불 피우기 완료): parentId={}, childId={}", parentId, event.childId());
 			ssePushUseCase.pushToParent(parentId, SseEventType.FIRE_LIT, data);
-		}
-	}
-
-	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handler(DateChangedEvent event) {
-		Map<String, Object> data = new LinkedHashMap<>();
-		data.put("eventType", SseEventType.DATE_CHANGED.name());
-		data.put("newDate", event.newDate());
-
-		for (Long parentId : event.parentIds()) {
-			ssePushUseCase.pushToParent(parentId, SseEventType.DATE_CHANGED, data);
-		}
-
-		for (Long childId : event.childIds()) {
-			ssePushUseCase.pushToChild(childId, SseEventType.DATE_CHANGED, data);
 		}
 	}
 }

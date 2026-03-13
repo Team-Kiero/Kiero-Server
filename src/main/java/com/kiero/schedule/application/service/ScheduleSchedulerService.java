@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
-import com.kiero.schedule.application.dto.DateChangedEvent;
 import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
 import com.kiero.schedule.application.dto.ScheduleUpdateEventTarget;
 import com.kiero.schedule.application.port.in.ScheduleSchedulerUseCase;
@@ -88,15 +87,5 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 				scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(entry.getKey(), entry.getValue()));
 			}
 		}
-	}
-
-	@Override
-	@Transactional
-	public void publishDateChangedEvent() {
-
-		List<Long> parentIds = parentLoadPort.findAllIds();
-		List<Long> childIds = childLoadPort.findAllIds();
-
-		scheduleEventPort.publish(new DateChangedEvent(parentIds, childIds, LocalDate.now(clock)));
 	}
 }

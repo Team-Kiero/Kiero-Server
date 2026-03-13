@@ -1,6 +1,5 @@
 package com.kiero.child.adapter.out.persistence;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,11 +20,4 @@ public interface ChildRepository extends JpaRepository<Child, Long> {
 	@Query("SELECT pc.child FROM ParentChild pc WHERE pc.parent.id = :parentId AND pc.child.lastName = :lastName AND pc.child.firstName = :firstName")
 	Optional<Child> findByParentIdAndName(@Param("parentId") Long parentId, @Param("lastName") String lastName, @Param("firstName") String firstName);
 
-	@Query(
-		"""
-		select c.id
-		from Child c
-		"""
-	)
-	List<Long> findAllIds();
 }
