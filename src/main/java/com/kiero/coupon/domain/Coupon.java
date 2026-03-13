@@ -1,6 +1,7 @@
 package com.kiero.coupon.domain;
 
 import com.kiero.child.domain.Child;
+import com.kiero.global.entity.BaseTimeEntity;
 import com.kiero.parent.domain.Parent;
 
 import jakarta.persistence.Column;
@@ -24,7 +25,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Table(name = CouponTableConstants.TABLE_COUPON)
-public class Coupon {
+public class Coupon extends BaseTimeEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
