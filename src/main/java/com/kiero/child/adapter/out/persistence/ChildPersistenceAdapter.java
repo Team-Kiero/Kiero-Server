@@ -1,5 +1,6 @@
 package com.kiero.child.adapter.out.persistence;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
@@ -34,5 +35,10 @@ public class ChildPersistenceAdapter implements ChildSavePort, ChildLoadPort {
 	@Override
 	public Optional<Child> findByParentIdAndName(Long parentId, String lastName, String firstName) {
 		return childRepository.findByParentIdAndName(parentId, lastName, firstName);
+	}
+
+	@Override
+	public List<Long> findAllIds() {
+		return childRepository.findAllIds();
 	}
 }

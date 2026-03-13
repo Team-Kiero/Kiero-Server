@@ -1,5 +1,6 @@
 package com.kiero.parent.adapter.out.persistence;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
@@ -31,4 +32,7 @@ public class ParentSocialPersistenceAdapter implements ParentLoadPort, ParentSav
 	public Parent save(Parent parent) {
 		return parentRepository.save(parent);
 	}
+
+	@Override
+	public List<Long> findAllIds() { return parentRepository.findAllIds(); }
 }

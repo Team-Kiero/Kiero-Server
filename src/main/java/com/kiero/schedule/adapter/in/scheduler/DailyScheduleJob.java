@@ -16,6 +16,6 @@ public class DailyScheduleJob {
 	@Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
 	public void runDailyJob() {
 		scheduleSchedulerUseCase.createTodayScheduleDetail();
-
+		scheduleSchedulerUseCase.publishDateChangedEvent();
 	}
 }
