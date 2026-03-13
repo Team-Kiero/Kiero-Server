@@ -30,7 +30,7 @@ public class TokenService {
 		String key = TokenKeyGenerator.refreshKey(memberId, role);
 		return tokenRepository.findById(key)
 			.map(Token::getRefreshToken)
-			.orElseThrow(() -> new KieroException(TokenErrorCode.REFRESH_TOKEN_NOT_FOUND));
+			.orElseThrow(() -> new KieroException(TokenErrorCode.JWT_TOKEN_NOT_FOUND));
 	}
 
 	@Transactional
@@ -39,7 +39,7 @@ public class TokenService {
 		Token token = tokenRepository.findById(key)
 			.orElseThrow(() -> {
 				log.error("No refresh token found in Redis for memberId: {}", memberId);
-				return new KieroException(TokenErrorCode.REFRESH_TOKEN_NOT_FOUND);
+				return new KieroException(TokenErrorCode.JWT_TOKEN_NOT_FOUND);
 			});
 		tokenRepository.delete(token);
 		log.info("Successfully deleted refresh token for memberId: {}", memberId);

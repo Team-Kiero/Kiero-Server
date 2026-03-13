@@ -38,7 +38,7 @@ public class CurrentMemberArgumentResolver implements HandlerMethodArgumentResol
 			.map(a-> a.replace("ROLE_", ""))
 			.map(Role::valueOf)
 			.findFirst()
-			.orElseThrow(()-> new KieroException(TokenErrorCode.INVALID_REFRESH_TOKEN_ERROR));
+			.orElseThrow(()-> new KieroException(TokenErrorCode.INVALID_JWT_TOKEN_ERROR));
 		return new CurrentAuth(memberId, role);
 	}
 

@@ -9,6 +9,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.kiero.global.auth.security.CustomAuthenticationEntryPoint;
 import com.kiero.global.auth.security.JwtAuthenticationFilter;
 
 import jakarta.servlet.DispatcherType;
@@ -22,7 +23,8 @@ public class SecurityConfig {
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http,
+		CustomAuthenticationEntryPoint customAuthenticationEntryPoint) throws Exception {
 		http
 			.csrf(csrf -> csrf.disable())
 			.formLogin(form -> form.disable())
@@ -30,6 +32,8 @@ public class SecurityConfig {
 			.sessionManagement(sm ->
 				sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 			)
+			.exceptionHandling(exception -> exception
+				.authenticationEntryPoint(customAuthenticationEntryPoint))
 			.authorizeHttpRequests(auth -> auth
 				.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
 				.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

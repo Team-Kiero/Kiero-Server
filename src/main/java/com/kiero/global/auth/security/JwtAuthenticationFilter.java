@@ -12,11 +12,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kiero.global.auth.enums.Role;
+import com.kiero.global.auth.jwt.application.exception.TokenErrorCode;
 import com.kiero.global.auth.jwt.infrastructure.JwtTokenProvider;
 import com.kiero.global.auth.jwt.infrastructure.JwtValidationType;
 import com.kiero.global.exception.KieroException;
 import com.kiero.global.response.code.ErrorCode;
+import com.kiero.global.response.dto.ErrorResponse;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -78,12 +81,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 	}
 
-	private void handleInvalidToken(JwtValidationType validationType, HttpServletResponse response) {
-		if (validationType == JwtValidationType.EXPIRED_JWT_TOKEN) {
-			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-		} else {
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-		}
+	private void handleInvalidToken(JwtValidationType validationType, HttpServletResponse response) throws IOException {
+
+		TokenErrorCode errorCode = switch (validationType) {
+			case EXPIRED_JWT_TOKEN -> TokenErrorCode.JWT_TOKEN_EXPIRED_ERROR;
+			case INVALID_JWT_TOKEN -> TokenErrorCode.INVALID_JWT_TOKEN_ERROR;
+			case INVALID_JWT_SIGNATURE -> TokenErrorCode.JWT_TOKEN_SIGNATURE_ERROR;
+			case UNSUPPORTED_JWT_TOKEN -> TokenErrorCode.UNSUPPORTED_JWT_TOKEN_ERROR;
+			case EMPTY_JWT -> TokenErrorCode.JWT_TOKEN_EMPTY_ERROR;
+			default -> TokenErrorCode.UNKNOWN_JWT_TOKEN_ERROR;
+		};
+
+		response.setStatus(errorCode.getHttpStatus().value());
+		response.setContentType("application/json;charset=UTF-8");
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		response.getWriter().write(
+			objectMapper.writeValueAsString(
+				ErrorResponse.of(errorCode)
+			)
+		);
 	}
 
 	private String getJwtFromRequest(HttpServletRequest request) {

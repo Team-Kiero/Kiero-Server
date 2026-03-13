@@ -114,12 +114,12 @@ public class AuthService {
 
 		if (!validationType.equals(JwtValidationType.VALID_JWT)) {
 			throw switch (validationType) {
-				case EXPIRED_JWT_TOKEN -> new KieroException(TokenErrorCode.REFRESH_TOKEN_EXPIRED_ERROR);
-				case INVALID_JWT_TOKEN -> new KieroException(TokenErrorCode.INVALID_REFRESH_TOKEN_ERROR);
-				case INVALID_JWT_SIGNATURE -> new KieroException(TokenErrorCode.REFRESH_TOKEN_SIGNATURE_ERROR);
-				case UNSUPPORTED_JWT_TOKEN -> new KieroException(TokenErrorCode.UNSUPPORTED_REFRESH_TOKEN_ERROR);
-				case EMPTY_JWT -> new KieroException(TokenErrorCode.REFRESH_TOKEN_EMPTY_ERROR);
-				default -> new KieroException(TokenErrorCode.UNKNOWN_REFRESH_TOKEN_ERROR);
+				case EXPIRED_JWT_TOKEN -> new KieroException(TokenErrorCode.JWT_TOKEN_EXPIRED_ERROR);
+				case INVALID_JWT_TOKEN -> new KieroException(TokenErrorCode.INVALID_JWT_TOKEN_ERROR);
+				case INVALID_JWT_SIGNATURE -> new KieroException(TokenErrorCode.JWT_TOKEN_SIGNATURE_ERROR);
+				case UNSUPPORTED_JWT_TOKEN -> new KieroException(TokenErrorCode.UNSUPPORTED_JWT_TOKEN_ERROR);
+				case EMPTY_JWT -> new KieroException(TokenErrorCode.JWT_TOKEN_EMPTY_ERROR);
+				default -> new KieroException(TokenErrorCode.UNKNOWN_JWT_TOKEN_ERROR);
 			};
 		}
 	}
@@ -151,7 +151,7 @@ public class AuthService {
 
 		if (!refreshToken.equals(storedRefreshToken)) {
 			log.error("MemberId mismatch: token does not match the stored refresh token");
-			throw new KieroException(TokenErrorCode.REFRESH_TOKEN_MEMBER_ID_MISMATCH_ERROR);
+			throw new KieroException(TokenErrorCode.JWT_TOKEN_MEMBER_ID_MISMATCH_ERROR);
 		}
 	}
 
