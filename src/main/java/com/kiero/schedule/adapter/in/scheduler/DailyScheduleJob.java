@@ -20,7 +20,7 @@ public class DailyScheduleJob {
 	private final ScheduleSchedulerUseCase scheduleSchedulerUseCase;
 	private final SseBroadcastUseCase sseBroadcastUseCase;
 
-	@Scheduled(cron = "0 40 0 * * *", zone = "Asia/Seoul")
+	@Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
 	public void runDailyJob() {
 		LocalDate today = LocalDate.now(clock);
 
