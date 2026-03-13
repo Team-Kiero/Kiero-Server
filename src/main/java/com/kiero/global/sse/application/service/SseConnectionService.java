@@ -50,7 +50,13 @@ public class SseConnectionService {
 		try {
 			emitter.getEmitter().send(SseEmitter.event().name(eventName).data(data));
 		} catch (Exception e) {
+			log.warn("SSE 전송 실패: key={}, eventName={}", key, eventName, e);
 			emitterRepository.remove(key);
 		}
+	}
+
+	public void broadcast(String eventName, Object data) {
+		emitterRepository.findAll().keySet()
+			.forEach(key -> safeSend(key, eventName, data));
 	}
 }

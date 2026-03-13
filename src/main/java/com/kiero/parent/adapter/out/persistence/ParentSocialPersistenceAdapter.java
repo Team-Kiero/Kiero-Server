@@ -31,4 +31,5 @@ public class ParentSocialPersistenceAdapter implements ParentLoadPort, ParentSav
 	public Parent save(Parent parent) {
 		return parentRepository.save(parent);
 	}
+
 }

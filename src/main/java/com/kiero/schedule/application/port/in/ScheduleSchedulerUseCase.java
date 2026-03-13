@@ -8,4 +8,5 @@ public interface ScheduleSchedulerUseCase {
 	void createTodayScheduleDetail();
 
 	void bulkMarkAndPushEventIfUpdateExists(LocalDate today, LocalTime now);
+
 }

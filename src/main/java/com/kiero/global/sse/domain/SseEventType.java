@@ -20,6 +20,7 @@ public enum SseEventType {
 
 	// 부모 + 자녀 이벤트
 	SCHEDULE_STATUS_UPDATED("schedule", "일정 상태 업데이트"),
+	DATE_CHANGED("date", "날짜 변경으로 일정 데이터 갱신 필요"),
 	;
 
 	private final String eventName;

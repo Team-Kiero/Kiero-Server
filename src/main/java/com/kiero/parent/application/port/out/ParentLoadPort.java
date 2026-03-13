@@ -8,5 +8,4 @@ import com.kiero.parent.domain.Parent;
 public interface ParentLoadPort {
 	Optional<Parent> findById(Long parentId);
 	Optional<Parent> findParentBySocialIdAndProvider(String socialId, Provider provider);
-
 }

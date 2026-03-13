@@ -10,4 +10,5 @@ import com.kiero.parent.domain.Parent;
 public interface ParentRepository extends JpaRepository<Parent, Long> {
 
 	Optional<Parent> findParentBySocialIdAndProvider(String socialId, Provider provider);
+
 }
