@@ -11,10 +11,10 @@ import jakarta.validation.constraints.Size;
 
 public record ScheduleAddRequest(
 	@Size(max = 10) @NotNull @NotEmpty String name,
-	@NotNull @NotEmpty Boolean isRecurring,
-	@NotNull @NotEmpty LocalTime startTime,
-	@NotNull @NotEmpty LocalTime endTime,
-	@NotNull @NotEmpty ScheduleColor scheduleColor,
+	@NotNull Boolean isRecurring,
+	@NotNull LocalTime startTime,
+	@NotNull LocalTime endTime,
+	@NotNull ScheduleColor scheduleColor,
 	LocalDate firstOrderDate,
 	String dayOfWeek,
 	String dates
