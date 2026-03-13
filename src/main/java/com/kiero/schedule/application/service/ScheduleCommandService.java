@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -788,6 +789,15 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 		if (!startTime.isBefore(endTime)) {
 			throw new KieroException(ScheduleErrorCode.INVALID_TIME_DURATION);
+		}
+		if (dates != null) {
+			LocalDate today = LocalDate.now();
+			LocalTime now = LocalTime.now();
+			List<LocalDate> requestDates = dateParser(dates);
+
+			if (requestDates.contains(today) && !now.isBefore(startTime)) {
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_IN_PAST);
+			}
 		}
 	}
 
