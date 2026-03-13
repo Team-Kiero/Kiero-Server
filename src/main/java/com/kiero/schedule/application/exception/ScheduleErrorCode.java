@@ -27,6 +27,10 @@ public enum ScheduleErrorCode implements BaseCode {
 	DAY_OF_WEEK_CANNOT_BE_MODIFIED(HttpStatus.BAD_REQUEST, "'이후 일정 포함', '이번 일정만' 조건 선택 시 요일은 수정될 수 없습니다."),
 	IS_INCLUDE_FOLLOWING_IS_REQUIRED(HttpStatus.BAD_REQUEST, "반복일정을 삭제할 경우, body에 '이후 일정 포함 여부'를 포함해야 합니다."),
 	SCHEDULE_CANNOT_BE_DELETED(HttpStatus.BAD_REQUEST, "아이가 이미 넘어가기, 인증 등의 행위를 수행하였거나 일정 시각이 지난 일정은 삭제할 수 없습니다."),
+	INVALID_WEEK_START_DATE(HttpStatus.BAD_REQUEST, "일정 조회 시작 날짜는 월요일이어야 합니다."),
+	INVALID_WEEK_END_DATE(HttpStatus.BAD_REQUEST, "일정 조회 종료 날짜는 일요일이어야 합니다."),
+	INVALID_SCHEDULE_RANGE(HttpStatus.BAD_REQUEST, "현재로부터 전후 12주의 일정만 조회할 수 있습니다."),
+
 	/*
 	403 FORBIDDEN
 	 */
