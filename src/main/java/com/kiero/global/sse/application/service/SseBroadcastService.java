@@ -22,12 +22,16 @@ public class SseBroadcastService implements SseBroadcastUseCase {
 		try {
 			sseConnectionService.broadcast(
 				SseEventType.DATE_CHANGED.getEventName(),
-				new DateChangedPayload(date)
+				new DateChangedPayload(
+					SseEventType.DATE_CHANGED,
+					date)
 			);
 		} catch (Exception e) {
 			log.error("DATE_CHANGED 브로드캐스트가 실패하였습니다. 실패 date={}", date, e);
 		}
 	}
 
-	public record DateChangedPayload(LocalDate date) {}
+	public record DateChangedPayload(
+		SseEventType eventType,
+		LocalDate date) {}
 }
