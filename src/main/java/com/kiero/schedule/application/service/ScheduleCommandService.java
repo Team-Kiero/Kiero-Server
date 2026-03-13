@@ -101,7 +101,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		// 요청한 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
 		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, request.endTime());
 
-		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
+		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime());
 
 		if (request.isRecurring()) {
 
@@ -307,7 +307,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
 		}
 
-		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
+		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime());
 
 		Schedule originalSchedule = schedulePersistencePort.findById(scheduleId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
@@ -776,7 +776,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
-	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates) {
+	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates, LocalTime startTime, LocalTime endTime) {
 		if (isRecurring && (dayOfWeek == null || dayOfWeek.isEmpty())) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE);
 		}
@@ -785,6 +785,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 		if (dayOfWeek != null && dates != null) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_XOR_DATE_REQUIRED);
+		}
+		if (!startTime.isBefore(endTime)) {
+			throw new KieroException(ScheduleErrorCode.INVALID_TIME_DURATION);
 		}
 	}
 

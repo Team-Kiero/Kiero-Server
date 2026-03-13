@@ -30,6 +30,7 @@ public enum ScheduleErrorCode implements BaseCode {
 	INVALID_WEEK_START_DATE(HttpStatus.BAD_REQUEST, "일정 조회 시작 날짜는 월요일이어야 합니다."),
 	INVALID_WEEK_END_DATE(HttpStatus.BAD_REQUEST, "일정 조회 종료 날짜는 일요일이어야 합니다."),
 	INVALID_SCHEDULE_RANGE(HttpStatus.BAD_REQUEST, "현재로부터 전후 12주의 일정만 조회할 수 있습니다."),
+	INVALID_TIME_DURATION(HttpStatus.BAD_REQUEST, "일정 시작 시간은 일정 종료 시간의 이전이어야 합니다."),
 
 	/*
 	403 FORBIDDEN
