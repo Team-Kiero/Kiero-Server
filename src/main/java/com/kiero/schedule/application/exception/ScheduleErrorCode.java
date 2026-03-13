@@ -32,6 +32,8 @@ public enum ScheduleErrorCode implements BaseCode {
 	INVALID_SCHEDULE_RANGE(HttpStatus.BAD_REQUEST, "현재로부터 전후 12주의 일정만 조회할 수 있습니다."),
 	INVALID_TIME_DURATION(HttpStatus.BAD_REQUEST, "일정 시작 시간은 일정 종료 시간의 이전이어야 합니다."),
 	SCHEDULE_IN_PAST(HttpStatus.BAD_REQUEST, "오늘의 단일 일정의 경우, 현재 이전 시간대로 조작될 수 없습니다."),
+	SCHEDULE_NOT_MANIPULATED_WHEN_FIRE_LIT(HttpStatus.BAD_REQUEST, "오늘의 불 피우기가 완료되었을 때, 오늘 단일 일정을 조작할 수 없습니다."),
+	SCHEDULE_NOT_MANIPULATED_WHEN_AFTER_SCHEDULE_NOT_PENDING(HttpStatus.BAD_REQUEST, "등록하려는 일정의 이후 일정 중 아이가 행위를 진행한 일정이 있다면 등록 불가능합니다."),
 
 	/*
 	403 FORBIDDEN
