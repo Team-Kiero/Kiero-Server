@@ -1,5 +1,9 @@
 package com.kiero.coupon.domain;
 
+import java.time.LocalDateTime;
+
+import org.springframework.data.annotation.LastModifiedDate;
+
 import com.kiero.child.domain.Child;
 import com.kiero.global.entity.BaseTimeEntity;
 import com.kiero.parent.domain.Parent;
@@ -41,6 +45,10 @@ public class Coupon extends BaseTimeEntity {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = CouponTableConstants.COLUMN_PARENT_ID, nullable = false)
 	private Parent parent;
+
+	@LastModifiedDate
+	@Column(name = CouponTableConstants.COLUMN_UPDATED_AT, nullable = false)
+	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = CouponTableConstants.COLUMN_CHILD_ID, nullable = false)
