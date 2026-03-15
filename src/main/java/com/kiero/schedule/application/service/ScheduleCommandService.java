@@ -321,6 +321,15 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime(), isFireLitToday, isExistsTodayNotPendingAfterEndTime);
 
+		// 오늘 일정을 수정하려고 할 때, 수정하려는 일정 상태가 PENDING이 아니거나 이미 시작된 일정이라면 예외
+		if (selectedDate.isEqual(today)) {
+			ScheduleDetail originalTodayDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(scheduleId, today)
+				.orElseThrow(()-> new KieroException(ScheduleErrorCode.INTERNAL_SERVER_ERROR));
+			if (originalTodayDetail.getScheduleStatus() != ScheduleStatus.PENDING || !originalSchedule.getStartTime().isAfter(now)) {
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
+			}
+		}
+
 		if (!parentId.equals(originalSchedule.getParent().getId())) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
@@ -708,7 +717,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					recalculateTodayStoneTypes(childId);
 				}
 				else {
-					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_DELETED);
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
 				}
 
 
@@ -727,7 +736,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					recalculateTodayStoneTypes(childId);
 				}
 				else {
-					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_DELETED);
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
 				}
 			}
 		}
@@ -744,7 +753,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				recalculateTodayStoneTypes(childId);
 			}
 			else {
-				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_DELETED);
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
 			}
 
 		}
