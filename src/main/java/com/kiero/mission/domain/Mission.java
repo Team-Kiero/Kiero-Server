@@ -1,6 +1,9 @@
 package com.kiero.mission.domain;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import org.springframework.data.annotation.LastModifiedDate;
 
 import com.kiero.child.domain.Child;
 import com.kiero.global.entity.BaseTimeEntity;
@@ -45,6 +48,10 @@ public class Mission extends BaseTimeEntity {
 
 	@Column(name = MissionTableConstants.COLUMN_IS_COMPLETED, nullable = false)
 	private boolean isCompleted;
+
+	@LastModifiedDate
+	@Column(name = MissionTableConstants.COLUMN_UPDATED_AT, nullable = false)
+	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = MissionTableConstants.COLUMN_PARENT_ID, nullable = false)

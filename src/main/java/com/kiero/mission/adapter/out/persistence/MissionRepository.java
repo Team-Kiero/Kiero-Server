@@ -18,12 +18,12 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
 
     @Query("SELECT m FROM Mission m " +
            "WHERE m.child.id = :childId AND m.dueAt >= :date " +
-           "ORDER BY m.dueAt ASC, m.createdAt DESC, m.name ASC")
+           "ORDER BY m.dueAt ASC, m.updatedAt DESC, m.name ASC")
     List<Mission> findAllByChildIdAndDueAtGreaterThanEqual(@Param("childId") Long childId, @Param("date") LocalDate date);
 
     @Query("SELECT m FROM Mission m " +
            "WHERE m.parent.id = :parentId AND m.dueAt >= :date " +
-           "ORDER BY m.dueAt ASC, m.createdAt DESC, m.name ASC")
+           "ORDER BY m.dueAt ASC, m.updatedAt DESC, m.name ASC")
     List<Mission> findAllByParentIdAndDueAtGreaterThanEqual(@Param("parentId") Long parentId, @Param("date") LocalDate date);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
