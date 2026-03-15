@@ -29,7 +29,12 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = {"child"})
     @Query("SELECT m FROM Mission m WHERE m.id = :missionId")
-    Optional<Mission> findByIdWithLock(@Param("missionId") Long missionId);
+    Optional<Mission> findByIdWithLockForChild(@Param("missionId") Long missionId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @EntityGraph(attributePaths = {"parent"})
+    @Query("SELECT m FROM Mission m WHERE m.id = :missionId")
+    Optional<Mission> findByIdWithLockForParent(@Param("missionId") Long missionId);
 
     List<Mission> findAllByChildIdAndDueAt(Long childId, LocalDate date);
 }
