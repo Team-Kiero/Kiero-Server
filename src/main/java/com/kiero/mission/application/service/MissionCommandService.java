@@ -185,6 +185,10 @@ public class MissionCommandService implements MissionCommandUseCase {
 			throw new KieroException(MissionErrorCode.NOT_YOUR_MISSION);
 		}
 
+		if (mission.isCompleted()) {
+			throw new KieroException(MissionErrorCode.MISSION_ALREADY_COMPLETED);
+		}
+
 		missionPort.delete(mission);
 	}
 
