@@ -7,9 +7,11 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 public record MissionCreateRequest(
         @NotBlank(message = "미션 이름은 필수입니다.")
+        @Size(max = 15, message = "미션 이름은 최대 15자까지 입력할 수 있습니다.")
         String name,
 
         @NotNull(message = "보상은 필수입니다.")

@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 public record MissionBulkCreateRequest(
         @NotEmpty(message = "미션 목록은 비어있을 수 없습니다.")
@@ -16,6 +17,7 @@ public record MissionBulkCreateRequest(
 ) {
     public record MissionItem(
             @NotNull(message = "미션 이름은 필수입니다.")
+            @Size(max = 15, message = "미션 이름은 최대 15자까지 입력할 수 있습니다.")
             String name,
 
             @NotNull(message = "보상은 필수입니다.")
