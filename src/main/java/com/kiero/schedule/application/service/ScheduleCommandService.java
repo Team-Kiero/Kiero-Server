@@ -319,8 +319,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		// 요청한 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
 		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, request.endTime());
 
-		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime(), isFireLitToday, isExistsTodayNotPendingAfterEndTime);
-
 		// 오늘 일정을 수정하려고 할 때, 수정하려는 일정 상태가 PENDING이 아니거나 이미 시작된 일정이라면 예외
 		if (selectedDate.isEqual(today)) {
 			ScheduleDetail originalTodayDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(scheduleId, today)
@@ -329,6 +327,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
 			}
 		}
+
+		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime(), isFireLitToday, isExistsTodayNotPendingAfterEndTime);
 
 		if (!parentId.equals(originalSchedule.getParent().getId())) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
@@ -693,6 +693,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		boolean isPending = hasDetail && scheduleDetail.get().getScheduleStatus() == ScheduleStatus.PENDING;
 		boolean isBeforeStart = originalSchedule.getStartTime().isAfter(now);
 
+		// 삭제하려는 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
+		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, originalSchedule.getEndTime());
+
 		// 삭제하려는 일정이 반복일정일 경우
 		if (originalSchedule.isRecurring()) {
 			if (request == null || request.isIncludeFollowing() == null)
@@ -708,7 +711,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				if ( !isToday ) {
 					originalSchedule.changeRepeatEndDate(repeatEndDate);
 				}
-				else if ( hasDetail && isPending && isBeforeStart ) {
+				else if ( hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
 					originalSchedule.changeRepeatEndDate(repeatEndDate);
 
 					scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
@@ -726,7 +729,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
 					discardedSchedulePersistencePort.save(discardedSchedule);
 				}
-				else if ( hasDetail && isPending && isBeforeStart ) {
+				else if ( hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
 					DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
 					discardedSchedulePersistencePort.save(discardedSchedule);
 
@@ -746,7 +749,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			if ( !isToday ) {
 				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 			}
-			else if ( isPending && isBeforeStart ) {
+			else if ( isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
 				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 
 				eventPort.publish(new ScheduleModifiedEvent(childId));
