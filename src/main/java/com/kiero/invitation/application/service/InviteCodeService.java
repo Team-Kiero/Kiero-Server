@@ -30,6 +30,13 @@ public class InviteCodeService implements InviteCodeUseCase {
     @Override
     @Transactional
     public String createInviteCode(Long parentId, String childLastName, String childFirstName) {
+        inviteCodeQueryPort.findByParentKey(parentId.toString())
+            .ifPresent(existing -> {
+                inviteCodeCommandPort.deleteByCode(existing.getCode());
+                log.info("Invalidated previous invite code: {}, parentId: {}, childName: {} {}",
+                    existing.getCode(), parentId, existing.getChildLastName(), existing.getChildFirstName());
+            });
+
         String code = generateUniqueCode();
 
         InviteCode inviteCode = InviteCode.of(code, parentId, childLastName, childFirstName);
