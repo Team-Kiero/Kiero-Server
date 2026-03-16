@@ -28,7 +28,11 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
 		AuthenticationException authException
 	) throws IOException {
 
-		TokenErrorCode errorCode = TokenErrorCode.JWT_TOKEN_EMPTY_ERROR;
+		String authorizationHeader = request.getHeader("Authorization");
+
+		TokenErrorCode errorCode = (authorizationHeader != null && !authorizationHeader.startsWith("Bearer "))
+			? TokenErrorCode.INVALID_AUTHORIZATION_HEADER
+			: TokenErrorCode.JWT_TOKEN_EMPTY_ERROR;
 
 		response.setStatus(errorCode.getHttpStatus().value());
 		response.setContentType("application/json;charset=UTF-8");

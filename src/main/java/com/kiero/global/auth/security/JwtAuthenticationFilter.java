@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtTokenProvider jwtTokenProvider;
+	private final ObjectMapper objectMapper;
 
 	@Override
 	protected void doFilterInternal(
@@ -95,7 +96,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		response.setStatus(errorCode.getHttpStatus().value());
 		response.setContentType("application/json;charset=UTF-8");
 
-		ObjectMapper objectMapper = new ObjectMapper();
 		response.getWriter().write(
 			objectMapper.writeValueAsString(
 				ErrorResponse.of(errorCode)

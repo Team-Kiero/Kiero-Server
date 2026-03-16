@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -791,8 +790,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates, LocalTime startTime, LocalTime endTime, boolean isFireLitToday, boolean isExistsTodayNotPendingAfterEndTime) {
 
-		LocalDate today = LocalDate.now();
-		LocalTime now = LocalTime.now();
+		LocalDate today = LocalDate.now(clock);
+		LocalTime now = LocalTime.now(clock);
 		List<LocalDate> requestDates = dates == null ? null : dateParser(dates);
 
 		// 반복일정일 때 dayOfWeek 필드가 비어있으면 예외
