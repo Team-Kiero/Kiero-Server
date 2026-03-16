@@ -457,7 +457,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			6) 오늘 일정들의 불조각 종류를 재계산합니다.
 			 */
 			case RecurringToRecurring -> {
-				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 
 				List<DayOfWeek> originalDayOfWeeks = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(
 					originalSchedule.getId());
