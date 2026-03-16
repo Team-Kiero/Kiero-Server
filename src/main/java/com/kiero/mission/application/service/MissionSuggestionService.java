@@ -143,25 +143,39 @@ public class MissionSuggestionService implements MissionSuggestionUseCase {
 		StringBuilder sb = new StringBuilder();
 		DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
 
+		LocalDate endOfThisWeek = start.getDayOfWeek() == DayOfWeek.SUNDAY
+			? start
+			: start.with(java.time.temporal.TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+
 		for (int i = 0; i < days; i++) {
 			LocalDate date = start.plusDays(i);
 			String dayStr = date.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.KOREAN);
+			String weekLabel = getWeekLabel(endOfThisWeek, date);
 
 			sb.append("- ")
 				.append(date.format(formatter))
 				.append(" (")
 				.append(dayStr)
-				.append(")");
+				.append(") [")
+				.append(weekLabel)
+				.append("]");
 
 			if (i == 0) sb.append(" [오늘]");
 			if (i == 1) sb.append(" [내일]");
 			if (i == 2) sb.append(" [모레]");
 
-			if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
-				sb.append("  <-- (이번 주/다음 주 경계)");
-			}
 			sb.append("\n");
 		}
 		return sb.toString();
+	}
+
+	private String getWeekLabel(LocalDate endOfThisWeek, LocalDate date) {
+		if (!date.isAfter(endOfThisWeek)) return "이번주";
+		LocalDate endOfNextWeek = endOfThisWeek.plusDays(7);
+		if (!date.isAfter(endOfNextWeek)) return "다음주";
+		LocalDate endOfWeekAfterNext = endOfNextWeek.plusDays(7);
+		if (!date.isAfter(endOfWeekAfterNext)) return "다다음주";
+		long weeksLater = java.time.temporal.ChronoUnit.WEEKS.between(endOfThisWeek, date);
+		return weeksLater + "주 후";
 	}
 }

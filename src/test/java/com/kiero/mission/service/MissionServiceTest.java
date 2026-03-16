@@ -107,7 +107,7 @@ public class MissionServiceTest {
 				.willReturn(List.of());
 			given(missionPersistencePort.findByIdWithLockForChild(missionId))
 				.willReturn(Optional.of(mission));
-			given(childLoadPort.findByIdWithLockForChild(childId))
+			given(childLoadPort.findByIdWithLock(childId))
 				.willReturn(Optional.of(child));
 
 			// When
@@ -136,7 +136,7 @@ public class MissionServiceTest {
 
 			// Then 5: Repository 호출 검증
 			verify(missionPersistencePort, times(1)).findByIdWithLockForChild(missionId);
-			verify(childLoadPort, times(1)).findByIdWithLockForChild(childId);
+			verify(childLoadPort, times(1)).findByIdWithLock(childId);
 		}
 
 		@Test
