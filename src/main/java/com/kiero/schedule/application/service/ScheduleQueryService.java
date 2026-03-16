@@ -81,9 +81,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 		Long childId) {
 		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
 
-		if (startDate.isAfter(endDate) || endDate.isBefore(startDate)) {
-			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
-		}
+		validateScheduleRange(startDate, endDate);
 
 		List<Schedule> schedules = schedulePersistencePort.findAllByChildId(childId);
 		if (schedules.isEmpty()) {
@@ -442,6 +440,33 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
 			throw new KieroException(ScheduleErrorCode.NOT_ALLOWED_TO_CHILD);
+		}
+	}
+
+	private void validateScheduleRange(LocalDate startDate, LocalDate endDate) {
+		LocalDate today = LocalDate.now(clock);
+
+		// 종료일이 시작일보다 이후라면 예외
+		if (endDate.isBefore(startDate)) {
+			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
+		}
+
+		// startDate는 월요일이어야 함
+		if (startDate.getDayOfWeek() != java.time.DayOfWeek.MONDAY) {
+			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_START_DATE);
+		}
+
+		// endDate는 일요일이어야 함
+		if (!endDate.equals(startDate.plusDays(6))) {
+			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_END_DATE);
+		}
+
+		// 현재 기준 이전 12주 ~ 이후 12주 범위만 허용
+		LocalDate minAllowedStartDate = today.minusWeeks(13);
+		LocalDate maxAllowedEndDate = today.plusWeeks(13);
+
+		if (startDate.isBefore(minAllowedStartDate) || endDate.isAfter(maxAllowedEndDate)) {
+			throw new KieroException(ScheduleErrorCode.INVALID_SCHEDULE_RANGE);
 		}
 	}
 }

@@ -101,7 +101,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		// 요청한 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
 		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, request.endTime());
 
-		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
+		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime(), isFireLitToday, isExistsTodayNotPendingAfterEndTime);
 
 		if (request.isRecurring()) {
 
@@ -307,18 +307,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
 		}
 
-		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates());
-
 		Schedule originalSchedule = schedulePersistencePort.findById(scheduleId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
 
 		if (!parentId.equals(originalSchedule.getParent().getId())) {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
-
-		boolean isEffectsToChildSchedule = false;
-
-		ScheduleUpdateCase scheduleUpdateCase = scheduleUpdateCaseResolver(originalSchedule, request);
 
 		Long childId = originalSchedule.getChild().getId();
 
@@ -327,6 +321,21 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		// 요청한 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
 		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, request.endTime());
+
+		// 오늘 일정을 수정하려고 할 때, 수정하려는 일정 상태가 PENDING이 아니거나 이미 시작된 일정이라면 예외
+		if (selectedDate.isEqual(today)) {
+			ScheduleDetail originalTodayDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(scheduleId, today)
+				.orElseThrow(()-> new KieroException(ScheduleErrorCode.INTERNAL_SERVER_ERROR));
+			if (originalTodayDetail.getScheduleStatus() != ScheduleStatus.PENDING || !originalSchedule.getStartTime().isAfter(now)) {
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
+			}
+		}
+
+		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime(), isFireLitToday, isExistsTodayNotPendingAfterEndTime);
+
+		boolean isEffectsToChildSchedule = false;
+
+		ScheduleUpdateCase scheduleUpdateCase = scheduleUpdateCaseResolver(originalSchedule, request);
 
 		switch (scheduleUpdateCase) {
 
@@ -683,6 +692,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		boolean isPending = hasDetail && scheduleDetail.get().getScheduleStatus() == ScheduleStatus.PENDING;
 		boolean isBeforeStart = originalSchedule.getStartTime().isAfter(now);
 
+		// 삭제하려는 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
+		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, originalSchedule.getEndTime());
+
 		// 삭제하려는 일정이 반복일정일 경우
 		if (originalSchedule.isRecurring()) {
 			if (request == null || request.isIncludeFollowing() == null)
@@ -698,7 +710,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				if ( !isToday ) {
 					originalSchedule.changeRepeatEndDate(repeatEndDate);
 				}
-				else if ( hasDetail && isPending && isBeforeStart ) {
+				else if ( hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
 					originalSchedule.changeRepeatEndDate(repeatEndDate);
 
 					scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
@@ -707,7 +719,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					recalculateTodayStoneTypes(childId);
 				}
 				else {
-					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_DELETED);
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
 				}
 
 
@@ -716,7 +728,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
 					discardedSchedulePersistencePort.save(discardedSchedule);
 				}
-				else if ( hasDetail && isPending && isBeforeStart ) {
+				else if ( hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
 					DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
 					discardedSchedulePersistencePort.save(discardedSchedule);
 
@@ -726,7 +738,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					recalculateTodayStoneTypes(childId);
 				}
 				else {
-					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_DELETED);
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
 				}
 			}
 		}
@@ -736,14 +748,14 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			if ( !isToday ) {
 				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 			}
-			else if ( isPending && isBeforeStart ) {
+			else if ( isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
 				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 
 				eventPort.publish(new ScheduleModifiedEvent(childId));
 				recalculateTodayStoneTypes(childId);
 			}
 			else {
-				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_DELETED);
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
 			}
 
 		}
@@ -776,15 +788,50 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
-	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates) {
+	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates, LocalTime startTime, LocalTime endTime, boolean isFireLitToday, boolean isExistsTodayNotPendingAfterEndTime) {
+
+		LocalDate today = LocalDate.now(clock);
+		LocalTime now = LocalTime.now(clock);
+		List<LocalDate> requestDates = dates == null ? null : dateParser(dates);
+
+		// 반복일정일 때 dayOfWeek 필드가 비어있으면 예외
 		if (isRecurring && (dayOfWeek == null || dayOfWeek.isEmpty())) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE);
 		}
+		// 단일일정일 때 dates 필드가 비어있으면 예외
 		if (!isRecurring && (dates == null || dates.isEmpty())) {
 			throw new KieroException(ScheduleErrorCode.DATE_NOT_NULLABLE_WHEN_IS_RECURRING_IS_FALSE);
 		}
+		// dayOfWeek 혹은 dates 필드가 모두 비어있으면 예외
 		if (dayOfWeek != null && dates != null) {
 			throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_XOR_DATE_REQUIRED);
+		}
+		// startTime이 endTime의 이전이 아니면 예외
+		if (!startTime.isBefore(endTime)) {
+			throw new KieroException(ScheduleErrorCode.INVALID_TIME_DURATION);
+		}
+		// 단일일정일 때
+		if (dates != null) {
+			// 요청 날짜 중 하나라도 오늘 이전이면 예외
+			if (requestDates.stream().anyMatch(date -> date.isBefore(today))) {
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_IN_PAST);
+			}
+			// 일정 일자가 오늘을 포함하고 있을 때
+			if (requestDates.contains(today)) {
+				// 불피우기를 이미 완료하였다면 예외
+				if (isFireLitToday) {
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_NOT_MANIPULATED_WHEN_FIRE_LIT);
+				}
+				// 이후 일정 중 아이가 행위를 진행한 일정이 있으면 예외
+				if (isExistsTodayNotPendingAfterEndTime) {
+					throw new KieroException(
+						ScheduleErrorCode.SCHEDULE_NOT_MANIPULATED_WHEN_AFTER_SCHEDULE_NOT_PENDING);
+				}
+				// 현재 시각이 일정의 startTime 이후라면 예외
+				if (!now.isBefore(startTime)) {
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_IN_PAST);
+				}
+			}
 		}
 	}
 
