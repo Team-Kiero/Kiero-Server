@@ -47,7 +47,7 @@ public class Coupon extends BaseTimeEntity {
 	private Parent parent;
 
 	@LastModifiedDate
-	@Column(name = CouponTableConstants.COLUMN_UPDATED_AT, nullable = false)
+	@Column(name = CouponTableConstants.COLUMN_UPDATED_AT)
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)

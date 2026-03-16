@@ -50,7 +50,7 @@ public class Mission extends BaseTimeEntity {
 	private boolean isCompleted;
 
 	@LastModifiedDate
-	@Column(name = MissionTableConstants.COLUMN_UPDATED_AT, nullable = false)
+	@Column(name = MissionTableConstants.COLUMN_UPDATED_AT)
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
