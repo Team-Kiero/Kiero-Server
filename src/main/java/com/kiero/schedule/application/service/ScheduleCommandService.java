@@ -447,12 +447,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			/*
 			반복일정 -> 반복일정이고 요일 변화가 있을 때,
 			1) selectedDate를 기준으로 기존의 scheduleDetail가 존재한다면 삭제합니다.
-			2) 기존의 일정의 반복종료일자를 selectedDate 하루 전으로 업데이트합니다.
+			2) 기존의 일정의 반복종료일자를 selectedDate 이전 마지막 반복일자로 업데이트합니다.
 			3) request body로 새로운 schedule을 생성하고, 반복시작일자는 selectedDate로 합니다.
 			4) request body와 새로 생성한 schedule로 scheduleRepeatDays를 생성합니다.
 
 			새로 생성된 일정의 날짜가 오늘이고 일정 시작 시각이 현재보다 이후라면,
-			4) scheduleDetail을 추가로 생성합니다.
+			4) scheduleDetail을 추가로 6생성합니다.
 			5) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
 			6) 오늘 일정들의 불조각 종류를 재계산합니다.
 			 */
@@ -498,6 +498,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				// 2) 오늘 일정들의 stoneType 재계산
 				// 3) 이벤트를 발행하도록 설정
 				if (requestDayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
+					scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), today);
 
 					ScheduleDetail scheduleDetail = ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, saved);
 					scheduleDetailPersistencePort.save(scheduleDetail);
