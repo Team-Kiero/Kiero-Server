@@ -43,8 +43,13 @@ public class MissionPersistenceAdapter implements MissionPersistencePort {
 	}
 
 	@Override
-	public Optional<Mission> findByIdWithLock(Long missionId) {
-		return missionRepository.findByIdWithLock(missionId);
+	public Optional<Mission> findByIdWithLockForChild(Long missionId) {
+		return missionRepository.findByIdWithLockForChild(missionId);
+	}
+
+	@Override
+	public Optional<Mission> findByIdWithLockForParent(Long missionId) {
+		return missionRepository.findByIdWithLockForParent(missionId);
 	}
 
 	@Override

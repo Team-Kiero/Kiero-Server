@@ -111,7 +111,7 @@ public class MissionCommandService implements MissionCommandUseCase {
 	@Override
 	@Transactional
 	public MissionResponse completeMission(Long childId, Long missionId) {
-		Mission mission = missionPort.findByIdWithLock(missionId)
+		Mission mission = missionPort.findByIdWithLockForChild(missionId)
 			.orElseThrow(() -> new KieroException(MissionErrorCode.MISSION_NOT_FOUND));
 
 		if (!mission.getChild().getId().equals(childId)) {
@@ -159,7 +159,7 @@ public class MissionCommandService implements MissionCommandUseCase {
 	@Override
 	@Transactional
 	public MissionUpdateResponse updateMission(Long parentId, Long missionId, MissionUpdateRequest request) {
-		Mission mission = missionPort.findById(missionId)
+		Mission mission = missionPort.findByIdWithLockForParent(missionId)
 			.orElseThrow(() -> new KieroException(MissionErrorCode.MISSION_NOT_FOUND));
 
 		if (!mission.getParent().getId().equals(parentId)) {
@@ -178,11 +178,15 @@ public class MissionCommandService implements MissionCommandUseCase {
 	@Override
 	@Transactional
 	public void deleteMission(Long parentId, Long missionId) {
-		Mission mission = missionPort.findById(missionId)
+		Mission mission = missionPort.findByIdWithLockForParent(missionId)
 			.orElseThrow(() -> new KieroException(MissionErrorCode.MISSION_NOT_FOUND));
 
 		if (!mission.getParent().getId().equals(parentId)) {
 			throw new KieroException(MissionErrorCode.NOT_YOUR_MISSION);
+		}
+
+		if (mission.isCompleted()) {
+			throw new KieroException(MissionErrorCode.MISSION_ALREADY_COMPLETED);
 		}
 
 		missionPort.delete(mission);

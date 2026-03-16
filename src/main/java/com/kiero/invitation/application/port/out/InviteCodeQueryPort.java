@@ -7,5 +7,7 @@ import com.kiero.invitation.domain.InviteCode;
 public interface InviteCodeQueryPort {
 	Optional<InviteCode> findByCode(String code);
 
+	Optional<InviteCode> findByParentKey(String parentKey);
+
 	boolean existsByCode(String code);
 }

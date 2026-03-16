@@ -105,7 +105,7 @@ public class MissionServiceTest {
 
 			given(parentChildLoadPort.findParentsByChildId(childId))
 				.willReturn(List.of());
-			given(missionPersistencePort.findByIdWithLock(missionId))
+			given(missionPersistencePort.findByIdWithLockForChild(missionId))
 				.willReturn(Optional.of(mission));
 			given(childLoadPort.findByIdWithLock(childId))
 				.willReturn(Optional.of(child));
@@ -135,7 +135,7 @@ public class MissionServiceTest {
 			assertThat(publishedEvent.name()).isEqualTo("수학 숙제하기");
 
 			// Then 5: Repository 호출 검증
-			verify(missionPersistencePort, times(1)).findByIdWithLock(missionId);
+			verify(missionPersistencePort, times(1)).findByIdWithLockForChild(missionId);
 			verify(childLoadPort, times(1)).findByIdWithLock(childId);
 		}
 
@@ -145,7 +145,7 @@ public class MissionServiceTest {
 			Long childId = 1L;
 			Long invalidMissionId = 999L;
 
-			given(missionPersistencePort.findByIdWithLock(invalidMissionId))
+			given(missionPersistencePort.findByIdWithLockForChild(invalidMissionId))
 				.willReturn(Optional.empty());
 
 			// When & Then 1
@@ -163,7 +163,7 @@ public class MissionServiceTest {
 			Long otherChildId = 2L;
 			Long missionId = 1L;
 
-			given(missionPersistencePort.findByIdWithLock(missionId))
+			given(missionPersistencePort.findByIdWithLockForChild(missionId))
 				.willReturn(Optional.of(mission));
 
 			// When & Then 1
@@ -185,7 +185,7 @@ public class MissionServiceTest {
 			Long childId = 1L;
 			Long missionId = 1L;
 
-			given(missionPersistencePort.findByIdWithLock(missionId))
+			given(missionPersistencePort.findByIdWithLockForChild(missionId))
 				.willReturn(Optional.of(mission));
 
 			// When & Then 1
@@ -213,7 +213,7 @@ public class MissionServiceTest {
 			Long childId = 1L;
 			Long missionId = 1L;
 
-			given(missionPersistencePort.findByIdWithLock(missionId))
+			given(missionPersistencePort.findByIdWithLockForChild(missionId))
 				.willReturn(Optional.of(expiredMission));
 
 			// When & Then 1

@@ -22,6 +22,11 @@ public class InviteCodePersistenceAdapter implements InviteCodeQueryPort, Invite
 	}
 
 	@Override
+	public Optional<InviteCode> findByParentKey(String parentKey) {
+		return inviteCodeRepository.findByParentKey(parentKey);
+	}
+
+	@Override
 	public boolean existsByCode(String code) {
 		return inviteCodeRepository.existsById(code);
 	}

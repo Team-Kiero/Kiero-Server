@@ -31,6 +31,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CouponCommandService implements CouponCommandUseCase {
 
+	private static final int MAX_COUPON_PRICE = 500;
+
 	private final ParentChildAccessPort parentChildAccessPort;
 	private final ParentLoadPort parentLoadPort;
 	private final ChildLoadPort childLoadPort;
@@ -52,7 +54,8 @@ public class CouponCommandService implements CouponCommandUseCase {
 		Child child = childLoadPort.findById(childId)
 			.orElseThrow(() -> new KieroException(CouponErrorCode.CHILD_NOT_FOUND));
 
-		Coupon coupon = Coupon.create(request.name(), request.price(), parent, child);
+		int price = Math.min(request.price(), MAX_COUPON_PRICE);
+		Coupon coupon = Coupon.create(request.name(), price, parent, child);
 		Coupon saved = couponPersistencePort.save(coupon);
 
 		couponEventPort.publish(new CouponCreatedEvent(childId, saved.getName(), saved.getPrice()));
@@ -70,7 +73,8 @@ public class CouponCommandService implements CouponCommandUseCase {
 			throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
 		}
 
-		coupon.update(request.name(), request.price());
+		int price = Math.min(request.price(), MAX_COUPON_PRICE);
+		coupon.update(request.name(), price);
 
 		return CouponResponse.from(coupon);
 	}
