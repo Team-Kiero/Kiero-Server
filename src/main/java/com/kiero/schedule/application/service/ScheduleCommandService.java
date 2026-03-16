@@ -493,9 +493,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
 
 				// 추가된 일정의 요일에 오늘이 포함되고 일정 시작 시간이 현재 이후며, 아이가 오늘 불피우기를 하지 않았고 아이가 미리 수행한 일정이 없다면
-				// 1) 추가된 일정의 scheduleDetail 생성
-				// 2) 오늘 일정들의 stoneType 재계산
-				// 3) 이벤트를 발행하도록 설정
+				// 1) 오리지널 일정의 오늘자 scheduleDetail 삭제
+				// 2) 추가된 일정의 scheduleDetail 생성
+				// 3) 오늘 일정들의 stoneType 재계산
+				// 4) 이벤트를 발행하도록 설정
 				if (requestDayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
 					scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), today);
 
