@@ -310,6 +310,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		Schedule originalSchedule = schedulePersistencePort.findById(scheduleId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
 
+		if (!parentId.equals(originalSchedule.getParent().getId())) {
+			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
+		}
+
 		Long childId = originalSchedule.getChild().getId();
 
 		// 오늘 아이의 불피우기 완료 여부
@@ -328,10 +332,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 
 		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime(), isFireLitToday, isExistsTodayNotPendingAfterEndTime);
-
-		if (!parentId.equals(originalSchedule.getParent().getId())) {
-			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
-		}
 
 		boolean isEffectsToChildSchedule = false;
 
