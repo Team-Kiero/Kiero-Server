@@ -156,4 +156,6 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 		where sd.id = :scheduleDetailId
 		""")
 	Optional<ScheduleDetail> findByIdWithSchedule(Long scheduleDetailId);
+
+	void deleteAllByScheduleId(Long scheduleId);
 }

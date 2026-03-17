@@ -463,10 +463,17 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				List<DayOfWeek> requestDayOfWeeks = dayOfWeekParser(request.dayOfWeek());
 
 				LocalDate newScheduleRepeatStartDate = repeatStartDateResolver(selectedDate, requestDayOfWeeks, request.startTime(), today, now);
-				LocalDate originalScheduleRepeatEndDate = repeatEndDateResolver(selectedDate, originalDayOfWeeks);
 
 				throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(),
 					request.endTime(), childId, selectedDate, newScheduleRepeatStartDate, originalSchedule.getId());
+
+				LocalDate originalScheduleRepeatEndDate = repeatEndDateResolver(selectedDate, originalDayOfWeeks);
+
+				// 더 이상 유효하지 않은 반복 일정은 하드딜리트
+				if (originalScheduleRepeatEndDate.isBefore(originalSchedule.getRepeatStartDate())) {
+					deleteScheduleSet(originalSchedule);
+					return;
+				}
 
 				originalSchedule.changeRepeatEndDate(originalScheduleRepeatEndDate);
 
@@ -529,10 +536,17 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				if (!sameDays) throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_CANNOT_BE_MODIFIED);
 
 				LocalDate newScheduleRepeatStartDate = repeatStartDateResolver(selectedDate, dayOfWeeks, request.startTime(), today, now);
-				LocalDate originalScheduleRepeatEndDate = repeatEndDateResolver(selectedDate, dayOfWeeks);
 
 				throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(),
 					request.endTime(), childId, selectedDate, newScheduleRepeatStartDate, originalSchedule.getId());
+
+				LocalDate originalScheduleRepeatEndDate = repeatEndDateResolver(selectedDate, dayOfWeeks);
+
+				// 더 이상 유효하지 않은 반복 일정은 하드딜리트
+				if (originalScheduleRepeatEndDate.isBefore(originalSchedule.getRepeatStartDate())) {
+					deleteScheduleSet(originalSchedule);
+					return;
+				}
 
 				originalSchedule.changeRepeatEndDate(originalScheduleRepeatEndDate);
 
@@ -708,6 +722,17 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					originalSchedule.getId());
 				LocalDate repeatEndDate = repeatEndDateResolver(selectedDate, dayOfWeeks);
 
+				// 더 이상 유효하지 않은 반복 일정은 하드딜리트
+				if (repeatEndDate.isBefore(originalSchedule.getRepeatStartDate())) {
+					deleteScheduleSet(originalSchedule);
+					return;
+				}
+
+				// 1) 유효한 일정은 repeatEndDate 업데이트
+				// 삭제 요청한 일정이 오늘이고 유효하다면
+				// 2) scheduleDetail 삭제
+				// 3) 이벤트 발행
+				// 4) 불조각 종류 재계산
 				if ( !isToday ) {
 					originalSchedule.changeRepeatEndDate(repeatEndDate);
 				}
@@ -1028,5 +1053,11 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			cursor = cursor.minusDays(1);
 		}
 		return selectedDate.minusDays(1);
+	}
+
+	private void deleteScheduleSet(Schedule originalSchedule) {
+		scheduleDetailPersistencePort.deleteAllByScheduleId(originalSchedule.getId());
+		scheduleRepeatDaysPersistencePort.deleteAllByScheduleId(originalSchedule.getId());
+		schedulePersistencePort.deleteById(originalSchedule.getId());
 	}
 }
