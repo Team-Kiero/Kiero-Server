@@ -311,11 +311,13 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 				.toList();
 
 		// 오늘 일정이 존재하지 않을 경우
-		if (scheduleDetails.isEmpty()) { return new ScheduleProgressForChildResponse(0, List.of()); }
+		if (scheduleDetails.isEmpty()) { return new ScheduleProgressForChildResponse(0, false, List.of()); }
 
 		// 당일 생성된 일정 중 유효한 일정만 필터링
 		LocalDateTime earliestStoneUsedAt = findEarliestStoneUsedAt(scheduleDetails);
 		List<ScheduleDetail> filteredScheduleDetails = filterTodayCreatedSchedules(today, scheduleDetails, earliestStoneUsedAt);
+
+		boolean isFireLitToday =  filteredScheduleDetails.stream().anyMatch(sd -> sd.getStoneUsedAt() != null);
 
 		// 아이가 인증하지 않고 스킵한 일정을 제외하여 dto building
 		List<ScheduleProgressForChildDto> schedules = filteredScheduleDetails.stream()
@@ -334,7 +336,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 			})
 			.toList();
 
-		return new ScheduleProgressForChildResponse(schedules.size(), schedules);
+		return new ScheduleProgressForChildResponse(schedules.size(), isFireLitToday, schedules);
 	}
 
 	@Override
