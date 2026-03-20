@@ -47,4 +47,9 @@ public class DiscardedSchedulePersistenceAdapter implements DiscardedSchedulePer
 	public List<DiscardedSchedule> findAllByDate(LocalDate today) {
 		return discardedScheduleRepository.findAllByDate(today);
 	}
+
+	@Override
+	public void deleteByScheduleId(Long id) {
+		discardedScheduleRepository.deleteByScheduleId(id);
+	}
 }

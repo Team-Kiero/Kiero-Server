@@ -1058,5 +1058,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		scheduleDetailPersistencePort.deleteAllByScheduleId(originalSchedule.getId());
 		scheduleRepeatDaysPersistencePort.deleteAllByScheduleId(originalSchedule.getId());
 		schedulePersistencePort.deleteById(originalSchedule.getId());
+		discardedSchedulePersistencePort.deleteByScheduleId(originalSchedule.getId());
 	}
 }

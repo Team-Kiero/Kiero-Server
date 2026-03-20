@@ -22,4 +22,6 @@ public interface DiscardedSchedulePersistencePort {
 	);
 
 	List<DiscardedSchedule> findAllByDate(LocalDate today);
+
+	void deleteByScheduleId(Long id);
 }

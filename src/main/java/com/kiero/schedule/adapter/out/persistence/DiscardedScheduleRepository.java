@@ -50,4 +50,5 @@ public interface DiscardedScheduleRepository extends JpaRepository<DiscardedSche
 
 	List<DiscardedSchedule> findAllByDate(LocalDate today);
 
+	void deleteByScheduleId(Long id);
 }
