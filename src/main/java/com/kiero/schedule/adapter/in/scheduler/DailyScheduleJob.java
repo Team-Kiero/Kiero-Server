@@ -25,6 +25,7 @@ public class DailyScheduleJob {
 		LocalDate today = LocalDate.now(clock);
 
 		scheduleSchedulerUseCase.createTodayScheduleDetail();
+		scheduleSchedulerUseCase.deleteObsoleteNonRecurringSchedules();
 		sseBroadcastUseCase.broadcastDateChangedSafely(today);
 	}
 }

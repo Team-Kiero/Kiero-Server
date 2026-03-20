@@ -11,14 +11,13 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kiero.child.application.port.out.ChildLoadPort;
-import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
 import com.kiero.schedule.application.dto.ScheduleUpdateEventTarget;
 import com.kiero.schedule.application.port.in.ScheduleSchedulerUseCase;
 import com.kiero.schedule.application.port.out.DiscardedSchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleEventPort;
+import com.kiero.schedule.application.port.out.SchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleRepeatDaysPersistencePort;
 import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
@@ -41,8 +40,7 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 	private final ScheduleEventPort scheduleEventPort;
 
 	private final ScheduleCommandService scheduleCommandService;
-	private final ParentLoadPort parentLoadPort;
-	private final ChildLoadPort childLoadPort;
+	private final SchedulePersistencePort schedulePersistencePort;
 
 	@Override
 	@Transactional
@@ -88,4 +86,11 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 			}
 		}
 	}
+
+	@Override
+	@Transactional
+	public void deleteObsoleteNonRecurringSchedules() {
+		schedulePersistencePort.deleteObsoleteNonRecurringSchedules();
+	}
+
 }

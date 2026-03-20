@@ -46,4 +46,9 @@ public class SchedulePersistenceAdapter implements SchedulePersistencePort {
 		scheduleRepository.deleteById(scheduleId);
 	}
 
+	@Override
+	public void deleteObsoleteNonRecurringSchedules() {
+		scheduleRepository.deleteObsoleteNonRecurringSchedules();
+	}
+
 }
