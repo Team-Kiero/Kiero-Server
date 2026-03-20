@@ -9,4 +9,5 @@ public interface ScheduleSchedulerUseCase {
 
 	void bulkMarkAndPushEventIfUpdateExists(LocalDate today, LocalTime now);
 
+	void deleteObsoleteNonRecurringSchedules();
 }
