@@ -110,4 +110,9 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 		return scheduleDetailRepository.findByIdWithSchedule(scheduleDetailId);
 	}
 
+	@Override
+	public void deleteAllByScheduleId(Long scheduleId) {
+		scheduleDetailRepository.deleteAllByScheduleId(scheduleId);
+	}
+
 }

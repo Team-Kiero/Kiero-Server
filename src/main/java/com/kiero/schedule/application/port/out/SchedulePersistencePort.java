@@ -17,4 +17,7 @@ public interface SchedulePersistencePort {
 
 	Optional<Schedule> findById(Long scheduleId);
 
+	void deleteById(Long scheduleId);
+
+	void deleteObsoleteNonRecurringSchedules();
 }
