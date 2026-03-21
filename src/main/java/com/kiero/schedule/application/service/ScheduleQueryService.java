@@ -365,9 +365,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 		boolean isFireLitToday =  filteredScheduleDetails.stream().anyMatch(sd -> sd.getStoneUsedAt() != null);
 
-		// 아이가 인증하지 않고 스킵한 일정을 제외하여 dto building
 		List<ScheduleProgressForParentDto.ScheduleDto> schedules = filteredScheduleDetails.stream()
-			.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.SKIPPED)
 			.map(sd -> {
 				boolean isOngoing = !now.isBefore(sd.getSchedule().getStartTime()) && now.isBefore(sd.getSchedule().getEndTime());
 
