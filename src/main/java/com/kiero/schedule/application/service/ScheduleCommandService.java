@@ -540,6 +540,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				LocalDate originalScheduleRepeatEndDate = repeatEndDateResolver(selectedDate, dayOfWeeks);
 
+				// 원본 일정의 오늘자 scheduleDetail이 존재하는가 (= 오늘이 원본일정의 반복요일에 해당했는가)
+				boolean isOriginalDetailExists = scheduleDetailPersistencePort.findByScheduleIdAndDate(
+					originalSchedule.getId(), selectedDate).isPresent();
+
 				// 더 이상 유효하지 않은 반복 일정은 하드딜리트
 				if (originalScheduleRepeatEndDate.isBefore(originalSchedule.getRepeatStartDate())) {
 					deleteScheduleSet(originalSchedule);
@@ -566,11 +570,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				scheduleRepeatDaysPersistencePort.saveAll(scheduleRepeatDays);
 
-				Optional<ScheduleDetail> originalDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
-					originalSchedule.getId(), selectedDate);
-
-				if(originalDetail.isPresent()) {
-					originalDetail.get().changeSchedule(saved);
+				if(isOriginalDetailExists) {
+					ScheduleDetail scheduleDetail = ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING,
+						null, saved);
+					scheduleDetailPersistencePort.save(scheduleDetail);
 					if (request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
 						recalculateTodayStoneTypes(childId);
 						isEffectsToChildSchedule = true;
@@ -1013,8 +1016,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		if (selectedDate.isAfter(today)) { // 진입 일자가 미래 일자면
 
 			if (isAdd) baseDate = selectedDate; // 일정 추가의 상황이라면
-			else if (!includesToday) baseDate = selectedDate; // 일정 수정의 상황이고, 반복요일에 오늘이 포함되지 않는다면
-			else if (startTime.isAfter(now)) baseDate = today; // 일정 수정의 상황이고, 반복요일에 오늘이 포함되고, 일정 시작시간이 현재보다 이후라면
+			else if (includesToday && startTime.isAfter(now)) baseDate = today; // 일정 수정의 상황이고, 반복요일에 오늘이 포함되고, 일정 시작시간이 현재보다 이후라면
 			else baseDate = selectedDate; // 일정 수정의 상황이고, 반복요일에 오늘이 포함되고, 일정 시작시간이 현재보다 이전이라면
 
 		} else if (selectedDate.isBefore(today)) {
