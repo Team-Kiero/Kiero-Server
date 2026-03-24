@@ -106,7 +106,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		if (request.isRecurring()) {
 
 			List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
-			LocalDate repeatStartDate = repeatStartDateResolver(true, request.firstOrderDate(), dayOfWeeks, request.startTime(), today, now);
+			LocalDate repeatStartDate = repeatStartDateResolver(request.firstOrderDate(), dayOfWeeks, request.startTime(), today, now);
 
 			throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(), request.endTime(), child.getId(), null, repeatStartDate, null);
 
@@ -403,7 +403,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
 
-				LocalDate repeatStartDate = repeatStartDateResolver(false, selectedDate, dayOfWeeks, request.startTime(), today, now);
+				LocalDate repeatStartDate = repeatStartDateResolver(selectedDate, dayOfWeeks, request.startTime(), today, now);
 
 				throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(),
 					request.endTime(), childId, selectedDate, repeatStartDate, originalSchedule.getId());
@@ -462,7 +462,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					originalSchedule.getId());
 				List<DayOfWeek> requestDayOfWeeks = dayOfWeekParser(request.dayOfWeek());
 
-				LocalDate newScheduleRepeatStartDate = repeatStartDateResolver(false, selectedDate, requestDayOfWeeks, request.startTime(), today, now);
+				LocalDate newScheduleRepeatStartDate = repeatStartDateResolver(selectedDate, requestDayOfWeeks, request.startTime(), today, now);
 
 				throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(),
 					request.endTime(), childId, selectedDate, newScheduleRepeatStartDate, originalSchedule.getId());
@@ -533,7 +533,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				boolean sameDays = new HashSet<>(dayOfWeekParser(request.dayOfWeek())).equals(new HashSet<>(dayOfWeeks));
 				if (!sameDays) throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_CANNOT_BE_MODIFIED);
 
-				LocalDate newScheduleRepeatStartDate = repeatStartDateResolver(false, selectedDate, dayOfWeeks, request.startTime(), today, now);
+				LocalDate newScheduleRepeatStartDate = repeatStartDateResolver(selectedDate, dayOfWeeks, request.startTime(), today, now);
 
 				throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(),
 					request.endTime(), childId, selectedDate, newScheduleRepeatStartDate, originalSchedule.getId());
@@ -1000,7 +1000,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 	// 반복일정이 첫 번째로 시작되는 일자를 구하는 리졸버
 	private LocalDate repeatStartDateResolver(
-		boolean isAdd,
 		LocalDate selectedDate,
 		List<DayOfWeek> repeatDays,
 		LocalTime startTime,
@@ -1015,9 +1014,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		if (selectedDate.isAfter(today)) { // 진입 일자가 미래 일자면
 
-			if (isAdd) baseDate = selectedDate; // 일정 추가의 상황이라면
-			else if (includesToday && startTime.isAfter(now)) baseDate = today; // 일정 수정의 상황이고, 반복요일에 오늘이 포함되고, 일정 시작시간이 현재보다 이후라면
-			else baseDate = selectedDate; // 일정 수정의 상황이고, 반복요일에 오늘이 포함되고, 일정 시작시간이 현재보다 이전이라면
+			baseDate = selectedDate;
 
 		} else if (selectedDate.isBefore(today)) {
 
