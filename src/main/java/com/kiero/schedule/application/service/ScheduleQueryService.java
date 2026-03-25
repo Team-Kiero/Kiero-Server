@@ -44,6 +44,8 @@ import com.kiero.schedule.domain.enums.ScheduleColor;
 import com.kiero.schedule.domain.enums.ScheduleStatus;
 import com.kiero.schedule.domain.vo.DiscardKey;
 
+import org.springframework.cache.annotation.Cacheable;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -77,6 +79,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 
 	@Override
 	@Transactional
+	@Cacheable(cacheNames = "schedules", key = "#childId + ':' + #startDate + ':' + #endDate")
 	public ScheduleOccurrencesResponse getSchedules(LocalDate startDate, LocalDate endDate, Long parentId,
 		Long childId) {
 		checkIsExistsAndAccessibleByParentIdAndChildId(parentId, childId);
