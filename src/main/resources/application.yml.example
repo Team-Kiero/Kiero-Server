@@ -39,3 +39,6 @@ aws:
   credentials:
     access-key: YOUR_ACCESS_KEY
     secret-key: YOUR_SECRET_KEY
+
+apple:
+  bundle-id: com.your.app.bundle-id

@@ -6,4 +6,5 @@ import com.kiero.parent.application.dto.ParentLoginResponse;
 public interface ParentLoginUseCase {
 	ParentLoginResponse loginWithAuthorizationCode(String authorizationCode, SocialLoginRequest request);
 	ParentLoginResponse loginWithKakaoAccessToken(String kakaoAccessToken);
+	ParentLoginResponse loginWithAppleIdentityToken(String identityToken, String name);
 }

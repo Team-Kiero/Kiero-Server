@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
 import com.kiero.global.auth.dto.CurrentAuth;
+import com.kiero.parent.application.dto.AppleLoginRequest;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.invitation.application.port.in.InviteCodeUseCase;
 import com.kiero.parent.application.dto.ChildInfoResponse;
@@ -78,6 +79,28 @@ public class ParentController {
 		@RequestParam("accessToken") String accessToken
 	) {
 		ParentLoginResponse response = parentLoginUseCase.loginWithKakaoAccessToken(accessToken);
+
+		ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN, response.refreshToken())
+			.maxAge(COOKIE_MAX_AGE)
+			.path("/")
+			.secure(true)
+			.sameSite("None")
+			.httpOnly(true)
+			.build();
+
+		return ResponseEntity.ok()
+			.header(HttpHeaders.SET_COOKIE, cookie.toString())
+			.body(SuccessResponse.of(ParentSuccessCode.LOGIN_SUCCESS, response));
+	}
+
+	@PostMapping("/login/apple")
+	public ResponseEntity<SuccessResponse<ParentLoginResponse>> loginWithApple(
+		@Valid @RequestBody AppleLoginRequest request
+	) {
+		ParentLoginResponse response = parentLoginUseCase.loginWithAppleIdentityToken(
+			request.identityToken(),
+			request.name()
+		);
 
 		ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN, response.refreshToken())
 			.maxAge(COOKIE_MAX_AGE)
