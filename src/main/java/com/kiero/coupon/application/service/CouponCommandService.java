@@ -41,6 +41,8 @@ public class CouponCommandService implements CouponCommandUseCase {
 	private final CouponEventPort couponEventPort;
 	private final ParentChildLoadPort parentChildLoadPort;
 
+	private final CouponCacheEvictHelper couponCacheEvictHelper;
+
 	@Override
 	@Transactional
 	public CouponResponse createCoupon(Long parentId, Long childId, CouponCreateRequest request) {
@@ -58,6 +60,8 @@ public class CouponCommandService implements CouponCommandUseCase {
 		Coupon coupon = Coupon.create(request.name(), price, parent, child);
 		Coupon saved = couponPersistencePort.save(coupon);
 
+		couponCacheEvictHelper.evictByChildId(childId);
+
 		couponEventPort.publish(new CouponCreatedEvent(childId, saved.getName(), saved.getPrice()));
 
 		return CouponResponse.from(saved);
@@ -74,7 +78,10 @@ public class CouponCommandService implements CouponCommandUseCase {
 		}
 
 		int price = Math.min(request.price(), MAX_COUPON_PRICE);
+
 		coupon.update(request.name(), price);
+
+		couponCacheEvictHelper.evictByChildId(coupon.getChild().getId());
 
 		return CouponResponse.from(coupon);
 	}
@@ -88,6 +95,8 @@ public class CouponCommandService implements CouponCommandUseCase {
 		if (!coupon.getParent().getId().equals(parentId)) {
 			throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
 		}
+
+		couponCacheEvictHelper.evictByChildId(coupon.getChild().getId());
 
 		couponPersistencePort.delete(coupon);
 	}

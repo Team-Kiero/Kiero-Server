@@ -2,6 +2,7 @@ package com.kiero.coupon.application.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ public class CouponQueryService implements CouponsQueryUseCase {
 
 	@Override
 	@Transactional(readOnly = true)
+	@Cacheable(cacheNames = "coupons", key = "#childId", condition = "#childId != null")
 	public List<CouponResponse> getCouponsByChild(Long childId) {
 		return couponLoadPort.findAllByChildIdOrderByPriceAsc(childId)
 			.stream()
@@ -32,6 +34,7 @@ public class CouponQueryService implements CouponsQueryUseCase {
 
 	@Override
 	@Transactional(readOnly = true)
+	@Cacheable(cacheNames = "coupons", key = "#childId", condition = "#childId != null")
 	public List<CouponResponse> getCouponsByParent(Long parentId, Long childId) {
 		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
 			throw new KieroException(CouponErrorCode.NOT_YOUR_CHILD);
