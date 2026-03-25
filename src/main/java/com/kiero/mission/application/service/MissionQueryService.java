@@ -15,6 +15,8 @@ import com.kiero.mission.application.port.out.MissionPersistencePort;
 import com.kiero.mission.domain.Mission;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 
+import org.springframework.cache.annotation.Cacheable;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -27,6 +29,7 @@ public class MissionQueryService implements MissionQueryUseCase {
 
 	@Override
 	@Transactional(readOnly = true)
+	@Cacheable(cacheNames = "missions", key = "#childId", condition = "#childId != null")
 	public List<MissionResponse> getMissionsByParent(Long parentId, Long childId) {
 		LocalDate today = LocalDate.now();
 
@@ -46,6 +49,7 @@ public class MissionQueryService implements MissionQueryUseCase {
 
 	@Override
 	@Transactional(readOnly = true)
+	@Cacheable(cacheNames = "missions", key = "#childId")
 	public List<MissionResponse> getMissionsByChild(Long childId) {
 		LocalDate today = LocalDate.now();
 		return missionPort.findAllByChildIdAndDueAtGreaterThanEqual(childId, today)
