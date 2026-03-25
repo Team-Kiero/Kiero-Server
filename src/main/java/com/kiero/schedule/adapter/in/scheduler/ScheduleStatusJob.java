@@ -27,6 +27,7 @@ public class ScheduleStatusJob {
 		LocalTime now = LocalTime.now(clock);
 
 		scheduleSchedulerUseCase.bulkMarkAndPushEventIfUpdateExists(today, now);
+		scheduleSchedulerUseCase.pushEventIfScheduleStart(today, now);
 
 	}
 }
