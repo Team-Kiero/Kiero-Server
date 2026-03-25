@@ -56,6 +56,10 @@ spring:
 open-api:
   service-key: ${OPEN_API_SERVICE_KEY}
 
+# Apple
+apple:
+  bundle-id: ${APPLE_BUNDLE_ID}
+
 # Sentry
 sentry:
   dsn: ${SENTRY_DSN}
