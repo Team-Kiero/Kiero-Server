@@ -73,6 +73,10 @@ sentry:
     - org.springframework.security.authentication.BadCredentialsException
     - org.springframework.web.bind.MethodArgumentNotValidException
     - org.springframework.web.bind.MissingServletRequestParameterException
+    - org.springframework.web.bind.MissingRequestCookieException
+    - org.springframework.web.bind.MissingRequestHeaderException
+    - org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+    - org.springframework.http.converter.HttpMessageNotReadableException
     - org.springframework.web.servlet.NoHandlerFoundException
     - jakarta.validation.ConstraintViolationException
 
