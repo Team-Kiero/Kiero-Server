@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
-import com.kiero.schedule.application.dto.ScheduleUpdateEventTarget;
+import com.kiero.schedule.application.dto.ScheduleEventTarget;
 import com.kiero.schedule.application.port.in.ScheduleSchedulerUseCase;
 import com.kiero.schedule.application.port.out.DiscardedSchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
@@ -69,7 +69,7 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 	@Override
 	@Transactional
 	public void bulkMarkAndPushEventIfUpdateExists(LocalDate today, LocalTime now) {
-		List<ScheduleUpdateEventTarget> targets = scheduleDetailPersistencePort.findScheduleUpdateEventTarget(today, now);
+		List<ScheduleEventTarget> targets = scheduleDetailPersistencePort.findScheduleUpdateEventTarget(today, now);
 
 		if (!targets.isEmpty()) {
 			scheduleDetailPersistencePort.bulkMarkPendingAsFailed(today, now);
@@ -77,8 +77,8 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 
 			Map<Long, List<Long>> parentIdsByChildId = targets.stream()
 				.collect(Collectors.groupingBy(
-					ScheduleUpdateEventTarget::childId,
-					Collectors.mapping(ScheduleUpdateEventTarget::parentId, Collectors.toList())
+					ScheduleEventTarget::childId,
+					Collectors.mapping(ScheduleEventTarget::parentId, Collectors.toList())
 				));
 
 			for (var entry : parentIdsByChildId.entrySet()) {

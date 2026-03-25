@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.kiero.schedule.application.dto.ScheduleUpdateEventTarget;
+import com.kiero.schedule.application.dto.ScheduleEventTarget;
 import com.kiero.schedule.domain.ScheduleDetail;
 
 @Repository
@@ -81,7 +81,7 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 	);
 
 	@Query("""
-		select distinct new com.kiero.schedule.application.dto.ScheduleUpdateEventTarget(
+		select distinct new com.kiero.schedule.application.dto.ScheduleEventTarget(
 			c.id,
 			p.id
 		)
@@ -97,7 +97,7 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 		  )
 		  and s.endTime <= :now
 """)
-	List<ScheduleUpdateEventTarget> findScheduleUpdateEventTargets(
+	List<ScheduleEventTarget> findScheduleUpdateEventTargets(
 		@Param("today") LocalDate today,
 		@Param("now") LocalTime now
 	);

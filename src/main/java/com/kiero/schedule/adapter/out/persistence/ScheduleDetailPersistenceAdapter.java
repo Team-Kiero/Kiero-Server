@@ -7,7 +7,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
-import com.kiero.schedule.application.dto.ScheduleUpdateEventTarget;
+import com.kiero.schedule.application.dto.ScheduleEventTarget;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
 import com.kiero.schedule.domain.ScheduleDetail;
 
@@ -86,7 +86,7 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	}
 
 	@Override
-	public List<ScheduleUpdateEventTarget> findScheduleUpdateEventTarget(LocalDate today, LocalTime now) {
+	public List<ScheduleEventTarget> findScheduleUpdateEventTarget(LocalDate today, LocalTime now) {
 		return scheduleDetailRepository.findScheduleUpdateEventTargets(today, now);
 	}
 

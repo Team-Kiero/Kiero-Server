@@ -1,6 +1,6 @@
 package com.kiero.schedule.application.dto;
 
-public record ScheduleUpdateEventTarget(
+public record ScheduleEventTarget(
 	Long childId,
 	Long parentId
 ) {

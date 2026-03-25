@@ -5,7 +5,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
-import com.kiero.schedule.application.dto.ScheduleUpdateEventTarget;
+import com.kiero.schedule.application.dto.ScheduleEventTarget;
 import com.kiero.schedule.domain.ScheduleDetail;
 
 public interface ScheduleDetailPersistencePort {
@@ -37,7 +37,7 @@ public interface ScheduleDetailPersistencePort {
 
 	void deleteScheduleDetail(ScheduleDetail scheduleDetail);
 
-	List<ScheduleUpdateEventTarget> findScheduleUpdateEventTarget(LocalDate today, LocalTime now);
+	List<ScheduleEventTarget> findScheduleUpdateEventTarget(LocalDate today, LocalTime now);
 
 	void bulkMarkPendingAsFailed(LocalDate today, LocalTime now);
 
