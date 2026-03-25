@@ -75,4 +75,8 @@ public class Parent extends BaseTimeEntity {
 		this.image = image;
 	}
 
+	public void updateAppleProfile(final String email) {
+		this.email = email;
+	}
+
 }
