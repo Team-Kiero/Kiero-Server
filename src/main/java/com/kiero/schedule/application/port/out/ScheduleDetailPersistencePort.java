@@ -39,6 +39,8 @@ public interface ScheduleDetailPersistencePort {
 
 	List<ScheduleEventTarget> findScheduleUpdateEventTarget(LocalDate today, LocalTime now);
 
+	List<ScheduleEventTarget> findScheduleStartEventTarget(LocalDate today, LocalTime now);
+
 	void bulkMarkPendingAsFailed(LocalDate today, LocalTime now);
 
 	void bulkMarkVerifiedAsCompleted(LocalDate today, LocalTime now);

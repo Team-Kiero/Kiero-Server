@@ -91,6 +91,13 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	}
 
 	@Override
+	public List<ScheduleEventTarget> findScheduleStartEventTarget(LocalDate today, LocalTime now) {
+		LocalTime nowStart = now.withSecond(0).withNano(0);
+		LocalTime nowEnd = nowStart.plusMinutes(1);
+		return scheduleDetailRepository.findScheduleStartEventTargets(today, nowStart, nowEnd);
+	}
+
+	@Override
 	public void bulkMarkPendingAsFailed(LocalDate today, LocalTime now) {
 		scheduleDetailRepository.bulkMarkPendingAsFailed(today, now);
 	}

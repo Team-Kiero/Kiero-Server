@@ -89,6 +89,24 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 
 	@Override
 	@Transactional
+	public void pushEventIfScheduleStart(LocalDate today, LocalTime now) {
+		List<ScheduleEventTarget> targets = scheduleDetailPersistencePort.findScheduleStartEventTarget(today, now);
+
+		if (!targets.isEmpty()) {
+			Map<Long, List<Long>> parentIdsByChildId = targets.stream()
+				.collect(Collectors.groupingBy(
+					ScheduleEventTarget::childId,
+					Collectors.mapping(ScheduleEventTarget::parentId, Collectors.toList())
+				));
+
+			for (var entry : parentIdsByChildId.entrySet()) {
+				scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(entry.getKey(), entry.getValue()));
+			}
+		}
+	}
+
+	@Override
+	@Transactional
 	public void deleteObsoleteNonRecurringSchedules() {
 		schedulePersistencePort.deleteObsoleteNonRecurringSchedules();
 	}
