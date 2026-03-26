@@ -31,6 +31,7 @@ public class CacheConfig {
 					.allowIfSubType("com.kiero.")
 					.allowIfSubType("java.util.")
 					.allowIfSubType("java.time.")
+					.allowIfSubType("java.lang.")
 					.build(),
 				ObjectMapper.DefaultTyping.EVERYTHING
 			);
