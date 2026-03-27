@@ -19,7 +19,7 @@ public class MissionCacheableService {
 	private final MissionPersistencePort missionPort;
 
 	@Transactional(readOnly = true)
-	@Cacheable(cacheNames = "missions", key = "#childId", condition = "#childId != null")
+	@Cacheable(cacheNames = "missions", key = "#childId + ':' + T(java.time.LocalDate).now()", condition = "#childId != null")
 	public List<MissionResponse> getMissionsByChild(Long childId) {
 		LocalDate today = LocalDate.now();
 		return missionPort.findAllByChildIdAndDueAtGreaterThanEqual(childId, today)

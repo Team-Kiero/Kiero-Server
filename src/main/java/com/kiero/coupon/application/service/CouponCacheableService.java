@@ -18,7 +18,7 @@ public class CouponCacheableService {
 	private final CouponLoadPort couponLoadPort;
 
 	@Transactional(readOnly = true)
-	@Cacheable(cacheNames = "coupons", key = "#childId", condition = "#childId != null")
+	@Cacheable(cacheNames = "coupons", key = "#childId + ':' + T(java.time.LocalDate).now()", condition = "#childId != null")
 	public List<CouponResponse> getCouponsByChild(Long childId) {
 		return couponLoadPort.findAllByChildIdOrderByPriceAsc(childId)
 			.stream()

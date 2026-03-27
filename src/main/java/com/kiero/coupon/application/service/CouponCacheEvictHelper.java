@@ -1,5 +1,7 @@
 package com.kiero.coupon.application.service;
 
+import java.time.LocalDate;
+
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
@@ -34,7 +36,7 @@ public class CouponCacheEvictHelper {
 	private void doEvict(Long childId) {
 		Cache cache = cacheManager.getCache(CACHE_NAME);
 		if (cache != null) {
-			cache.evict(childId);
+			cache.evict(childId + ":" + LocalDate.now());
 		}
 	}
 }
