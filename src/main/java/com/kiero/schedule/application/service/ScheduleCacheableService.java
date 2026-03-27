@@ -37,7 +37,7 @@ public class ScheduleCacheableService {
 	private final ScheduleDetailPersistencePort scheduleDetailPersistencePort;
 	private final Clock clock;
 
-	@Transactional
+	@Transactional(readOnly = true)
 	@Cacheable(cacheNames = "schedules", key = "#childId + ':' + #startDate + ':' + #endDate")
 	public ScheduleOccurrencesResponse getSchedules(LocalDate startDate, LocalDate endDate, Long childId) {
 		List<Schedule> schedules = schedulePersistencePort.findAllByChildId(childId);
