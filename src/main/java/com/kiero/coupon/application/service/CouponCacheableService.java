@@ -1,5 +1,7 @@
 package com.kiero.coupon.application.service;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.cache.annotation.Cacheable;
@@ -16,13 +18,18 @@ import lombok.RequiredArgsConstructor;
 public class CouponCacheableService {
 
 	private final CouponLoadPort couponLoadPort;
+	private final Clock clock;
 
 	@Transactional(readOnly = true)
-	@Cacheable(cacheNames = "coupons", key = "#childId + ':' + T(java.time.LocalDate).now()", condition = "#childId != null")
+	@Cacheable(cacheNames = "coupons", key = "#root.target.cacheKey(#childId)", condition = "#childId != null")
 	public List<CouponResponse> getCouponsByChild(Long childId) {
 		return couponLoadPort.findAllByChildIdOrderByPriceAsc(childId)
 			.stream()
 			.map(CouponResponse::from)
 			.toList();
+	}
+
+	public String cacheKey(Long childId) {
+		return childId + ":" + LocalDate.now(clock);
 	}
 }

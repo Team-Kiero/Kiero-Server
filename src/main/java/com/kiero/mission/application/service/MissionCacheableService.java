@@ -21,10 +21,14 @@ public class MissionCacheableService {
 	private final Clock clock;
 
 	@Transactional(readOnly = true)
-	@Cacheable(cacheNames = "missions", key = "#childId + ':' + T(java.time.LocalDate).now()", condition = "#childId != null")
+	@Cacheable(cacheNames = "missions", key = "#root.target.cacheKey(#childId)", condition = "#childId != null")
 	public List<MissionResponse> getMissionsByChild(Long childId) {
 		LocalDate today = LocalDate.now(clock);
 		return missionPort.findAllByChildIdAndDueAtGreaterThanEqual(childId, today)
 			.stream().map(MissionResponse::from).toList();
+	}
+
+	public String cacheKey(Long childId) {
+		return childId + ":" + LocalDate.now(clock);
 	}
 }
