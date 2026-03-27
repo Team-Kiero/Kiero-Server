@@ -1,5 +1,6 @@
 package com.kiero.mission.application.service;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -17,11 +18,12 @@ import lombok.RequiredArgsConstructor;
 public class MissionCacheableService {
 
 	private final MissionPersistencePort missionPort;
+	private final Clock clock;
 
 	@Transactional(readOnly = true)
 	@Cacheable(cacheNames = "missions", key = "#childId + ':' + T(java.time.LocalDate).now()", condition = "#childId != null")
 	public List<MissionResponse> getMissionsByChild(Long childId) {
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(clock);
 		return missionPort.findAllByChildIdAndDueAtGreaterThanEqual(childId, today)
 			.stream().map(MissionResponse::from).toList();
 	}
