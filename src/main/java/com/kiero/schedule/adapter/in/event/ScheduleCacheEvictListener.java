@@ -9,7 +9,6 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.kiero.schedule.application.dto.FireLitEvent;
 import com.kiero.schedule.application.dto.ScheduleCacheEvent;
-import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
 import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -25,14 +24,7 @@ public class ScheduleCacheEvictListener {
 	private final StringRedisTemplate stringRedisTemplate;
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handle(ScheduleCacheEvent event) {
-		evictByChildId(event.childId());
-	}
-
-	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handle(ScheduleModifiedEvent event) {
-		evictByChildId(event.childId());
-	}
+	public void handle(ScheduleCacheEvent event) { evictByChildId(event.childId()); }
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleStatusUpdatedEvent event) {
