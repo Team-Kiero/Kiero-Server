@@ -48,6 +48,8 @@ public class MissionCommandService implements MissionCommandUseCase {
 	private final ChildLoadPort childLoadPort;
 	private final ParentChildLoadPort parentChildLoadPort;
 
+	private final MissionCacheEvictHelper missionCacheEvictHelper;
+
 	@Override
 	@Transactional
 	public MissionResponse createMission(Long parentId, Long childId, MissionCreateRequest request) {
@@ -74,6 +76,8 @@ public class MissionCommandService implements MissionCommandUseCase {
 			mission.getName(),
 			mission.getReward()
 		));
+
+		missionCacheEvictHelper.evictByChildId(childId);
 
 		log.info("Mission created: missionId={}, parentId={}, childId={}, name={}",
 			saved.getId(), parentId, childId, request.name());
@@ -102,6 +106,8 @@ public class MissionCommandService implements MissionCommandUseCase {
 		for (Mission m : saved) {
 			eventPort.publish(new MissionCreatedEvent(childId, m.getName(), m.getReward()));
 		}
+
+		missionCacheEvictHelper.evictByChildId(childId);
 
 		log.info("Bulk created {} missions for parentId={}, childId={}", saved.size(), parentId, childId);
 
@@ -150,6 +156,8 @@ public class MissionCommandService implements MissionCommandUseCase {
 			eventPort.publish(new MissionCompleteEvent(parentIds, childId));
 		}
 
+		missionCacheEvictHelper.evictByChildId(childId);
+
 		log.info("Mission completed: missionId={}, childId={}, reward={}, newCoinAmount={}",
 			missionId, childId, mission.getReward(), child.getCoinAmount());
 
@@ -172,6 +180,8 @@ public class MissionCommandService implements MissionCommandUseCase {
 
 		mission.update(request.name(), request.reward(), request.dueAt());
 
+		missionCacheEvictHelper.evictByChildId(mission.getChild().getId());
+
 		return MissionUpdateResponse.from(mission);
 	}
 
@@ -189,7 +199,9 @@ public class MissionCommandService implements MissionCommandUseCase {
 			throw new KieroException(MissionErrorCode.MISSION_ALREADY_COMPLETED);
 		}
 
+		Long childId = mission.getChild().getId();
 		missionPort.delete(mission);
+		missionCacheEvictHelper.evictByChildId(childId);
 	}
 
 	private void validateParentChildRelation(Long parentId, Long childId) {

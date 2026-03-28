@@ -30,6 +30,7 @@ import com.kiero.schedule.application.dto.FireLitResponse;
 import com.kiero.schedule.application.dto.NowScheduleCompleteEventForFeed;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
+import com.kiero.schedule.application.dto.ScheduleCacheEvent;
 import com.kiero.schedule.application.dto.ScheduleDeleteRequest;
 import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
 import com.kiero.schedule.application.dto.ScheduleModifyRequest;
@@ -65,7 +66,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 	private final ChildLoadPort childLoadPort;
 	private final ParentChildAccessPort parentChildAccessPort;
 
-	private final ScheduleEventPort eventPort;
 	private final Clock clock;
 
 	private final SchedulePersistencePort schedulePersistencePort;
@@ -177,8 +177,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			}
 		}
 
-		// 아이의 오늘 일정에 영향이 있을 때만 이벤트 전송
-		if (isEffectsToChildSchedule) eventPort.publish(new ScheduleModifiedEvent(childId));
+		// 아이의 오늘 일정에 영향이 있을 때만 SSE 이벤트 전송
+		if (isEffectsToChildSchedule) scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+
+		scheduleEventPort.publish(new ScheduleCacheEvent(childId));
 	}
 
 
@@ -237,7 +239,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.map(Parent::getId)
 			.toList();
 
-		eventPort.publish(new NowScheduleCompleteEventForFeed(
+		scheduleEventPort.publish(new NowScheduleCompleteEventForFeed(
 			parents,
 			scheduleDetail.getSchedule().getChild().getId(),
 			scheduleDetail.getId(),
@@ -291,8 +293,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.map(Parent::getId)
 			.toList();
 
-		eventPort.publish(new FireLitEvent(parentIds, child.getId()));
-		eventPort.publish(new FireLitEventForFeed(parents, child.getId(), earnedCoinAmount, LocalDateTime.now(clock)));
+		scheduleEventPort.publish(new FireLitEvent(parentIds, child.getId()));
+		scheduleEventPort.publish(new FireLitEventForFeed(parents, child.getId(), earnedCoinAmount, LocalDateTime.now(clock)));
 		return FireLitResponse.of(gotStones, earnedCoinAmount);
 	}
 
@@ -675,8 +677,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			default -> throw new KieroException(ScheduleErrorCode.SCHEDULE_UPDATE_CASE_CANNOT_RESOLVED);
 		}
 
-		// 아이의 오늘 일정에 영향이 있을 때만 이벤트 전송
-		if (isEffectsToChildSchedule) eventPort.publish(new ScheduleModifiedEvent(childId));
+		// 아이의 오늘 일정에 영향이 있을 때만 SSE 이벤트 전송
+		if (isEffectsToChildSchedule) scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+
+		scheduleEventPort.publish(new ScheduleCacheEvent(childId));
 	}
 
 	@Override
@@ -739,7 +743,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 					scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
 
-					eventPort.publish(new ScheduleModifiedEvent(childId));
+					scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
 					recalculateTodayStoneTypes(childId);
 				}
 				else {
@@ -758,7 +762,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 					scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
 
-					eventPort.publish(new ScheduleModifiedEvent(childId));
+					scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
 					recalculateTodayStoneTypes(childId);
 				}
 				else {
@@ -775,7 +779,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			else if ( isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
 				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 
-				eventPort.publish(new ScheduleModifiedEvent(childId));
+				scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
 				recalculateTodayStoneTypes(childId);
 			}
 			else {
@@ -783,6 +787,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			}
 
 		}
+
+		scheduleEventPort.publish(new ScheduleCacheEvent(childId));
 	}
 
 	protected void calculateStoneTypePerScheduleDetail(List<ScheduleDetail> scheduleDetails) {

@@ -30,6 +30,7 @@ import com.kiero.mission.application.dto.MissionResponse;
 import com.kiero.mission.application.exception.MissionErrorCode;
 import com.kiero.mission.application.port.out.MissionEventPort;
 import com.kiero.mission.application.port.out.MissionPersistencePort;
+import com.kiero.mission.application.service.MissionCacheEvictHelper;
 import com.kiero.mission.application.service.MissionCommandService;
 import com.kiero.mission.domain.Mission;
 import com.kiero.parent.application.exception.ParentErrorCode;
@@ -53,6 +54,8 @@ public class MissionServiceTest {
 	MissionEventPort missionEventPort;
 	@Mock
 	ParentChildLoadPort parentChildLoadPort;
+	@Mock
+	MissionCacheEvictHelper missionCacheEvictHelper;
 
 	@InjectMocks
 	MissionCommandService missionCommandService;
