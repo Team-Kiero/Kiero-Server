@@ -22,34 +22,28 @@ import lombok.RequiredArgsConstructor;
 public class MissionQueryService implements MissionQueryUseCase {
 
 	private final MissionPersistencePort missionPort;
-
+	private final MissionCacheableService missionCacheableService;
 	private final ParentChildAccessPort parentChildAccessPort;
 
 	@Override
-	@Transactional(readOnly = true)
 	public List<MissionResponse> getMissionsByParent(Long parentId, Long childId) {
-		LocalDate today = LocalDate.now();
-
 		// 1. 특정 자녀 조회
 		if (childId != null) {
 			if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
 				throw new KieroException(MissionErrorCode.NOT_YOUR_CHILD);
 			}
-			return missionPort.findAllByChildIdAndDueAtGreaterThanEqual(childId, today)
-				.stream().map(MissionResponse::from).toList();
+			return missionCacheableService.getMissionsByChild(childId);
 		}
 
-		// 2. 전체 자녀 조회
+		// 2. 전체 자녀 조회 (캐시 미적용)
+		LocalDate today = LocalDate.now();
 		return missionPort.findAllByParentIdAndDueAtGreaterThanEqual(parentId, today)
 			.stream().map(MissionResponse::from).toList();
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public List<MissionResponse> getMissionsByChild(Long childId) {
-		LocalDate today = LocalDate.now();
-		return missionPort.findAllByChildIdAndDueAtGreaterThanEqual(childId, today)
-			.stream().map(MissionResponse::from).toList();
+		return missionCacheableService.getMissionsByChild(childId);
 	}
 
 	@Override
