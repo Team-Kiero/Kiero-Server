@@ -3,8 +3,6 @@ package com.kiero.mission.domain;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import org.springframework.data.annotation.LastModifiedDate;
-
 import com.kiero.child.domain.Child;
 import com.kiero.global.entity.BaseTimeEntity;
 import com.kiero.parent.domain.Parent;
@@ -49,7 +47,6 @@ public class Mission extends BaseTimeEntity {
 	@Column(name = MissionTableConstants.COLUMN_IS_COMPLETED, nullable = false)
 	private boolean isCompleted;
 
-	@LastModifiedDate
 	@Column(name = MissionTableConstants.COLUMN_UPDATED_AT)
 	private LocalDateTime updatedAt;
 
@@ -80,5 +77,6 @@ public class Mission extends BaseTimeEntity {
 		this.name = name;
 		this.reward = reward;
 		this.dueAt = dueAt;
+		this.updatedAt = LocalDateTime.now();
 	}
 }
