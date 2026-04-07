@@ -20,6 +20,11 @@ public enum AdminErrorCode implements BaseCode {
 	404 NOT FOUND
 	 */
 	ADMIN_NOT_FOUND(HttpStatus.NOT_FOUND, "관리자 정보를 찾을 수 없습니다."),
+	PARENT_NOT_FOUND(HttpStatus.NOT_FOUND, "부모 정보를 찾을 수 없습니다."),
+	CHILD_NOT_FOUND(HttpStatus.NOT_FOUND, "아이 정보를 찾을 수 없습니다."),
+	MISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "미션 정보를 찾을 수 없습니다."),
+	SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "일정 정보를 찾을 수 없습니다."),
+	COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "쿠폰 정보를 찾을 수 없습니다."),
 	;
 
 	private final HttpStatus httpStatus;
