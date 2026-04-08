@@ -685,14 +685,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 	@Override
 	@Transactional
-	public void deleteSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleDeleteRequest request) {
+	public void deleteSchedule(Long parentId, Long scheduleId, LocalDate startDate, LocalDate endDate, LocalDate selectedDate, ScheduleDeleteRequest request) {
 
 		LocalDate today = LocalDate.now(clock);
 		LocalTime now = LocalTime.now(clock);
-
-		if (selectedDate.isBefore(today)) {
-			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
-		}
 
 		Schedule originalSchedule = schedulePersistencePort.findById(scheduleId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
@@ -703,89 +699,127 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		Long childId = originalSchedule.getChild().getId();
 
-		Optional<ScheduleDetail> scheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
+		Optional<ScheduleDetail> scheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(originalSchedule.getId(), today);
 
-		boolean isToday = selectedDate.isEqual(today);
 		boolean hasDetail = scheduleDetail.isPresent();
 		boolean isPending = hasDetail && scheduleDetail.get().getScheduleStatus() == ScheduleStatus.PENDING;
 		boolean isBeforeStart = originalSchedule.getStartTime().isAfter(now);
-
 		// 삭제하려는 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
 		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, originalSchedule.getEndTime());
+		boolean isTodayScheduleCanBeManipulated = hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime;
 
-		// 삭제하려는 일정이 반복일정일 경우
+		// 삭제하려는 일정이 반복일정인 경우
 		if (originalSchedule.isRecurring()) {
-			if (request == null || request.isIncludeFollowing() == null)
-				throw new KieroException(ScheduleErrorCode.IS_INCLUDE_FOLLOWING_IS_REQUIRED);
 
-			if (request.isIncludeFollowing()) { // 이후 일정을 포함하는 경우
+			// 필수 필드가 입력되어 있지 않으면 예외
+			if (request == null || request.isIncludeFollowing() == null || startDate == null || endDate == null || selectedDate != null) {
+				throw new KieroException(ScheduleErrorCode.REQUIRED_PARAMS_FOR_RECURRING_SCHEDULE);
+			}
 
-				// 기존 일정의 반복 종료일자 구하기
-				List<DayOfWeek> dayOfWeeks = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(
-					originalSchedule.getId());
-				LocalDate repeatEndDate = repeatEndDateResolver(selectedDate, dayOfWeeks);
+			log.info("isIncludeFollowing: {}, startDate: {}, endDate: {}, selectedDate: {}",
+				request.isIncludeFollowing(), startDate, endDate, selectedDate);
 
-				// 더 이상 유효하지 않은 반복 일정은 하드딜리트
+
+			if (!startDate.isBefore(endDate)) {
+				throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
+			}
+
+			if (endDate.isBefore(today)) {
+				throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
+			}
+
+			List<DayOfWeek> repeatDays = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(originalSchedule.getId());
+
+			// discard된 일정을 제외하고, 일정의 그 주에서의 반복요일을 날짜에 매핑
+			List<LocalDate> repeatDates = getActiveRepeatDates(originalSchedule, repeatDays, startDate, childId);
+
+			// 이후 일정을 포함하는 경우
+			if (request.isIncludeFollowing()) {
+
+				// 삭제되면 안되는 일정들 중, 가장 최신 일정의 일자 추출
+				Optional<LocalDate> lastCannotBeDeletedDate = repeatDates.stream()
+					.filter(date -> date.isBefore(today)
+						|| (date.isEqual(today) && !isBeforeStart)
+						|| (date.isEqual(today) && isExistsTodayNotPendingAfterEndTime)
+						|| (date.isEqual(today) && !isPending))
+					.sorted()
+					.reduce((first, second) -> second);
+
+				LocalDate repeatEndDate = lastCannotBeDeletedDate
+					.orElseGet(() -> repeatEndDateResolver(startDate, repeatDays));
+
+				log.info("lastCannotBeDeletedDate: {}, repeatEndDate: {}", lastCannotBeDeletedDate, repeatEndDate);
+
+				// repeatEndDate가 repeatStartDate보다 이전이면 일정 전체가 무효 → 전체 삭제
 				if (repeatEndDate.isBefore(originalSchedule.getRepeatStartDate())) {
+					if (repeatDates.contains(today)) {
+						scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+						recalculateTodayStoneTypes(childId);
+					}
 					deleteScheduleSet(originalSchedule);
+					log.info("invalid duration - 전체 삭제되었습니다.");
+					return;
 				}
 
-				// 1) 유효한 일정은 repeatEndDate 업데이트
-				// 삭제 요청한 일정이 오늘이고 유효하다면
-				// 2) scheduleDetail 삭제
-				// 3) 이벤트 발행
-				// 4) 불조각 종류 재계산
-				if ( !isToday ) {
-					originalSchedule.changeRepeatEndDate(repeatEndDate);
+				// 일정 종료일자 업데이트
+				originalSchedule.changeRepeatEndDate(repeatEndDate);
+
+				// 오늘 일정이 삭제 가능한 상태라면 scheduleDetail 삭제
+				if (repeatDates.contains(today)) {
+					if (isTodayScheduleCanBeManipulated) {
+						scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
+
+						scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+						recalculateTodayStoneTypes(childId);
+					}
 				}
-				else if ( hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
-					originalSchedule.changeRepeatEndDate(repeatEndDate);
+			}
 
-					scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
+			// 이번 주차만 삭제하는 경우
+			else {
+				// 반복 일자 중 삭제되면 안되는 일정들 제외 (삭제해도 되는 일정만 추출)
+				List<LocalDate> canBeDeletedSchedules = repeatDates.stream()
+					.filter(date -> date.isAfter(today)
+						|| (date.isEqual(today) && isBeforeStart && !isExistsTodayNotPendingAfterEndTime && isPending))
+					.toList();
 
-					scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
-					recalculateTodayStoneTypes(childId);
-				}
-				else {
-					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
-				}
+				List<DiscardedSchedule> discardedSchedules = canBeDeletedSchedules.stream()
+					.map(date -> DiscardedSchedule.create(date, originalSchedule))
+					.toList();
+				discardedSchedulePersistencePort.saveAll(discardedSchedules);
 
-
-			} else { // 이후 일정을 포함하지 않는 경우
-				if ( !isToday ) {
-					DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
-					discardedSchedulePersistencePort.save(discardedSchedule);
-				}
-				else if ( hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
-					DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
-					discardedSchedulePersistencePort.save(discardedSchedule);
-
-					scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
-
-					scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
-					recalculateTodayStoneTypes(childId);
-				}
-				else {
-					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
+				if (repeatDates.contains(today)) {
+					if (isTodayScheduleCanBeManipulated) {
+						scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
+						scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+						recalculateTodayStoneTypes(childId);
+					}
 				}
 			}
 		}
 
 		// 삭제하려는 일정이 단일일정일 경우
 		else {
-			if ( !isToday ) {
-				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
+			if (selectedDate == null || startDate != null || endDate != null || request.isIncludeFollowing() != null) {
+				throw new KieroException(ScheduleErrorCode.REQUIRED_PARAMS_FOR_NORMAL_SCHEDULE);
 			}
-			else if ( isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
-				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 
-				scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
-				recalculateTodayStoneTypes(childId);
+			if (selectedDate.equals(today)) {
+				if (isTodayScheduleCanBeManipulated) {
+					scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
+					scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+					recalculateTodayStoneTypes(childId);
+				}
+				else {
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
+				}
+			}
+			else if (selectedDate.isAfter(today)) {
+				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 			}
 			else {
-				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
+				throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
 			}
-
 		}
 
 		scheduleEventPort.publish(new ScheduleCacheEvent(childId));
@@ -1048,7 +1082,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE));
 	}
 
-	// selectedDate를 기준으로, 기존 반복 요일 중 selectedDate 이전의 마지막 발생일을 반환.
+	// 기존 반복 요일 중 특정 날짜 이전의 마지막 발생일을 반환.
 	private LocalDate repeatEndDateResolver(LocalDate selectedDate, List<DayOfWeek> originalRepeatDays) {
 		LocalDate cursor = selectedDate.minusDays(1);
 		for (int i = 0; i < 7; i++) {
@@ -1064,5 +1098,25 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		scheduleRepeatDaysPersistencePort.deleteAllByScheduleId(originalSchedule.getId());
 		schedulePersistencePort.deleteById(originalSchedule.getId());
 		discardedSchedulePersistencePort.deleteByScheduleId(originalSchedule.getId());
+	}
+
+	private List<LocalDate> getActiveRepeatDates(Schedule schedule, List<DayOfWeek> repeatDays, LocalDate startDate, Long childId) {
+
+		// 일정의 반복요일과 대응하는 LocalDate
+		List<LocalDate> allRepeatDates = repeatDays.stream()
+			.map(day -> startDate.with(DayOfWeek.toJavaDayOfWeek(day)))
+			.toList();
+
+		// discarded된 날짜 제외
+		Set<LocalDate> discardedDates = discardedSchedulePersistencePort
+			.findAllByChildIdAndDateIn(childId, allRepeatDates)
+			.stream()
+			.filter(ds -> ds.getSchedule().getId().equals(schedule.getId()))
+			.map(DiscardedSchedule::getDate)
+			.collect(Collectors.toSet());
+
+		return allRepeatDates.stream()
+			.filter(date -> !discardedDates.contains(date))
+			.toList();
 	}
 }

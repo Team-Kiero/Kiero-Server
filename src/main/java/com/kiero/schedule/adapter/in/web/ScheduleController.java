@@ -144,11 +144,13 @@ public class ScheduleController {
 	@DeleteMapping("/{scheduleId}")
 	public ResponseEntity<SuccessResponse<Void>> deleteSchedule(
 		@PathVariable("scheduleId") Long scheduleId,
-		@RequestParam("selectedDate") LocalDate selectedDate,
+		@RequestParam(required = false, value = "selectedDate") LocalDate selectedDate,
+		@RequestParam(required = false, value = "startDate") LocalDate startDate,
+		@RequestParam(required = false, value = "endDate") LocalDate endDate,
 		@RequestBody(required = false) ScheduleDeleteRequest request,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		scheduleCommandUseCase.deleteSchedule(currentAuth.memberId(), scheduleId, selectedDate, request);
+		scheduleCommandUseCase.deleteSchedule(currentAuth.memberId(), scheduleId, startDate, endDate, selectedDate, request);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_DELETE_SUCCESS));
 	}
