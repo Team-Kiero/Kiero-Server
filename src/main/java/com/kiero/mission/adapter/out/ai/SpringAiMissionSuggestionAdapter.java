@@ -48,6 +48,7 @@ public class SpringAiMissionSuggestionAdapter implements MissionSuggestionAiPort
 		   5. dueAt 추출 규칙 (매우 중요 - 엄격 적용)
 		      - 원칙: 해당 미션 항목의 **본문** 또는 **같은 항목 내의 바로 앞 문장**에 날짜/요일이 명시된 경우 그 날짜를 추출한다.
 		      - ★문맥 허용: "수요일 미술시간 준비물" 처럼, 특정 행사를 위한 준비물인 경우 그 행사의 날짜를 dueAt으로 잡는다.
+		      - ★오늘 표현: "오늘까지", "오늘", "당일" 같은 표현이 본문에 명시된 경우 → 참조표에서 [오늘] 레이블이 붙은 날짜를 선택.
 		      - ★절대 금지: '오늘의 숙제', '알림장' 같은 **문서 전체의 제목/헤더**를 보고 날짜를 추측하지 말 것.
 		      - ★결과: 위 조건에 맞는 날짜 정보가 없으면, 시스템이 처리하므로 **반드시 dueAt은 null**로 반환할 것.
 
@@ -72,6 +73,9 @@ public class SpringAiMissionSuggestionAdapter implements MissionSuggestionAiPort
 		\s
 		 입력: "3. 다음주 수요일 미술시간. 준비물 붓 챙겨오기"
 		 출력: [\\\\{"name": "미술 준비물 붓 챙기기", "dueAt": "2026-01-28"\\\\}]
+		\s
+		 입력: "오늘까지 수학 익힘책을 풀어주세요."
+		 출력: [\\\\{"name": "수학익힘책 풀기", "dueAt": "{today}"\\\\}]
 		
 		   [출력 포맷]
 		   - JSON 배열만 출력 (Markdown 금지).

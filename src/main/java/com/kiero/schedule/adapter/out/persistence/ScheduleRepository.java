@@ -14,6 +14,8 @@ import com.kiero.schedule.domain.Schedule;
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 	List<Schedule> findAllByChildId(Long childId);
 
+	List<Schedule> findAllByParentId(Long parentId);
+
 	Optional<Schedule> findFirstByChildIdOrderByCreatedAtDesc(Long childId);
 
 	@Modifying

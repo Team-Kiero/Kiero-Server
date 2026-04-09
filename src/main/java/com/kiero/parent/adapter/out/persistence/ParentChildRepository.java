@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -30,4 +31,11 @@ public interface ParentChildRepository extends JpaRepository<ParentChild, Long> 
 		""")
 	List<Parent> findParentsByChildId(@Param("childId") Long childId);
 
+	@Modifying
+	@Query("DELETE FROM ParentChild pc WHERE pc.child.id = :childId")
+	void deleteAllByChildId(@Param("childId") Long childId);
+
+	@Modifying
+	@Query("DELETE FROM ParentChild pc WHERE pc.parent.id = :parentId")
+	void deleteAllByParentId(@Param("parentId") Long parentId);
 }

@@ -8,6 +8,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kiero.admin.application.dto.AdminLoginResponse;
+import com.kiero.admin.domain.Admin;
 import com.kiero.child.application.dto.ChildLoginResponse;
 import com.kiero.child.domain.Child;
 import com.kiero.global.auth.enums.Role;
@@ -43,6 +45,16 @@ public class AuthService {
 
 		return ParentLoginResponse.of(parent.getName(), parent.getEmail(), parent.getImage(), parent.getRole(),
 			accessToken, refreshToken);
+	}
+
+	public AdminLoginResponse generateLoginResponse(Admin admin) {
+		Collection<GrantedAuthority> authorities = List.of(Role.ADMIN.toGrantedAuthority());
+		UsernamePasswordAuthenticationToken authenticationToken = createAuthenticationToken(admin.getId(), Role.ADMIN,
+			authorities);
+		String refreshToken = issueAndSaveRefreshToken(admin.getId(), authenticationToken);
+		String accessToken = jwtTokenProvider.issueAccessToken(authenticationToken);
+
+		return AdminLoginResponse.of(accessToken, refreshToken);
 	}
 
 	public ChildLoginResponse generateLoginResponse(Child child) {
