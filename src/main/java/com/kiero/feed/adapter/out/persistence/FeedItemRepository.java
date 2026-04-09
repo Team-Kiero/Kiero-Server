@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.feed.domain.FeedItem;
 
@@ -82,4 +83,12 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 	List<FeedItem> findUnreadFeedItemByParentId(
 		@Param("parentId") Long parentId
 	);
+
+	@Modifying
+	@Query("DELETE FROM FeedItem f WHERE f.child.id = :childId")
+	void deleteAllByChildId(@Param("childId") Long childId);
+
+	@Modifying
+	@Query("DELETE FROM FeedItem f WHERE f.parent.id = :parentId")
+	void deleteAllByParentId(@Param("parentId") Long parentId);
 }
