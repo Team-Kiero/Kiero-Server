@@ -228,7 +228,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 
 		if (scheduleDetail.getStoneUsedAt() != null) {
-			throw new KieroException(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETE);
+			throw new KieroException(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETED);
 		}
 
 		scheduleDetail.changeScheduleStatus(ScheduleStatus.VERIFIED);
@@ -263,7 +263,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		LocalDateTime earliestStoneUsedAt = scheduleQueryService.findEarliestStoneUsedAt(all);
 		if (earliestStoneUsedAt != null) {
-			throw new KieroException(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETE);
+			throw new KieroException(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETED);
 		}
 
 		List<ScheduleDetail> filteredAllScheduleDetails = scheduleQueryService.filterTodayCreatedSchedules(today, all, null);
@@ -864,7 +864,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 		// 단일일정일 때 dates 필드가 비어있으면 예외
 		if (!isRecurring && (dates == null || dates.isEmpty())) {
-			throw new KieroException(ScheduleErrorCode.DATE_NOT_NULLABLE_WHEN_IS_RECURRING_IS_FALSE);
+			throw new KieroException(ScheduleErrorCode.DATE_NOT_NULLABLE_WHEN_RECURRING_IS_FALSE);
 		}
 		// dayOfWeek 혹은 dates 필드가 모두 비어있으면 예외
 		if (dayOfWeek != null && dates != null) {
@@ -884,12 +884,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			if (requestDates.contains(today)) {
 				// 불피우기를 이미 완료하였다면 예외
 				if (isFireLitToday) {
-					throw new KieroException(ScheduleErrorCode.SCHEDULE_NOT_MANIPULATED_WHEN_FIRE_LIT);
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED_WHEN_FIRE_LIT);
 				}
 				// 이후 일정 중 아이가 행위를 진행한 일정이 있으면 예외
 				if (isExistsTodayNotPendingAfterEndTime) {
 					throw new KieroException(
-						ScheduleErrorCode.SCHEDULE_NOT_MANIPULATED_WHEN_AFTER_SCHEDULE_NOT_PENDING);
+						ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED_WHEN_AFTER_SCHEDULE_NOT_PENDING);
 				}
 				// 현재 시각이 일정의 startTime 이후라면 예외
 				if (!now.isBefore(startTime)) {
