@@ -534,11 +534,11 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 				// repeatEndDate가 repeatStartDate보다 이전이면 일정 전체가 무효 → 전체 삭제
 				if (repeatEndDate.isBefore(originalSchedule.getRepeatStartDate())) {
+					deleteScheduleSet(originalSchedule);
 					if (repeatDates.contains(today)) {
 						scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
 						recalculateTodayStoneTypes(childId);
 					}
-					deleteScheduleSet(originalSchedule);
 					return;
 				}
 
