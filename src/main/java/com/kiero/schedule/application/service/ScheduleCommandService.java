@@ -311,25 +311,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
-		// 종료일이 시작일보다 이후라면 예외
-		if (endDate.isBefore(startDate)) {
-			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
-		}
-
-		// startDate는 월요일이어야 함
-		if (startDate.getDayOfWeek() != java.time.DayOfWeek.MONDAY) {
-			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_START_DATE);
-		}
-
-		// endDate는 startDate와 같은 주의 일요일이어야 함
-		if (!endDate.equals(startDate.plusDays(6))) {
-			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_END_DATE);
-		}
-
 		if (!request.startTime().isBefore(request.endTime())) {
 			throw new KieroException(ScheduleErrorCode.INVALID_TIME_DURATION);
 		}
-
 
 		Long childId = originalSchedule.getChild().getId();
 
@@ -394,13 +378,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				throw new KieroException(ScheduleErrorCode.REQUIRED_PARAMS_FOR_RECURRING_SCHEDULE);
 			}
 
-			if (!startDate.isBefore(endDate)) {
-				throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
-			}
-
-			if (endDate.isBefore(today)) {
-				throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
-			}
+			validateWeekRange(startDate, endDate, today);
 
 			List<DayOfWeek> repeatDays = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(
 				originalSchedule.getId());
@@ -497,21 +475,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
-		// 종료일이 시작일보다 이후라면 예외
-		if (endDate.isBefore(startDate)) {
-			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
-		}
-
-		// startDate는 월요일이어야 함
-		if (startDate.getDayOfWeek() != java.time.DayOfWeek.MONDAY) {
-			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_START_DATE);
-		}
-
-		// endDate는 startDate와 같은 주의 일요일이어야 함
-		if (!endDate.equals(startDate.plusDays(6))) {
-			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_END_DATE);
-		}
-
 		Long childId = originalSchedule.getChild().getId();
 
 		Optional<ScheduleDetail> scheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(originalSchedule.getId(), today);
@@ -532,17 +495,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				throw new KieroException(ScheduleErrorCode.REQUIRED_PARAMS_FOR_RECURRING_SCHEDULE);
 			}
 
-			log.info("isIncludeFollowing: {}, startDate: {}, endDate: {}, selectedDate: {}",
-				request.isIncludeFollowing(), startDate, endDate, selectedDate);
-
-
-			if (!startDate.isBefore(endDate)) {
-				throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
-			}
-
-			if (endDate.isBefore(today)) {
-				throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
-			}
+			validateWeekRange(startDate, endDate, today);
 
 			List<DayOfWeek> repeatDays = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(originalSchedule.getId());
 
@@ -564,8 +517,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				LocalDate repeatEndDate = lastCannotBeDeletedDate
 					.orElseGet(() -> repeatEndDateResolver(startDate, repeatDays));
 
-				log.info("lastCannotBeDeletedDate: {}, repeatEndDate: {}", lastCannotBeDeletedDate, repeatEndDate);
-
 				// repeatEndDate가 repeatStartDate보다 이전이면 일정 전체가 무효 → 전체 삭제
 				if (repeatEndDate.isBefore(originalSchedule.getRepeatStartDate())) {
 					if (repeatDates.contains(today)) {
@@ -573,7 +524,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 						recalculateTodayStoneTypes(childId);
 					}
 					deleteScheduleSet(originalSchedule);
-					log.info("invalid duration - 전체 삭제되었습니다.");
 					return;
 				}
 
@@ -830,6 +780,21 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		List<ScheduleDetail> filteredAllScheduleDetails = scheduleQueryService.filterTodayCreatedSchedules(today, allScheduleDetails, earliestStoneUsedAt);
 
 		calculateStoneTypePerScheduleDetail(filteredAllScheduleDetails);
+	}
+
+	private void validateWeekRange(LocalDate startDate, LocalDate endDate, LocalDate today) {
+		if (!startDate.isBefore(endDate)) {
+			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
+		}
+		if (endDate.isBefore(today)) {
+			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
+		}
+		if (startDate.getDayOfWeek() != java.time.DayOfWeek.MONDAY) {
+			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_START_DATE);
+		}
+		if (!endDate.equals(startDate.plusDays(6))) {
+			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_END_DATE);
+		}
 	}
 
 	// 반복일정이 첫 번째로 시작되는 일자를 구하는 리졸버
