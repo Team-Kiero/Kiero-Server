@@ -134,7 +134,11 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 			);
 		}
 
-		int order = filteredAllScheduleDetails.indexOf(todo) + 1;
+		int order = filteredAllScheduleDetails.stream()
+			.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.SKIPPED)
+			.toList()
+			.indexOf(todo) + 1;
+
 		boolean isNowScheduleVerified = todo.getScheduleStatus() == ScheduleStatus.VERIFIED;
 
 		return TodayScheduleResponse.of(
