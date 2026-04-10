@@ -131,11 +131,13 @@ public class ScheduleController {
 	@PatchMapping("/{scheduleId}")
 	public ResponseEntity<SuccessResponse<Void>> updateSchedule(
 		@PathVariable("scheduleId") Long scheduleId,
-		@RequestParam("selectedDate") LocalDate selectedDate,
+		@RequestParam(required = false, value = "selectedDate") LocalDate selectedDate,
+		@RequestParam(required = false, value = "startDate") LocalDate startDate,
+		@RequestParam(required = false, value = "endDate") LocalDate endDate,
 		@RequestBody ScheduleModifyRequest request,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		scheduleCommandUseCase.updateSchedule(currentAuth.memberId(), scheduleId, selectedDate, request);
+		scheduleCommandUseCase.updateSchedule(currentAuth.memberId(), scheduleId, selectedDate, startDate, endDate, request);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_UPDATE_SUCCESS));
 	}
