@@ -317,25 +317,26 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		Long childId = originalSchedule.getChild().getId();
 
-		Optional<ScheduleDetail> originalScheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
-			originalSchedule.getId(), today);
-
-		boolean hasDetail = originalScheduleDetail.isPresent();
-		boolean isPending = hasDetail && originalScheduleDetail.get().getScheduleStatus() == ScheduleStatus.PENDING;
-		boolean isBeforeStart = originalSchedule.getStartTime().isAfter(now);
-		// 삭제하려는 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
-		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(
-			today, childId, originalSchedule.getEndTime());
-		boolean isFireLitToday = scheduleDetailPersistencePort.existsStoneUsedTodayByChildIdAndDate(childId,
-			LocalDate.now(clock));
-		boolean isTodayScheduleCanBeManipulated =
-			hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime && !isFireLitToday;
-
 		// 단일일정을 수정할 경우
 		if (!originalSchedule.isRecurring()) {
 			if (selectedDate == null || startDate != null || endDate != null) {
 				throw new KieroException(ScheduleErrorCode.REQUIRED_PARAMS_FOR_NORMAL_SCHEDULE);
 			}
+
+			Optional<ScheduleDetail> originalScheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
+				originalSchedule.getId(), selectedDate);
+
+			boolean isTodaySchedule = selectedDate.isEqual(today);
+			boolean hasDetail = originalScheduleDetail.isPresent();
+			boolean isPending = hasDetail && originalScheduleDetail.get().getScheduleStatus() == ScheduleStatus.PENDING;
+			boolean isBeforeStart = originalSchedule.getStartTime().isAfter(now);
+			// 삭제하려는 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
+			boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(
+				today, childId, originalSchedule.getEndTime());
+			boolean isFireLitToday = scheduleDetailPersistencePort.existsStoneUsedTodayByChildIdAndDate(childId,
+				LocalDate.now(clock));
+			boolean isTodayScheduleCanBeManipulated =
+				isTodaySchedule && hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime && !isFireLitToday;
 
 			// 기존 존재하는 일정과 시간이 충돌하면 예외
 			throwExceptionWhenAddNormalScheduleIfDuplicated(request.startTime(), request.endTime(),
@@ -379,6 +380,20 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			}
 
 			validateWeekRange(startDate, endDate, today);
+
+			Optional<ScheduleDetail> originalScheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
+				originalSchedule.getId(), today);
+
+			boolean hasDetail = originalScheduleDetail.isPresent();
+			boolean isPending = hasDetail && originalScheduleDetail.get().getScheduleStatus() == ScheduleStatus.PENDING;
+			boolean isBeforeStart = originalSchedule.getStartTime().isAfter(now);
+			// 삭제하려는 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
+			boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(
+				today, childId, originalSchedule.getEndTime());
+			boolean isFireLitToday = scheduleDetailPersistencePort.existsStoneUsedTodayByChildIdAndDate(childId,
+				LocalDate.now(clock));
+			boolean isTodayScheduleCanBeManipulated =
+				hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime && !isFireLitToday;
 
 			List<DayOfWeek> repeatDays = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(
 				originalSchedule.getId());
