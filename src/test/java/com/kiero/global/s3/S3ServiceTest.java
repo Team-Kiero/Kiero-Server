@@ -1,8 +1,11 @@
 package com.kiero.global.s3;
 
-import com.kiero.global.s3.dto.PresignedUrlRequest;
-import com.kiero.global.s3.dto.PresignedUrlResponse;
-import com.kiero.global.s3.service.S3Service;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import java.net.URL;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,15 +13,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import com.kiero.global.s3.dto.PresignedUrlRequest;
+import com.kiero.global.s3.dto.PresignedUrlResponse;
+import com.kiero.global.s3.service.S3Service;
+
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
-
-import java.net.URL;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /**
  * S3Service 단위 테스트
