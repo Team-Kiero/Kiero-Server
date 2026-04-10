@@ -101,7 +101,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		// 요청한 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
 		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, request.endTime());
 
-		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime(), isFireLitToday, isExistsTodayNotPendingAfterEndTime);
+		validateAddScheduleRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime(), isFireLitToday, isExistsTodayNotPendingAfterEndTime);
 
 		if (request.isRecurring()) {
 
@@ -852,7 +852,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
-	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates, LocalTime startTime, LocalTime endTime, boolean isFireLitToday, boolean isExistsTodayNotPendingAfterEndTime) {
+	private void validateAddScheduleRequest(boolean isRecurring, String dayOfWeek, String dates, LocalTime startTime, LocalTime endTime, boolean isFireLitToday, boolean isExistsTodayNotPendingAfterEndTime) {
 
 		LocalDate today = LocalDate.now(clock);
 		LocalTime now = LocalTime.now(clock);
