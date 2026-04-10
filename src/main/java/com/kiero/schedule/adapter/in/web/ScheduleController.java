@@ -134,7 +134,7 @@ public class ScheduleController {
 		@RequestParam(required = false, value = "selectedDate") LocalDate selectedDate,
 		@RequestParam(required = false, value = "startDate") LocalDate startDate,
 		@RequestParam(required = false, value = "endDate") LocalDate endDate,
-		@RequestBody ScheduleModifyRequest request,
+		@Valid @RequestBody ScheduleModifyRequest request,
 		@CurrentMember CurrentAuth currentAuth
 	) {
 		scheduleCommandUseCase.updateSchedule(currentAuth.memberId(), scheduleId, selectedDate, startDate, endDate, request);

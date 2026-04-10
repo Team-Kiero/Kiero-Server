@@ -311,9 +311,25 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
-		if (request.startTime().isAfter(request.endTime())) {
+		// 종료일이 시작일보다 이후라면 예외
+		if (endDate.isBefore(startDate)) {
+			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
+		}
+
+		// startDate는 월요일이어야 함
+		if (startDate.getDayOfWeek() != java.time.DayOfWeek.MONDAY) {
+			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_START_DATE);
+		}
+
+		// endDate는 startDate와 같은 주의 일요일이어야 함
+		if (!endDate.equals(startDate.plusDays(6))) {
+			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_END_DATE);
+		}
+
+		if (!request.startTime().isBefore(request.endTime())) {
 			throw new KieroException(ScheduleErrorCode.INVALID_TIME_DURATION);
 		}
+
 
 		Long childId = originalSchedule.getChild().getId();
 
@@ -481,6 +497,21 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
+		// 종료일이 시작일보다 이후라면 예외
+		if (endDate.isBefore(startDate)) {
+			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
+		}
+
+		// startDate는 월요일이어야 함
+		if (startDate.getDayOfWeek() != java.time.DayOfWeek.MONDAY) {
+			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_START_DATE);
+		}
+
+		// endDate는 startDate와 같은 주의 일요일이어야 함
+		if (!endDate.equals(startDate.plusDays(6))) {
+			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_END_DATE);
+		}
+
 		Long childId = originalSchedule.getChild().getId();
 
 		Optional<ScheduleDetail> scheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(originalSchedule.getId(), today);
@@ -585,7 +616,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		// 삭제하려는 일정이 단일일정일 경우
 		else {
-			if (selectedDate == null || startDate != null || endDate != null || request.isIncludeFollowing() != null) {
+			if (selectedDate == null || startDate != null || endDate != null || (request != null && request.isIncludeFollowing() != null)) {
 				throw new KieroException(ScheduleErrorCode.REQUIRED_PARAMS_FOR_NORMAL_SCHEDULE);
 			}
 
