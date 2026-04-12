@@ -131,11 +131,13 @@ public class ScheduleController {
 	@PatchMapping("/{scheduleId}")
 	public ResponseEntity<SuccessResponse<Void>> updateSchedule(
 		@PathVariable("scheduleId") Long scheduleId,
-		@RequestParam("selectedDate") LocalDate selectedDate,
-		@RequestBody ScheduleModifyRequest request,
+		@RequestParam(required = false, value = "selectedDate") LocalDate selectedDate,
+		@RequestParam(required = false, value = "startDate") LocalDate startDate,
+		@RequestParam(required = false, value = "endDate") LocalDate endDate,
+		@Valid @RequestBody ScheduleModifyRequest request,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		scheduleCommandUseCase.updateSchedule(currentAuth.memberId(), scheduleId, selectedDate, request);
+		scheduleCommandUseCase.updateSchedule(currentAuth.memberId(), scheduleId, selectedDate, startDate, endDate, request);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_UPDATE_SUCCESS));
 	}
@@ -144,11 +146,13 @@ public class ScheduleController {
 	@DeleteMapping("/{scheduleId}")
 	public ResponseEntity<SuccessResponse<Void>> deleteSchedule(
 		@PathVariable("scheduleId") Long scheduleId,
-		@RequestParam("selectedDate") LocalDate selectedDate,
+		@RequestParam(required = false, value = "selectedDate") LocalDate selectedDate,
+		@RequestParam(required = false, value = "startDate") LocalDate startDate,
+		@RequestParam(required = false, value = "endDate") LocalDate endDate,
 		@RequestBody(required = false) ScheduleDeleteRequest request,
 		@CurrentMember CurrentAuth currentAuth
 	) {
-		scheduleCommandUseCase.deleteSchedule(currentAuth.memberId(), scheduleId, selectedDate, request);
+		scheduleCommandUseCase.deleteSchedule(currentAuth.memberId(), scheduleId, startDate, endDate, selectedDate, request);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.SCHEDULE_DELETE_SUCCESS));
 	}

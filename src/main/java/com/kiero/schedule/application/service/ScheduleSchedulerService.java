@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
 import com.kiero.schedule.application.dto.ScheduleEventTarget;
+import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
 import com.kiero.schedule.application.port.in.ScheduleSchedulerUseCase;
 import com.kiero.schedule.application.port.out.DiscardedSchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;

@@ -23,6 +23,11 @@ public class DiscardedSchedulePersistenceAdapter implements DiscardedSchedulePer
 	}
 
 	@Override
+	public List<DiscardedSchedule> saveAll(List<DiscardedSchedule> discardedSchedules) {
+		return discardedScheduleRepository.saveAll(discardedSchedules);
+	}
+
+	@Override
 	public List<DiscardedSchedule> findAllByChildIdAndDayOfWeekIn(
 		Long childId, List<DayOfWeek> dayOfWeeks
 	) {
