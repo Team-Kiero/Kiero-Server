@@ -9,6 +9,8 @@ import com.kiero.schedule.domain.enums.DayOfWeek;
 public interface DiscardedSchedulePersistencePort {
 	DiscardedSchedule save(DiscardedSchedule discardedSchedule);
 
+	List<DiscardedSchedule> saveAll(List<DiscardedSchedule> discardedSchedules);
+
 	List<DiscardedSchedule> findAllByChildIdAndDayOfWeekIn(
 		Long childId, List<DayOfWeek> dayOfWeeks
 	);

@@ -318,7 +318,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_START_DATE);
 		}
 
-		// endDate는 일요일이어야 함
+		// endDate는 startDate와 같은 주의 일요일이어야 함
 		if (!endDate.equals(startDate.plusDays(6))) {
 			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_END_DATE);
 		}

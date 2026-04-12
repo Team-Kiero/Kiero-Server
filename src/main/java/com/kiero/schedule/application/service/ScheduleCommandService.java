@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,7 +41,6 @@ import com.kiero.schedule.application.port.out.ScheduleDetailPersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleEventPort;
 import com.kiero.schedule.application.port.out.SchedulePersistencePort;
 import com.kiero.schedule.application.port.out.ScheduleRepeatDaysPersistencePort;
-import com.kiero.schedule.application.service.resolver.ScheduleUpdateCase;
 import com.kiero.schedule.domain.DiscardedSchedule;
 import com.kiero.schedule.domain.Schedule;
 import com.kiero.schedule.domain.ScheduleDetail;
@@ -101,14 +99,14 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		// 요청한 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
 		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, request.endTime());
 
-		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime(), isFireLitToday, isExistsTodayNotPendingAfterEndTime);
+		validateAddScheduleRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime(), isFireLitToday, isExistsTodayNotPendingAfterEndTime);
 
 		if (request.isRecurring()) {
 
 			List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
 			LocalDate repeatStartDate = repeatStartDateResolver(request.firstOrderDate(), dayOfWeeks, request.startTime(), today, now);
 
-			throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(), request.endTime(), child.getId(), null, repeatStartDate, null);
+			throwExceptionWhenAddRecurringScheduleIfDuplicated(dayOfWeeks, request.startTime(), request.endTime(), child.getId(), repeatStartDate, null);
 
 			Schedule schedule = Schedule.create(
 				parent, child,
@@ -228,7 +226,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 
 		if (scheduleDetail.getStoneUsedAt() != null) {
-			throw new KieroException(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETE);
+			throw new KieroException(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETED);
 		}
 
 		scheduleDetail.changeScheduleStatus(ScheduleStatus.VERIFIED);
@@ -263,7 +261,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		LocalDateTime earliestStoneUsedAt = scheduleQueryService.findEarliestStoneUsedAt(all);
 		if (earliestStoneUsedAt != null) {
-			throw new KieroException(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETE);
+			throw new KieroException(ScheduleErrorCode.FIRE_LIT_ALREADY_COMPLETED);
 		}
 
 		List<ScheduleDetail> filteredAllScheduleDetails = scheduleQueryService.filterTodayCreatedSchedules(today, all, null);
@@ -300,14 +298,11 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 	@Override
 	@Transactional
-	public void updateSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleModifyRequest request) {
+	public void updateSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, LocalDate startDate,
+		LocalDate endDate, ScheduleModifyRequest request) {
 
 		LocalDate today = LocalDate.now(clock);
 		LocalTime now = LocalTime.now(clock);
-
-		if (selectedDate.isBefore(today)) {
-			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
-		}
 
 		Schedule originalSchedule = schedulePersistencePort.findById(scheduleId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
@@ -316,49 +311,45 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_ACCESS_DENIED);
 		}
 
-		Long childId = originalSchedule.getChild().getId();
-
-		// 오늘 아이의 불피우기 완료 여부
-		boolean isFireLitToday = scheduleDetailPersistencePort.existsStoneUsedTodayByChildIdAndDate(childId, LocalDate.now(clock));
-
-		// 요청한 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
-		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, request.endTime());
-
-		// 오늘 일정을 수정하려고 할 때, 수정하려는 일정 상태가 PENDING이 아니거나 이미 시작된 일정이라면 예외
-		if (selectedDate.isEqual(today)) {
-			ScheduleDetail originalTodayDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(scheduleId, today)
-				.orElseThrow(()-> new KieroException(ScheduleErrorCode.INTERNAL_SERVER_ERROR));
-			if (originalTodayDetail.getScheduleStatus() != ScheduleStatus.PENDING || !originalSchedule.getStartTime().isAfter(now)) {
-				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
-			}
+		if (!request.startTime().isBefore(request.endTime())) {
+			throw new KieroException(ScheduleErrorCode.INVALID_TIME_DURATION);
 		}
 
-		validateAddAndUpdateRequest(request.isRecurring(), request.dayOfWeek(), request.dates(), request.startTime(), request.endTime(), isFireLitToday, isExistsTodayNotPendingAfterEndTime);
+		Long childId = originalSchedule.getChild().getId();
 
-		boolean isEffectsToChildSchedule = false;
+		// 단일일정을 수정할 경우
+		if (!originalSchedule.isRecurring()) {
+			if (selectedDate == null || startDate != null || endDate != null) {
+				throw new KieroException(ScheduleErrorCode.REQUIRED_PARAMS_FOR_NORMAL_SCHEDULE);
+			}
 
-		ScheduleUpdateCase scheduleUpdateCase = scheduleUpdateCaseResolver(originalSchedule, request);
+			Optional<ScheduleDetail> originalScheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
+				originalSchedule.getId(), selectedDate);
 
-		switch (scheduleUpdateCase) {
+			boolean isTodaySchedule = selectedDate.isEqual(today);
+			boolean hasDetail = originalScheduleDetail.isPresent();
+			boolean isPending = hasDetail && originalScheduleDetail.get().getScheduleStatus() == ScheduleStatus.PENDING;
+			boolean isBeforeStart = originalSchedule.getStartTime().isAfter(now);
+			// 삭제하려는 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
+			boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(
+				today, childId, originalSchedule.getEndTime());
+			boolean isFireLitToday = scheduleDetailPersistencePort.existsStoneUsedTodayByChildIdAndDate(childId,
+				LocalDate.now(clock));
+			boolean isTodayScheduleCanBeManipulated =
+				isTodaySchedule && hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime && !isFireLitToday;
 
-			/*
-			단일일정 -> 단일일정일 때,
-			1) 기존의 scheduleDetail을 삭제합니다.
-			2) 새로운 schedule을 생성합니다.
-			3) scheduleDetail을 생성합니다.
+			// 기존 존재하는 일정과 시간이 충돌하면 예외
+			throwExceptionWhenAddNormalScheduleIfDuplicated(request.startTime(), request.endTime(),
+				selectedDate.toString(),
+				childId, originalSchedule.getId());
 
-			새로 생성된 일정의 날짜가 오늘이고 일정 시작 시각이 현재보다 이후라면,
-			4) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
-			5) 오늘 일정들의 불조각 종류를 재계산합니다.
-			 */
-			case NormalToNormal -> {
+			// 오늘 이전의 일정을 수정하려고 하면 예외
+			if (selectedDate.isBefore(today)) {
+				throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
+			}
+			// 오늘 이후의 일정을 수정하거나, 오늘 일정 중 수정 가능한 일정을 수정
+			else if (selectedDate.isAfter(today) || (selectedDate.isEqual(today) && isTodayScheduleCanBeManipulated)) {
 
-				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
-
-				throwExceptionWhenAddNormalScheduleIfDuplicated(request.startTime(), request.endTime(), request.dates(),
-					childId, originalSchedule.getId());
-
-				// 새로운 schedule 생성 및 저장
 				Schedule newSchedule = Schedule.create(
 					originalSchedule.getParent(),
 					originalSchedule.getChild(),
@@ -370,329 +361,127 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					null,
 					null
 				);
-
 				Schedule saved = schedulePersistencePort.save(newSchedule);
+				originalScheduleDetail.ifPresent(detail -> detail.changeSchedule(saved));
 
-				List<LocalDate> dates = dateParser(request.dates());
-				List<ScheduleDetail> details = dates.stream()
-					.distinct()
-					.sorted()
-					.map(date -> ScheduleDetail.create(date, null, null, ScheduleStatus.PENDING, null, saved))
-					.toList();
-
-				scheduleDetailPersistencePort.saveAll(details);
-
-				// 수정 이후 일정의 날짜에 오늘이 포함되고 유효하거나, 원본 일정이 오늘이었다면
-				if ((dates.contains(today) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) || selectedDate.isEqual(today)) {
+				if (selectedDate.isEqual(today)) {
 					recalculateTodayStoneTypes(childId);
-					isEffectsToChildSchedule = true;
+					scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
 				}
+			} else {
+				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
+			}
+		}
+
+		// 반복일정을 수정하려 할 경우
+		else {
+			if (selectedDate != null || startDate == null || endDate == null) {
+				throw new KieroException(ScheduleErrorCode.REQUIRED_PARAMS_FOR_RECURRING_SCHEDULE);
 			}
 
-			/*
-			단일일정 -> 반복일정일 때,
-			1) 기존의 scheduleDetail을 삭제합니다.
-			2) 새로운 schedule을 생성합니다.
-			3) 새로운 scheduleRepeatDays를 생성합니다.
+			validateWeekRange(startDate, endDate, today);
 
-			새로 생성된 일정의 날짜가 오늘이고 일정 시작 시각이 현재보다 이후라면,
-			4) scheduleDetail을 추가로 생성합니다.
-			5) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
-			6) 오늘 일정들의 불조각 종류를 재계산합니다.
-			 */
-			case NormalToRecurring -> {
-				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
+			Optional<ScheduleDetail> originalScheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
+				originalSchedule.getId(), today);
 
-				List<DayOfWeek> dayOfWeeks = dayOfWeekParser(request.dayOfWeek());
+			boolean hasDetail = originalScheduleDetail.isPresent();
+			boolean isPending = hasDetail && originalScheduleDetail.get().getScheduleStatus() == ScheduleStatus.PENDING;
+			boolean isBeforeStart = originalSchedule.getStartTime().isAfter(now);
+			// 삭제하려는 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
+			boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(
+				today, childId, originalSchedule.getEndTime());
+			boolean isFireLitToday = scheduleDetailPersistencePort.existsStoneUsedTodayByChildIdAndDate(childId,
+				LocalDate.now(clock));
+			boolean isTodayScheduleCanBeManipulated =
+				hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime && !isFireLitToday;
 
-				LocalDate repeatStartDate = repeatStartDateResolver(selectedDate, dayOfWeeks, request.startTime(), today, now);
+			List<DayOfWeek> repeatDays = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(
+				originalSchedule.getId());
 
-				throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(),
-					request.endTime(), childId, selectedDate, repeatStartDate, originalSchedule.getId());
+			// discard된 일정을 제외하고, 일정의 그 주에서의 반복요일을 날짜에 매핑
+			List<LocalDate> repeatDates = getActiveRepeatDates(originalSchedule, repeatDays, startDate, childId);
 
-				// 새로운 schedule 생성 및 저장
-				Schedule newSchedule = Schedule.create(
-					originalSchedule.getParent(),
-					originalSchedule.getChild(),
-					request.name(),
-					request.startTime(),
-					request.endTime(),
-					request.scheduleColor(),
-					true,
-					repeatStartDate,
-					null
-				);
+			// 삭제되면 안되는 일정들 중, 가장 최신 일정의 일자 추출
+			Optional<LocalDate> lastCannotBeDeletedDate = repeatDates.stream()
+				.filter(date -> date.isBefore(today)
+					|| (date.isEqual(today) && !isBeforeStart)
+					|| (date.isEqual(today) && isExistsTodayNotPendingAfterEndTime)
+					|| (date.isEqual(today) && !isPending))
+				.sorted()
+				.reduce((first, second) -> second);
 
-				Schedule saved = schedulePersistencePort.save(newSchedule);
+			// 기존 일정의 반복 종료 일자 계산
+			LocalDate repeatEndDate = lastCannotBeDeletedDate
+				.orElseGet(() -> repeatEndDateResolver(startDate, repeatDays));
 
-				List<ScheduleRepeatDays> repeatDays = dayOfWeeks.stream()
-					.map(day -> ScheduleRepeatDays.create(day, saved))
-					.toList();
-				scheduleRepeatDaysPersistencePort.saveAll(repeatDays);
+			// 기존 일정의 반복 종료 일자 다음날부터, 첫 번째 반복 요일 일자
+			LocalDate newScheduleRepeatStartDate = repeatStartDateResolver(repeatEndDate.plusDays(1), repeatDays,
+				request.startTime(), today, now);
 
-				DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
+			// 기존 존재하는 일정과 시간이 충돌하면 예외
+			throwExceptionWhenAddRecurringScheduleIfDuplicated(repeatDays, request.startTime(), request.endTime(),
+				childId, newScheduleRepeatStartDate, originalSchedule.getId());
 
-				// 추가된 일정의 요일에 오늘이 포함되고 일정 시작 시간이 현재 이후며, 아이가 오늘 불피우기를 하지 않았고 아이가 미리 수행한 일정이 없다면
-				// 1) 추가된 일정의 scheduleDetail 생성
-				// 2) 오늘 일정들의 stoneType 재계산
-				// 3) 이벤트를 발행하도록 설정
-				if (repeatStartDate.isEqual(today) && dayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
+			boolean isEffectsToChildSchedule = false;
 
-					ScheduleDetail scheduleDetail = ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, saved);
-					scheduleDetailPersistencePort.save(scheduleDetail);
-
-					recalculateTodayStoneTypes(childId);
+			// repeatEndDate가 repeatStartDate보다 이전이면 일정 전체가 무효 → 전체 삭제
+			if (repeatEndDate.isBefore(originalSchedule.getRepeatStartDate())) {
+				if (repeatDates.contains(today)) {
 					isEffectsToChildSchedule = true;
+					recalculateTodayStoneTypes(childId);
 				}
+				deleteScheduleSet(originalSchedule);
 			}
 
-			/*
-			반복일정 -> 반복일정이고 요일 변화가 있을 때,
-			1) selectedDate를 기준으로 기존의 scheduleDetail가 존재한다면 삭제합니다.
-			2) 기존의 일정의 반복종료일자를 selectedDate 이전 마지막 반복일자로 업데이트합니다.
-			3) request body로 새로운 schedule을 생성하고, 반복시작일자는 selectedDate로 합니다.
-			4) request body와 새로 생성한 schedule로 scheduleRepeatDays를 생성합니다.
+			// 일정 종료일자 업데이트
+			originalSchedule.changeRepeatEndDate(repeatEndDate);
 
-			새로 생성된 일정의 날짜가 오늘이고 일정 시작 시각이 현재보다 이후라면,
-			4) scheduleDetail을 추가로 6생성합니다.
-			5) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
-			6) 오늘 일정들의 불조각 종류를 재계산합니다.
-			 */
-			case RecurringToRecurring -> {
+			Schedule newSchedule = Schedule.create(
+				originalSchedule.getParent(),
+				originalSchedule.getChild(),
+				request.name(),
+				request.startTime(),
+				request.endTime(),
+				request.scheduleColor(),
+				true,
+				newScheduleRepeatStartDate,
+				null
+			);
 
-				List<DayOfWeek> originalDayOfWeeks = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(
-					originalSchedule.getId());
-				List<DayOfWeek> requestDayOfWeeks = dayOfWeekParser(request.dayOfWeek());
+			Schedule saved = schedulePersistencePort.save(newSchedule);
 
-				LocalDate newScheduleRepeatStartDate = repeatStartDateResolver(selectedDate, requestDayOfWeeks, request.startTime(), today, now);
+			List<ScheduleRepeatDays> scheduleRepeatDays = repeatDays.stream()
+				.map(rd -> ScheduleRepeatDays.create(rd, saved))
+				.toList();
 
-				throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(),
-					request.endTime(), childId, selectedDate, newScheduleRepeatStartDate, originalSchedule.getId());
+			scheduleRepeatDaysPersistencePort.saveAll(scheduleRepeatDays);
 
-				LocalDate originalScheduleRepeatEndDate = repeatEndDateResolver(selectedDate, originalDayOfWeeks);
-
-				// 더 이상 유효하지 않은 반복 일정은 하드딜리트
-				if (originalScheduleRepeatEndDate.isBefore(originalSchedule.getRepeatStartDate())) {
-					deleteScheduleSet(originalSchedule);
-				}
-				else originalSchedule.changeRepeatEndDate(originalScheduleRepeatEndDate);
-
-				Schedule newSchedule = Schedule.create(
-					originalSchedule.getParent(),
-					originalSchedule.getChild(),
-					request.name(),
-					request.startTime(),
-					request.endTime(),
-					request.scheduleColor(),
-					true,
-					newScheduleRepeatStartDate,
-					null
-				);
-
-				Schedule saved = schedulePersistencePort.save(newSchedule);
-
-				List<ScheduleRepeatDays> scheduleRepeatDays = requestDayOfWeeks.stream()
-					.map(d -> ScheduleRepeatDays.create(d, saved))
-					.toList();
-
-				scheduleRepeatDaysPersistencePort.saveAll(scheduleRepeatDays);
-
-				DayOfWeek todayDayOfWeek = DayOfWeek.from(today.getDayOfWeek());
-
-				// 추가된 일정의 요일에 오늘이 포함되고 일정 시작 시간이 현재 이후며, 아이가 오늘 불피우기를 하지 않았고 아이가 미리 수행한 일정이 없다면
-				// 1) 오리지널 일정의 오늘자 scheduleDetail 삭제
-				// 2) 추가된 일정의 scheduleDetail 생성
-				// 3) 오늘 일정들의 stoneType 재계산
-				// 4) 이벤트를 발행하도록 설정
-				if (newScheduleRepeatStartDate.isEqual(today) && requestDayOfWeeks.contains(todayDayOfWeek) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
+			// 오늘 일정이 수정 대상이라면, 오리지널 scheduleDetail을 삭제하고 새로운 scheduleDetail 생성하여 저장
+			if (repeatDates.contains(today)) {
+				if (isTodayScheduleCanBeManipulated) {
 					scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), today);
 
 					ScheduleDetail scheduleDetail = ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, saved);
 					scheduleDetailPersistencePort.save(scheduleDetail);
 
-					recalculateTodayStoneTypes(childId);
 					isEffectsToChildSchedule = true;
-				}
-			}
-
-			/*
-			반복일정 -> 반복일정이고 요일 변화가 없고 이후 일정을 포함하여 수정할 때,
-			1) 기존의 일정의 반복마감일자를 selectedDate 하루 전으로 업데이트합니다.
-			2) request body로 새로운 schedule을 생성하고, 반복시작일자는 selectedDate로 합니다.
-			3) 기존의 일정의 반복요일과 새로 생성한 schedule로 새로 생성된 schedule의 scheduleRepeatDays를 생성합니다.
-
-			기존의 일정의 scheduleDetail이 생성되어 있다면, (즉, 반복요일에 오늘이 해당된다면)
-			4) 참조하는 schedule을 오리지널에서 새로 생성된 schedule로 변경합니다.
-
-			요청의 일정의 startTime이 현재 시간보다 이후라면,
-			6) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
-			7) 오늘 일정들의 불조각 종류를 재계산합니다.
-			 */
-			case RecurringToRecurringIncludeFollowing -> {
-
-				List<DayOfWeek> dayOfWeeks = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(scheduleId);
-
-				boolean sameDays = new HashSet<>(dayOfWeekParser(request.dayOfWeek())).equals(new HashSet<>(dayOfWeeks));
-				if (!sameDays) throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_CANNOT_BE_MODIFIED);
-
-				LocalDate newScheduleRepeatStartDate = repeatStartDateResolver(selectedDate, dayOfWeeks, request.startTime(), today, now);
-
-				throwExceptionWhenAddRecurringScheduleIfDuplicated(request.dayOfWeek(), request.startTime(),
-					request.endTime(), childId, selectedDate, newScheduleRepeatStartDate, originalSchedule.getId());
-
-				LocalDate originalScheduleRepeatEndDate = repeatEndDateResolver(selectedDate, dayOfWeeks);
-
-				// 원본 일정의 오늘자 scheduleDetail이 존재하는가 (= 오늘이 원본일정의 반복요일에 해당했는가)
-				boolean isOriginalDetailExists = scheduleDetailPersistencePort.findByScheduleIdAndDate(
-					originalSchedule.getId(), selectedDate).isPresent();
-
-				// 더 이상 유효하지 않은 반복 일정은 하드딜리트
-				if (originalScheduleRepeatEndDate.isBefore(originalSchedule.getRepeatStartDate())) {
-					deleteScheduleSet(originalSchedule);
-				}
-				else originalSchedule.changeRepeatEndDate(originalScheduleRepeatEndDate);
-
-				Schedule newSchedule = Schedule.create(
-					originalSchedule.getParent(),
-					originalSchedule.getChild(),
-					request.name(),
-					request.startTime(),
-					request.endTime(),
-					request.scheduleColor(),
-					true,
-					newScheduleRepeatStartDate,
-					null
-				);
-
-				Schedule saved = schedulePersistencePort.save(newSchedule);
-
-				List<ScheduleRepeatDays> scheduleRepeatDays = dayOfWeeks.stream()
-					.map(d -> ScheduleRepeatDays.create(d, saved))
-					.toList();
-
-				scheduleRepeatDaysPersistencePort.saveAll(scheduleRepeatDays);
-
-				if(isOriginalDetailExists) {
-					ScheduleDetail scheduleDetail = ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING,
-						null, saved);
-					scheduleDetailPersistencePort.save(scheduleDetail);
-					if (request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
-						recalculateTodayStoneTypes(childId);
-						isEffectsToChildSchedule = true;
-					}
-				}
-			}
-
-			/*
-			반복일정 -> 반복일정이고 요일 변화가 없고 이후 일정을 포함하지 않고 수정할 때,
-			1) request body로 새로운 schedule을 생성하고, isRecurring은 false로 설정합니다.
-
-			기존의 일정의 scheduleDetail이 생성되어 있다면, (즉, 반복요일에 오늘이 해당된다면)
-			2) 참조하는 schedule을 오리지널에서 새로 생성된 schedule로 변경합니다.
-
-			요청의 일정의 startTime이 현재 시간보다 이후라면,
-			3) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
-			4) 오늘 일정들의 불조각 종류를 재계산합니다.
-
-			5) 오리지널 일정을 담아 discardedSchedule을 생성합니다.
-			 */
-			case RecurringToRecurringExceptFollowing -> {
-
-				List<DayOfWeek> dayOfWeeks = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(scheduleId);
-
-				boolean sameDays = new HashSet<>(dayOfWeekParser(request.dayOfWeek())).equals(new HashSet<>(dayOfWeeks));
-				if (!sameDays) throw new KieroException(ScheduleErrorCode.DAY_OF_WEEK_CANNOT_BE_MODIFIED);
-
-				throwExceptionWhenAddNormalScheduleIfDuplicated(request.startTime(), request.endTime(), selectedDate.toString(),
-					childId, originalSchedule.getId());
-
-				Schedule newSchedule = Schedule.create(
-					originalSchedule.getParent(),
-					originalSchedule.getChild(),
-					request.name(),
-					request.startTime(),
-					request.endTime(),
-					request.scheduleColor(),
-					false,
-					null,
-					null
-				);
-
-				Schedule saved = schedulePersistencePort.save(newSchedule);
-
-				Optional<ScheduleDetail> originalDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(
-					originalSchedule.getId(), selectedDate);
-
-				if(originalDetail.isPresent()) {
-					originalDetail.get().changeSchedule(saved);
-					if (request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
-						recalculateTodayStoneTypes(childId);
-						isEffectsToChildSchedule = true;
-					}
-				} else {
-					ScheduleDetail scheduleDetail = ScheduleDetail.create(selectedDate, null, null, ScheduleStatus.PENDING, null, saved);
-					scheduleDetailPersistencePort.save(scheduleDetail);
-				}
-
-				DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
-
-				discardedSchedulePersistencePort.save(discardedSchedule);
-			}
-
-			/*
-			반복일정 -> 단일일정일 때,
-			1) 오리지널 schedule과 연관된 scheduleRepeatDays 삭제합니다.
-			2) 오리지널 schedule을 request body 내용으로 업데이트합니다.
-			3) 각 일자의 scheduleDetail이 생성되어 있지 않다면, 새로 scheduleDetail을 생성합니다.
-
-			요청의 dates에 오늘이 포함되어 있고, startTime이 현재 시간보다 이후라면,
-			3) 이벤트 발행을 위해 isEffectsToChildSchedule을 true로 바꿉니다.
-			4) 오늘 일정들의 불조각 종류를 재계산합니다.
-			 */
-			case RecurringToNormal -> {
-
-				scheduleRepeatDaysPersistencePort.deleteAllByScheduleId(scheduleId);
-
-				throwExceptionWhenAddNormalScheduleIfDuplicated(request.startTime(), request.endTime(), request.dates(),
-					childId, originalSchedule.getId());
-
-				List<LocalDate> dates = dateParser(request.dates());
-
-				originalSchedule.changeBasics(request.name(), request.startTime(), request.endTime(), request.scheduleColor());
-				originalSchedule.convertToNormal();
-
-				List<ScheduleDetail> scheduleDetails = dates.stream()
-					.filter(d -> !scheduleDetailPersistencePort.existsByScheduleIdAndDate(scheduleId, d))
-					.map(d -> ScheduleDetail.create(d, null, null, ScheduleStatus.PENDING, null, originalSchedule))
-					.toList();
-
-				scheduleDetailPersistencePort.saveAll(scheduleDetails);
-
-				if (dates.contains(today) && request.startTime().isAfter(now) && !isFireLitToday && !isExistsTodayNotPendingAfterEndTime) {
 					recalculateTodayStoneTypes(childId);
-					isEffectsToChildSchedule = true;
 				}
 			}
 
-			default -> throw new KieroException(ScheduleErrorCode.SCHEDULE_UPDATE_CASE_CANNOT_RESOLVED);
+			if (isEffectsToChildSchedule) {
+				scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+			}
 		}
-
-		// 아이의 오늘 일정에 영향이 있을 때만 SSE 이벤트 전송
-		if (isEffectsToChildSchedule) scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
-
 		scheduleEventPort.publish(new ScheduleCacheEvent(childId));
 	}
 
 	@Override
 	@Transactional
-	public void deleteSchedule(Long parentId, Long scheduleId, LocalDate selectedDate, ScheduleDeleteRequest request) {
+	public void deleteSchedule(Long parentId, Long scheduleId, LocalDate startDate, LocalDate endDate, LocalDate selectedDate, ScheduleDeleteRequest request) {
 
 		LocalDate today = LocalDate.now(clock);
 		LocalTime now = LocalTime.now(clock);
-
-		if (selectedDate.isBefore(today)) {
-			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
-		}
 
 		Schedule originalSchedule = schedulePersistencePort.findById(scheduleId)
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.SCHEDULE_NOT_FOUND));
@@ -703,89 +492,115 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 		Long childId = originalSchedule.getChild().getId();
 
-		Optional<ScheduleDetail> scheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
+		Optional<ScheduleDetail> scheduleDetail = scheduleDetailPersistencePort.findByScheduleIdAndDate(originalSchedule.getId(), today);
 
-		boolean isToday = selectedDate.isEqual(today);
 		boolean hasDetail = scheduleDetail.isPresent();
 		boolean isPending = hasDetail && scheduleDetail.get().getScheduleStatus() == ScheduleStatus.PENDING;
 		boolean isBeforeStart = originalSchedule.getStartTime().isAfter(now);
-
 		// 삭제하려는 일정의 종료시간 이후에 아이가 행위를 수행한 일정이 있는지 여부
 		boolean isExistsTodayNotPendingAfterEndTime = scheduleDetailPersistencePort.existsByDateAndChildIdAfterEndTime(today, childId, originalSchedule.getEndTime());
+		boolean isFireLitToday = scheduleDetailPersistencePort.existsStoneUsedTodayByChildIdAndDate(childId, LocalDate.now(clock));
+		boolean isTodayScheduleCanBeManipulated = hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime && !isFireLitToday;
 
-		// 삭제하려는 일정이 반복일정일 경우
+		// 삭제하려는 일정이 반복일정인 경우
 		if (originalSchedule.isRecurring()) {
-			if (request == null || request.isIncludeFollowing() == null)
-				throw new KieroException(ScheduleErrorCode.IS_INCLUDE_FOLLOWING_IS_REQUIRED);
 
-			if (request.isIncludeFollowing()) { // 이후 일정을 포함하는 경우
+			// 필수 필드가 입력되어 있지 않으면 예외
+			if (request == null || request.isIncludeFollowing() == null || startDate == null || endDate == null || selectedDate != null) {
+				throw new KieroException(ScheduleErrorCode.REQUIRED_PARAMS_FOR_RECURRING_SCHEDULE);
+			}
 
-				// 기존 일정의 반복 종료일자 구하기
-				List<DayOfWeek> dayOfWeeks = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(
-					originalSchedule.getId());
-				LocalDate repeatEndDate = repeatEndDateResolver(selectedDate, dayOfWeeks);
+			validateWeekRange(startDate, endDate, today);
 
-				// 더 이상 유효하지 않은 반복 일정은 하드딜리트
+			List<DayOfWeek> repeatDays = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(originalSchedule.getId());
+
+			// discard된 일정을 제외하고, 일정의 그 주에서의 반복요일을 날짜에 매핑
+			List<LocalDate> repeatDates = getActiveRepeatDates(originalSchedule, repeatDays, startDate, childId);
+
+			// 이후 일정을 포함하는 경우
+			if (request.isIncludeFollowing()) {
+
+				// 삭제되면 안되는 일정들 중, 가장 최신 일정의 일자 추출
+				Optional<LocalDate> lastCannotBeDeletedDate = repeatDates.stream()
+					.filter(date -> date.isBefore(today)
+						|| (date.isEqual(today) && !isBeforeStart)
+						|| (date.isEqual(today) && isExistsTodayNotPendingAfterEndTime)
+						|| (date.isEqual(today) && !isPending))
+					.sorted()
+					.reduce((first, second) -> second);
+
+				LocalDate repeatEndDate = lastCannotBeDeletedDate
+					.orElseGet(() -> repeatEndDateResolver(startDate, repeatDays));
+
+				// repeatEndDate가 repeatStartDate보다 이전이면 일정 전체가 무효 → 전체 삭제
 				if (repeatEndDate.isBefore(originalSchedule.getRepeatStartDate())) {
 					deleteScheduleSet(originalSchedule);
+					if (repeatDates.contains(today)) {
+						scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+						recalculateTodayStoneTypes(childId);
+					}
+					return;
 				}
 
-				// 1) 유효한 일정은 repeatEndDate 업데이트
-				// 삭제 요청한 일정이 오늘이고 유효하다면
-				// 2) scheduleDetail 삭제
-				// 3) 이벤트 발행
-				// 4) 불조각 종류 재계산
-				if ( !isToday ) {
-					originalSchedule.changeRepeatEndDate(repeatEndDate);
+				// 일정 종료일자 업데이트
+				originalSchedule.changeRepeatEndDate(repeatEndDate);
+
+				// 오늘 일정이 삭제 가능한 상태라면 scheduleDetail 삭제
+				if (repeatDates.contains(today)) {
+					if (isTodayScheduleCanBeManipulated) {
+						scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
+						scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+						recalculateTodayStoneTypes(childId);
+					}
 				}
-				else if ( hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
-					originalSchedule.changeRepeatEndDate(repeatEndDate);
+			}
 
-					scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
+			// 이번 주차만 삭제하는 경우
+			else {
+				// 반복 일자 중 삭제되면 안되는 일정들 제외 (삭제해도 되는 일정만 추출)
+				List<LocalDate> canBeDeletedSchedules = repeatDates.stream()
+					.filter(date -> date.isAfter(today)
+						|| (date.isEqual(today) && isBeforeStart && !isExistsTodayNotPendingAfterEndTime && isPending))
+					.toList();
 
-					scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
-					recalculateTodayStoneTypes(childId);
-				}
-				else {
-					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
-				}
+				List<DiscardedSchedule> discardedSchedules = canBeDeletedSchedules.stream()
+					.map(date -> DiscardedSchedule.create(date, originalSchedule))
+					.toList();
+				discardedSchedulePersistencePort.saveAll(discardedSchedules);
 
-
-			} else { // 이후 일정을 포함하지 않는 경우
-				if ( !isToday ) {
-					DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
-					discardedSchedulePersistencePort.save(discardedSchedule);
-				}
-				else if ( hasDetail && isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
-					DiscardedSchedule discardedSchedule = DiscardedSchedule.create(selectedDate, originalSchedule);
-					discardedSchedulePersistencePort.save(discardedSchedule);
-
-					scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
-
-					scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
-					recalculateTodayStoneTypes(childId);
-				}
-				else {
-					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
+				// 오늘 일정이 삭제 가능한 상태라면 scheduleDetail 삭제
+				if (repeatDates.contains(today)) {
+					if (isTodayScheduleCanBeManipulated) {
+						scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
+						scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+						recalculateTodayStoneTypes(childId);
+					}
 				}
 			}
 		}
 
 		// 삭제하려는 일정이 단일일정일 경우
 		else {
-			if ( !isToday ) {
-				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
+			if (selectedDate == null || startDate != null || endDate != null || (request != null && request.isIncludeFollowing() != null)) {
+				throw new KieroException(ScheduleErrorCode.REQUIRED_PARAMS_FOR_NORMAL_SCHEDULE);
 			}
-			else if ( isPending && isBeforeStart && !isExistsTodayNotPendingAfterEndTime) {
-				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 
-				scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
-				recalculateTodayStoneTypes(childId);
+			if (selectedDate.equals(today)) {
+				if (isTodayScheduleCanBeManipulated) {
+					scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
+					scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+					recalculateTodayStoneTypes(childId);
+				}
+				else {
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
+				}
+			}
+			else if (selectedDate.isAfter(today)) {
+				scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 			}
 			else {
-				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
+				throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
 			}
-
 		}
 
 		scheduleEventPort.publish(new ScheduleCacheEvent(childId));
@@ -818,7 +633,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
-	private void validateAddAndUpdateRequest(boolean isRecurring, String dayOfWeek, String dates, LocalTime startTime, LocalTime endTime, boolean isFireLitToday, boolean isExistsTodayNotPendingAfterEndTime) {
+	private void validateAddScheduleRequest(boolean isRecurring, String dayOfWeek, String dates, LocalTime startTime, LocalTime endTime, boolean isFireLitToday, boolean isExistsTodayNotPendingAfterEndTime) {
 
 		LocalDate today = LocalDate.now(clock);
 		LocalTime now = LocalTime.now(clock);
@@ -830,7 +645,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 		// 단일일정일 때 dates 필드가 비어있으면 예외
 		if (!isRecurring && (dates == null || dates.isEmpty())) {
-			throw new KieroException(ScheduleErrorCode.DATE_NOT_NULLABLE_WHEN_IS_RECURRING_IS_FALSE);
+			throw new KieroException(ScheduleErrorCode.DATE_NOT_NULLABLE_WHEN_RECURRING_IS_FALSE);
 		}
 		// dayOfWeek 혹은 dates 필드가 모두 비어있으면 예외
 		if (dayOfWeek != null && dates != null) {
@@ -850,12 +665,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			if (requestDates.contains(today)) {
 				// 불피우기를 이미 완료하였다면 예외
 				if (isFireLitToday) {
-					throw new KieroException(ScheduleErrorCode.SCHEDULE_NOT_MANIPULATED_WHEN_FIRE_LIT);
+					throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED_WHEN_FIRE_LIT);
 				}
 				// 이후 일정 중 아이가 행위를 진행한 일정이 있으면 예외
 				if (isExistsTodayNotPendingAfterEndTime) {
 					throw new KieroException(
-						ScheduleErrorCode.SCHEDULE_NOT_MANIPULATED_WHEN_AFTER_SCHEDULE_NOT_PENDING);
+						ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED_WHEN_AFTER_SCHEDULE_NOT_PENDING);
 				}
 				// 현재 시각이 일정의 startTime 이후라면 예외
 				if (!now.isBefore(startTime)) {
@@ -865,8 +680,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
-	private void throwExceptionWhenAddRecurringScheduleIfDuplicated(String dayOfWeek, LocalTime startTime, LocalTime endTime, Long childId, LocalDate selectedDate, LocalDate requestRepeatStartDate, Long excludeScheduleId) {
-		List<DayOfWeek> targetDays = dayOfWeekParser(dayOfWeek);
+	private void throwExceptionWhenAddRecurringScheduleIfDuplicated(List<DayOfWeek> targetDays, LocalTime startTime, LocalTime endTime, Long childId, LocalDate requestRepeatStartDate, Long excludeScheduleId) {
 		List<Schedule> existingRecurring = scheduleRepeatDaysPersistencePort.findSchedulesByChildIdAndDayOfWeeks(childId, targetDays);
 
 		// 기존의 반복일정과 충돌하는지 검사
@@ -889,13 +703,11 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.collect(Collectors.toSet());
 
 		// 기존의 단일일정과 충돌하는지 검사
-		// 일정 수정을 위한 충돌 검사의 경우 (selectedDate가 not null인 경우), 추가 필터를 적용한다.
-		// ㄴ selectedDate부터 반복일정의 반복이 시작되므로, selectedDate 이후 시점에 있는 단일 일정만 충돌 고려 대상으로 둔다.
 		boolean conflictWithNormal = normalsFromToday.stream()
 			.filter(sd -> targetDays.contains(DayOfWeek.from(sd.getDate().getDayOfWeek())))
 			.filter(sd -> !discardedKeys.contains(new DiscardKey(sd.getSchedule().getId(), sd.getDate())))
 			.filter(sd -> !sd.getSchedule().getId().equals(excludeScheduleId))
-			.filter(sd -> selectedDate == null || sd.getDate().isAfter(selectedDate))
+			.filter(sd -> sd.getDate().isEqual(requestRepeatStartDate) || sd.getDate().isAfter(requestRepeatStartDate))
 			.anyMatch(sd -> isTimeOverlapped(
 				startTime, endTime,
 				sd.getSchedule().getStartTime(), sd.getSchedule().getEndTime()
@@ -974,25 +786,6 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 	}
 
-	private ScheduleUpdateCase scheduleUpdateCaseResolver(Schedule schedule, ScheduleModifyRequest request) {
-
-		if (!schedule.isRecurring()) {
-			if (!request.isRecurring()) return ScheduleUpdateCase.NormalToNormal;
-			else return ScheduleUpdateCase.NormalToRecurring;
-		} else {
-			if (!request.isRecurring()) return ScheduleUpdateCase.RecurringToNormal;
-			else {
-				List<DayOfWeek> originalRepeatDays = scheduleRepeatDaysPersistencePort.findDayOfWeeksByScheduleId(schedule.getId());
-				List<DayOfWeek> requestRepeatDays = dayOfWeekParser(request.dayOfWeek());
-				boolean isSame = new HashSet<>(originalRepeatDays).equals(new HashSet<>(requestRepeatDays));
-
-				if (!isSame) return ScheduleUpdateCase.RecurringToRecurring;
-				else if (request.isIncludeFollowing()) return ScheduleUpdateCase.RecurringToRecurringIncludeFollowing;
-				else return ScheduleUpdateCase.RecurringToRecurringExceptFollowing;
-			}
-		}
-	}
-
 	private void recalculateTodayStoneTypes(Long childId) {
 		LocalDate today = LocalDate.now(clock);
 
@@ -1002,6 +795,21 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		List<ScheduleDetail> filteredAllScheduleDetails = scheduleQueryService.filterTodayCreatedSchedules(today, allScheduleDetails, earliestStoneUsedAt);
 
 		calculateStoneTypePerScheduleDetail(filteredAllScheduleDetails);
+	}
+
+	private void validateWeekRange(LocalDate startDate, LocalDate endDate, LocalDate today) {
+		if (!startDate.isBefore(endDate)) {
+			throw new KieroException(ScheduleErrorCode.INVALID_DATE_DURATION);
+		}
+		if (endDate.isBefore(today)) {
+			throw new KieroException(ScheduleErrorCode.PAST_SCHEDULE_CANNOT_BE_MODIFIED);
+		}
+		if (startDate.getDayOfWeek() != java.time.DayOfWeek.MONDAY) {
+			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_START_DATE);
+		}
+		if (!endDate.equals(startDate.plusDays(6))) {
+			throw new KieroException(ScheduleErrorCode.INVALID_WEEK_END_DATE);
+		}
 	}
 
 	// 반복일정이 첫 번째로 시작되는 일자를 구하는 리졸버
@@ -1048,7 +856,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.orElseThrow(() -> new KieroException(ScheduleErrorCode.DAY_OF_WEEK_NOT_NULLABLE_WHEN_IS_RECURRING_IS_TRUE));
 	}
 
-	// selectedDate를 기준으로, 기존 반복 요일 중 selectedDate 이전의 마지막 발생일을 반환.
+	// 기존 반복 요일 중 특정 날짜 이전의 마지막 발생일을 반환.
 	private LocalDate repeatEndDateResolver(LocalDate selectedDate, List<DayOfWeek> originalRepeatDays) {
 		LocalDate cursor = selectedDate.minusDays(1);
 		for (int i = 0; i < 7; i++) {
@@ -1064,5 +872,25 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		scheduleRepeatDaysPersistencePort.deleteAllByScheduleId(originalSchedule.getId());
 		schedulePersistencePort.deleteById(originalSchedule.getId());
 		discardedSchedulePersistencePort.deleteByScheduleId(originalSchedule.getId());
+	}
+
+	private List<LocalDate> getActiveRepeatDates(Schedule schedule, List<DayOfWeek> repeatDays, LocalDate startDate, Long childId) {
+
+		// 일정의 반복요일과 대응하는 LocalDate
+		List<LocalDate> allRepeatDates = repeatDays.stream()
+			.map(day -> startDate.with(DayOfWeek.toJavaDayOfWeek(day)))
+			.toList();
+
+		// discarded된 날짜 제외
+		Set<LocalDate> discardedDates = discardedSchedulePersistencePort
+			.findAllByChildIdAndDateIn(childId, allRepeatDates)
+			.stream()
+			.filter(ds -> ds.getSchedule().getId().equals(schedule.getId()))
+			.map(DiscardedSchedule::getDate)
+			.collect(Collectors.toSet());
+
+		return allRepeatDates.stream()
+			.filter(date -> !discardedDates.contains(date))
+			.toList();
 	}
 }
