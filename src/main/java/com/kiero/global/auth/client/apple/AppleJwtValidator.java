@@ -6,6 +6,7 @@ import java.security.PublicKey;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -30,22 +31,12 @@ public class AppleJwtValidator {
 	@Value("${apple.bundle-id}")
 	private String bundleId;
 
-	private final ApplePublicKeyClient applePublicKeyClient;
+	private final ApplePublicKeyProvider applePublicKeyProvider;
 	private final ObjectMapper objectMapper;
 
 	public Claims validateAndExtractClaims(String identityToken) {
 		String kid = extractKid(identityToken);
-
-		ApplePublicKeyResponse publicKeyResponse = applePublicKeyClient.getApplePublicKeys();
-
-		ApplePublicKeyResponse.Key matchingKey = publicKeyResponse.keys().stream()
-			.filter(key -> key.kid().equals(kid))
-			.findFirst()
-			.orElseThrow(() -> {
-				log.error("일치하는 Apple public key를 찾을 수 없습니다. kid: {}", kid);
-				return new KieroException(OAuthErrorCode.INVALID_APPLE_ID_TOKEN);
-			});
-
+		ApplePublicKeyResponse.Key matchingKey = findMatchingKey(kid);
 		PublicKey publicKey = buildPublicKey(matchingKey);
 
 		try {
@@ -64,6 +55,28 @@ public class AppleJwtValidator {
 			log.error("Apple identity token 검증 실패: {}", e.getMessage());
 			throw new KieroException(OAuthErrorCode.INVALID_APPLE_ID_TOKEN);
 		}
+	}
+
+	// 캐시에 kid가 없으면 key rotation으로 판단하여 캐시를 갱신 후 재시도
+	private ApplePublicKeyResponse.Key findMatchingKey(String kid) {
+		Optional<ApplePublicKeyResponse.Key> key = applePublicKeyProvider.getPublicKeys().keys().stream()
+			.filter(k -> k.kid().equals(kid))
+			.findFirst();
+
+		if (key.isPresent()) {
+			return key.get();
+		}
+
+		log.info("캐시된 Apple public key에서 kid를 찾지 못했습니다. 캐시를 갱신합니다. kid: {}", kid);
+		applePublicKeyProvider.evictCache();
+
+		return applePublicKeyProvider.getPublicKeys().keys().stream()
+			.filter(k -> k.kid().equals(kid))
+			.findFirst()
+			.orElseThrow(() -> {
+				log.error("일치하는 Apple public key를 찾을 수 없습니다. kid: {}", kid);
+				return new KieroException(OAuthErrorCode.INVALID_APPLE_ID_TOKEN);
+			});
 	}
 
 	@SuppressWarnings("unchecked")
