@@ -54,7 +54,7 @@ public class ParentController {
 	private final InviteCodeUseCase inviteCodeUseCase;
 	private final ScheduleMissionFacade scheduleMissionFacade;
 
-	@PostMapping("/login")
+	@PostMapping("/login/kakao")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> login(
 		@RequestParam("authorizationCode") String authorizationCode,
 		@RequestBody SocialLoginRequest request
@@ -74,7 +74,7 @@ public class ParentController {
 			.body(SuccessResponse.of(ParentSuccessCode.LOGIN_SUCCESS, response));
 	}
 
-	@PostMapping("/login/access-token")
+	@PostMapping("/login/kakao/token")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> loginWithAccessToken(
 		@RequestParam("accessToken") String accessToken
 	) {
