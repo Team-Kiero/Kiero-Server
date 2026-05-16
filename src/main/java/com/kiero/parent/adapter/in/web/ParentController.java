@@ -74,7 +74,7 @@ public class ParentController {
 			.body(SuccessResponse.of(ParentSuccessCode.LOGIN_SUCCESS, response));
 	}
 
-	@PostMapping("/login/kakao/token")
+	@PostMapping("/login/kakao/access-token")
 	public ResponseEntity<SuccessResponse<ParentLoginResponse>> loginWithAccessToken(
 		@RequestParam("accessToken") String accessToken
 	) {

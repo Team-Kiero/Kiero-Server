@@ -98,6 +98,27 @@ class ParentLoginServiceAppleTest {
 	}
 
 	@Test
+	@DisplayName("name이 빈 문자열이면 email을 displayName으로 사용한다")
+	void loginWithAppleIdentityToken_blankName_usesEmailAsDisplayName() {
+		// given
+		SocialLoginResponse socialResponse = SocialLoginResponse.of(SOCIAL_ID, Provider.APPLE, null, EMAIL, null);
+		ParentLoginResponse loginResponse = ParentLoginResponse.of(EMAIL, EMAIL, null, Role.PARENT, "access", "refresh");
+
+		when(appleSocialLoginPort.loginWithIdentityToken(IDENTITY_TOKEN)).thenReturn(socialResponse);
+		when(parentLoadPort.findParentBySocialIdAndProvider(SOCIAL_ID, Provider.APPLE)).thenReturn(Optional.empty());
+		when(parentSavePort.save(any(Parent.class))).thenAnswer(inv -> inv.getArgument(0));
+		when(authGeneratePort.generateLoginResponse(any(Parent.class))).thenReturn(loginResponse);
+
+		// when
+		parentLoginService.loginWithAppleIdentityToken(IDENTITY_TOKEN, "");
+
+		// then
+		verify(parentSavePort).save(argThat(parent ->
+			parent.getName().equals(EMAIL)
+		));
+	}
+
+	@Test
 	@DisplayName("기존 Apple 유저가 로그인하면 email이 업데이트되고 새 저장은 하지 않는다")
 	void loginWithAppleIdentityToken_existingUser_updatesEmailWithoutSave() {
 		// given

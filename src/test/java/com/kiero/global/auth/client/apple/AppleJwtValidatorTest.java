@@ -31,6 +31,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 @ExtendWith(MockitoExtension.class)
 class AppleJwtValidatorTest {
 
+	private static final String APPLE_ISS = "https://appleid.apple.com";
 	private static final String TEST_BUNDLE_ID = "com.kiero.app";
 	private static final String TEST_KID = "test-kid-123";
 	private static final String TEST_SUBJECT = "apple-user-sub-001";
@@ -144,8 +145,6 @@ class AppleJwtValidatorTest {
 			.extracting(e -> ((KieroException)e).getBaseCode())
 			.isEqualTo(OAuthErrorCode.INVALID_APPLE_ID_TOKEN);
 	}
-
-	private static final String APPLE_ISS = "https://appleid.apple.com";
 
 	private String createIdentityToken(String kid, String issuer, String audience, long expiresInSeconds) {
 		return Jwts.builder()
