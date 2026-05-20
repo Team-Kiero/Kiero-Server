@@ -35,11 +35,11 @@ public class AppleJwtValidator {
 	private final ObjectMapper objectMapper;
 
 	public Claims validateAndExtractClaims(String identityToken) {
-		String kid = extractKid(identityToken);
-		ApplePublicKeyResponse.Key matchingKey = findMatchingKey(kid);
-		PublicKey publicKey = buildPublicKey(matchingKey);
-
 		try {
+			String kid = extractKid(identityToken);
+			ApplePublicKeyResponse.Key matchingKey = findMatchingKey(kid);
+			PublicKey publicKey = buildPublicKey(matchingKey);
+
 			Claims claims = Jwts.parserBuilder()
 				.setSigningKey(publicKey)
 				.build()
