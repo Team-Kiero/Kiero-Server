@@ -99,6 +99,7 @@ public class ParentController {
 	) {
 		ParentLoginResponse response = parentLoginUseCase.loginWithAppleIdentityToken(
 			request.identityToken(),
+			request.authorizationCode(),
 			request.name()
 		);
 

@@ -11,6 +11,7 @@ import com.kiero.global.auth.enums.Role;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.dto.ParentLoginResponse;
 import com.kiero.parent.application.port.in.ParentLoginUseCase;
+import com.kiero.parent.application.port.out.AppleAuthPort;
 import com.kiero.parent.application.port.out.AppleSocialLoginPort;
 import com.kiero.parent.application.port.out.AuthGeneratePort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
@@ -26,6 +27,7 @@ public class ParentLoginService implements ParentLoginUseCase {
 
 	private final SocialLoginPort kakaoSocialLoginPort;
 	private final AppleSocialLoginPort appleSocialLoginPort;
+	private final AppleAuthPort appleAuthPort;
 	private final ParentLoadPort parentLoadPort;
 	private final ParentSavePort parentSavePort;
 	private final AuthGeneratePort authGeneratePort;
@@ -54,12 +56,14 @@ public class ParentLoginService implements ParentLoginUseCase {
 
 	@Override
 	@Transactional
-	public ParentLoginResponse loginWithAppleIdentityToken(String identityToken, String name) {
+	public ParentLoginResponse loginWithAppleIdentityToken(String identityToken, String authorizationCode, String name) {
 		SocialLoginResponse response = appleSocialLoginPort.loginWithIdentityToken(identityToken);
+		String appleRefreshToken = appleAuthPort.exchangeAuthorizationCode(authorizationCode);
 
 		Parent parent = parentLoadPort.findParentBySocialIdAndProvider(response.socialId(), response.provider())
 			.map(existing -> {
 				existing.updateAppleProfile(response.email());
+				existing.updateAppleRefreshToken(appleRefreshToken);
 				return existing;
 			})
 			.orElseGet(() -> {
@@ -72,6 +76,7 @@ public class ParentLoginService implements ParentLoginUseCase {
 					Provider.APPLE,
 					response.socialId()
 				);
+				newParent.updateAppleRefreshToken(appleRefreshToken);
 				return parentSavePort.save(newParent);
 			});
 
