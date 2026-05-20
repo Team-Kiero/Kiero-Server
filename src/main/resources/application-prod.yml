@@ -59,6 +59,9 @@ open-api:
 # Apple
 apple:
   bundle-id: ${APPLE_BUNDLE_ID}
+  team-id: ${APPLE_TEAM_ID}
+  key-id: ${APPLE_KEY_ID}
+  private-key: ${APPLE_PRIVATE_KEY}
 
 # Sentry
 sentry:

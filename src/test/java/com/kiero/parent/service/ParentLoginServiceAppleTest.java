@@ -17,6 +17,7 @@ import com.kiero.global.auth.client.dto.SocialLoginResponse;
 import com.kiero.global.auth.client.enums.Provider;
 import com.kiero.global.auth.enums.Role;
 import com.kiero.parent.application.dto.ParentLoginResponse;
+import com.kiero.parent.application.port.out.AppleAuthPort;
 import com.kiero.parent.application.port.out.AppleSocialLoginPort;
 import com.kiero.parent.application.port.out.AuthGeneratePort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
@@ -29,6 +30,8 @@ import com.kiero.parent.domain.Parent;
 class ParentLoginServiceAppleTest {
 
 	private static final String IDENTITY_TOKEN = "test.identity.token";
+	private static final String AUTHORIZATION_CODE = "test-authorization-code";
+	private static final String APPLE_REFRESH_TOKEN = "apple-refresh-token";
 	private static final String SOCIAL_ID = "apple-sub-001";
 	private static final String EMAIL = "user@apple.com";
 
@@ -37,6 +40,9 @@ class ParentLoginServiceAppleTest {
 
 	@Mock
 	private AppleSocialLoginPort appleSocialLoginPort;
+
+	@Mock
+	private AppleAuthPort appleAuthPort;
 
 	@Mock
 	private ParentLoadPort parentLoadPort;
@@ -59,12 +65,13 @@ class ParentLoginServiceAppleTest {
 		ParentLoginResponse loginResponse = ParentLoginResponse.of(name, EMAIL, null, Role.PARENT, "access", "refresh");
 
 		when(appleSocialLoginPort.loginWithIdentityToken(IDENTITY_TOKEN)).thenReturn(socialResponse);
+		when(appleAuthPort.exchangeAuthorizationCode(AUTHORIZATION_CODE)).thenReturn(APPLE_REFRESH_TOKEN);
 		when(parentLoadPort.findParentBySocialIdAndProvider(SOCIAL_ID, Provider.APPLE)).thenReturn(Optional.empty());
 		when(parentSavePort.save(any(Parent.class))).thenAnswer(inv -> inv.getArgument(0));
 		when(authGeneratePort.generateLoginResponse(any(Parent.class))).thenReturn(loginResponse);
 
 		// when
-		ParentLoginResponse response = parentLoginService.loginWithAppleIdentityToken(IDENTITY_TOKEN, name);
+		ParentLoginResponse response = parentLoginService.loginWithAppleIdentityToken(IDENTITY_TOKEN, AUTHORIZATION_CODE, name);
 
 		// then
 		assertThat(response).isEqualTo(loginResponse);
@@ -84,12 +91,13 @@ class ParentLoginServiceAppleTest {
 		ParentLoginResponse loginResponse = ParentLoginResponse.of(EMAIL, EMAIL, null, Role.PARENT, "access", "refresh");
 
 		when(appleSocialLoginPort.loginWithIdentityToken(IDENTITY_TOKEN)).thenReturn(socialResponse);
+		when(appleAuthPort.exchangeAuthorizationCode(AUTHORIZATION_CODE)).thenReturn(APPLE_REFRESH_TOKEN);
 		when(parentLoadPort.findParentBySocialIdAndProvider(SOCIAL_ID, Provider.APPLE)).thenReturn(Optional.empty());
 		when(parentSavePort.save(any(Parent.class))).thenAnswer(inv -> inv.getArgument(0));
 		when(authGeneratePort.generateLoginResponse(any(Parent.class))).thenReturn(loginResponse);
 
 		// when
-		parentLoginService.loginWithAppleIdentityToken(IDENTITY_TOKEN, null);
+		parentLoginService.loginWithAppleIdentityToken(IDENTITY_TOKEN, AUTHORIZATION_CODE, null);
 
 		// then
 		verify(parentSavePort).save(argThat(parent ->
@@ -105,12 +113,13 @@ class ParentLoginServiceAppleTest {
 		ParentLoginResponse loginResponse = ParentLoginResponse.of(EMAIL, EMAIL, null, Role.PARENT, "access", "refresh");
 
 		when(appleSocialLoginPort.loginWithIdentityToken(IDENTITY_TOKEN)).thenReturn(socialResponse);
+		when(appleAuthPort.exchangeAuthorizationCode(AUTHORIZATION_CODE)).thenReturn(APPLE_REFRESH_TOKEN);
 		when(parentLoadPort.findParentBySocialIdAndProvider(SOCIAL_ID, Provider.APPLE)).thenReturn(Optional.empty());
 		when(parentSavePort.save(any(Parent.class))).thenAnswer(inv -> inv.getArgument(0));
 		when(authGeneratePort.generateLoginResponse(any(Parent.class))).thenReturn(loginResponse);
 
 		// when
-		parentLoginService.loginWithAppleIdentityToken(IDENTITY_TOKEN, "");
+		parentLoginService.loginWithAppleIdentityToken(IDENTITY_TOKEN, AUTHORIZATION_CODE, "");
 
 		// then
 		verify(parentSavePort).save(argThat(parent ->
@@ -128,11 +137,12 @@ class ParentLoginServiceAppleTest {
 		ParentLoginResponse loginResponse = ParentLoginResponse.of("홍길동", newEmail, null, Role.PARENT, "access", "refresh");
 
 		when(appleSocialLoginPort.loginWithIdentityToken(IDENTITY_TOKEN)).thenReturn(socialResponse);
+		when(appleAuthPort.exchangeAuthorizationCode(AUTHORIZATION_CODE)).thenReturn(APPLE_REFRESH_TOKEN);
 		when(parentLoadPort.findParentBySocialIdAndProvider(SOCIAL_ID, Provider.APPLE)).thenReturn(Optional.of(existingParent));
 		when(authGeneratePort.generateLoginResponse(any(Parent.class))).thenReturn(loginResponse);
 
 		// when
-		parentLoginService.loginWithAppleIdentityToken(IDENTITY_TOKEN, null);
+		parentLoginService.loginWithAppleIdentityToken(IDENTITY_TOKEN, AUTHORIZATION_CODE, null);
 
 		// then
 		assertThat(existingParent.getEmail()).isEqualTo(newEmail);
