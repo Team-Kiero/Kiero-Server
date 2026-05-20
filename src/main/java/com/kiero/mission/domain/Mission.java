@@ -47,6 +47,9 @@ public class Mission extends BaseTimeEntity {
 	@Column(name = MissionTableConstants.COLUMN_IS_COMPLETED, nullable = false)
 	private boolean isCompleted;
 
+	@Column(name = MissionTableConstants.COLUMN_COMPLETED_AT, nullable = true)
+	private LocalDateTime completedAt;
+
 	@Column(name = MissionTableConstants.COLUMN_UPDATED_AT)
 	private LocalDateTime updatedAt;
 
@@ -71,6 +74,7 @@ public class Mission extends BaseTimeEntity {
 
 	public void complete() {
 		this.isCompleted = true;
+		this.completedAt = LocalDateTime.now();
 	}
 
 	public void update(String name, int reward, LocalDate dueAt) {
