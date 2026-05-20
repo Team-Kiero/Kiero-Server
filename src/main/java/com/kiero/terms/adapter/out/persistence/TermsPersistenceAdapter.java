@@ -1,6 +1,7 @@
 package com.kiero.terms.adapter.out.persistence;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -18,5 +19,10 @@ public class TermsPersistenceAdapter implements TermsLoadPort {
 	@Override
 	public List<Terms> findAllByIsRequiredTrueAndIsActiveTrue() {
 		return termsRepository.findAllByIsRequiredTrueAndIsActiveTrue();
+	}
+
+	@Override
+	public Optional<Terms> findById(Long termsId) {
+		return termsRepository.findById(termsId);
 	}
 }
