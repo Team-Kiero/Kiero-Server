@@ -15,6 +15,7 @@ import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.terms.application.dto.RequiredTermsAgreeRequest;
 import com.kiero.terms.application.dto.RequiredTermsResponse;
+import com.kiero.terms.application.dto.TermsAgreementStatusResponse;
 import com.kiero.terms.application.exception.TermsSuccessCode;
 import com.kiero.terms.application.port.in.TermsCommandUseCase;
 import com.kiero.terms.application.port.in.TermsQueryUseCase;
@@ -40,6 +41,17 @@ public class TermsController {
 	}
 
 	@PreAuthorize("hasRole('PARENT')")
+	@GetMapping("/required/status")
+	public ResponseEntity<SuccessResponse<TermsAgreementStatusResponse>> getRequiredTermsAgreementStatus(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		TermsAgreementStatusResponse response = termsQueryUseCase.getRequiredTermsAgreementStatus(currentAuth.memberId());
+
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(TermsSuccessCode.REQUIRED_TERMS_AGREEMENT_STATUS_RETRIEVED, response));
+	}
+
+	@PreAuthorize("hasRole('PARENT')")
 	@PostMapping("/required")
 	public ResponseEntity<SuccessResponse<?>> agreeToTerms(
 		@CurrentMember CurrentAuth currentAuth,
@@ -47,8 +59,7 @@ public class TermsController {
 	) {
 		termsCommandUseCase.agreeToTerms(currentAuth.memberId(), request.termsIds());
 
-		return ResponseEntity
-			.status(TermsSuccessCode.TERMS_AGREEMENT_CREATED.getHttpStatus())
+		return ResponseEntity.ok()
 			.body(SuccessResponse.of(TermsSuccessCode.TERMS_AGREEMENT_CREATED));
 	}
 }
