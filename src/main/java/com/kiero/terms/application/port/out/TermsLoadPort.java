@@ -7,5 +7,6 @@ import com.kiero.terms.domain.Terms;
 
 public interface TermsLoadPort {
 	List<Terms> findAllByIsRequiredTrueAndIsActiveTrue();
+
 	Optional<Terms> findById(Long termsId);
 }

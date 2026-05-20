@@ -11,8 +11,8 @@ import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 import com.kiero.terms.application.exception.TermsErrorCode;
 import com.kiero.terms.application.port.in.TermsCommandUseCase;
-import com.kiero.terms.application.port.out.TermsLoadPort;
 import com.kiero.terms.application.port.out.TermsAgreementPersistencePort;
+import com.kiero.terms.application.port.out.TermsLoadPort;
 import com.kiero.terms.domain.Terms;
 import com.kiero.terms.domain.TermsAgreement;
 
@@ -31,7 +31,6 @@ public class TermsCommandService implements TermsCommandUseCase {
 	public void agreeToTerms(Long parentId, List<Long> termsIds) {
 		Parent parent = parentLoadPort.findById(parentId)
 			.orElseThrow(() -> new KieroException(TermsErrorCode.PARENT_NOT_FOUND));
-
 
 		if (termsIds.size() != new HashSet<>(termsIds).size()) {
 			throw new KieroException(TermsErrorCode.DUPLICATE_TERMS_ID);
