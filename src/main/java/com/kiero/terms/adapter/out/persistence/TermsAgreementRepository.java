@@ -1,5 +1,7 @@
 package com.kiero.terms.adapter.out.persistence;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,4 +19,12 @@ public interface TermsAgreementRepository extends JpaRepository<TermsAgreement, 
 		""")
 	boolean existsByParentIdAndTermsIdAndWithdrawnAtIsNull(@Param("parentId") Long parentId,
 		@Param("termsId") Long termsId);
+
+	@Query("""
+		SELECT ta.terms.id
+		FROM TermsAgreement ta
+		WHERE ta.parent.id = :parentId
+			AND ta.withdrawnAt IS NULL
+		""")
+	List<Long> findActiveAgreedTermsIdsByParentId(@Param("parentId") Long parentId);
 }

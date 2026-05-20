@@ -2,6 +2,8 @@ package com.kiero.terms.adapter.out.persistence;
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 import com.kiero.terms.application.port.out.TermsAgreementLoadPort;
 import com.kiero.terms.application.port.out.TermsAgreementPersistencePort;
 import com.kiero.terms.domain.TermsAgreement;
@@ -17,6 +19,11 @@ public class TermsAgreementPersistenceAdapter implements TermsAgreementLoadPort,
 	@Override
 	public boolean existsTermsAgreement(Long parentId, Long termsId) {
 		return termsAgreementRepository.existsByParentIdAndTermsIdAndWithdrawnAtIsNull(parentId, termsId);
+	}
+
+	@Override
+	public List<Long> findActiveAgreedTermsIds(Long parentId) {
+		return termsAgreementRepository.findActiveAgreedTermsIdsByParentId(parentId);
 	}
 
 	@Override
