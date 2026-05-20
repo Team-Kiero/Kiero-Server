@@ -11,6 +11,7 @@ import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
 import com.kiero.terms.application.exception.TermsErrorCode;
 import com.kiero.terms.application.port.in.TermsCommandUseCase;
+import com.kiero.terms.application.port.out.TermsAgreementLoadPort;
 import com.kiero.terms.application.port.out.TermsAgreementPersistencePort;
 import com.kiero.terms.application.port.out.TermsLoadPort;
 import com.kiero.terms.domain.Terms;
@@ -25,6 +26,7 @@ public class TermsCommandService implements TermsCommandUseCase {
 
 	private final ParentLoadPort parentLoadPort;
 	private final TermsLoadPort termsLoadPort;
+	private final TermsAgreementLoadPort termsAgreementLoadPort;
 	private final TermsAgreementPersistencePort termsAgreementPersistencePort;
 
 	@Override
@@ -39,6 +41,10 @@ public class TermsCommandService implements TermsCommandUseCase {
 		for (Long termsId : termsIds) {
 			Terms terms = termsLoadPort.findById(termsId)
 				.orElseThrow(() -> new KieroException(TermsErrorCode.TERMS_NOT_FOUND));
+
+			if (termsAgreementLoadPort.existsTermsAgreement(parentId, termsId)) {
+				throw new KieroException(TermsErrorCode.ALREADY_AGREED_TERMS);
+			}
 
 			termsAgreementPersistencePort.save(TermsAgreement.create(parent, terms));
 		}

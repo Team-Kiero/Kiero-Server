@@ -14,6 +14,7 @@ public enum TermsErrorCode implements BaseCode {
 	400 Bad Request
 	*/
 	DUPLICATE_TERMS_ID(HttpStatus.BAD_REQUEST, "약관 목록에 중복된 항목이 있습니다."),
+	ALREADY_AGREED_TERMS(HttpStatus.BAD_REQUEST, "이미 동의한 약관입니다."),
 
 	/*
 	404 Not Found
