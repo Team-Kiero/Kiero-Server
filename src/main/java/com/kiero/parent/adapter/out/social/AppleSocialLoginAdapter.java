@@ -18,6 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AppleSocialLoginAdapter implements AppleSocialLoginPort {
 
+	private static final String DEFAULT_PROFILE_IMAGE =
+		"https://kiero-bucket.s3.ap-northeast-2.amazonaws.com/apple_default_profile.png";
+
 	private final AppleJwtValidator appleJwtValidator;
 
 	@Override
@@ -33,6 +36,6 @@ public class AppleSocialLoginAdapter implements AppleSocialLoginPort {
 
 		log.info("Apple 로그인 성공");
 
-		return SocialLoginResponse.of(sub, Provider.APPLE, null, email, null);
+		return SocialLoginResponse.of(sub, Provider.APPLE, null, email, DEFAULT_PROFILE_IMAGE);
 	}
 }
