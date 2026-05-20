@@ -31,7 +31,7 @@ public class AppleSocialLoginAdapter implements AppleSocialLoginPort {
 			throw new KieroException(OAuthErrorCode.INVALID_APPLE_ID_TOKEN);
 		}
 
-		log.info("Apple 로그인 성공 - sub: {}", sub);
+		log.info("Apple 로그인 성공");
 
 		return SocialLoginResponse.of(sub, Provider.APPLE, null, email, null);
 	}
