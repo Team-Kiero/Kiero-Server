@@ -15,7 +15,6 @@ import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.port.out.SocialLoginPort;
 
 import feign.FeignException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,7 +37,6 @@ public class KakaoSocialLoginAdapter implements SocialLoginPort {
 	private final KakaoApiClient kakaoApiClient;
 	private final KakaoAuthApiClient kakaoAuthApiClient;
 
-	@Transactional
 	@Override
 	public SocialLoginResponse login(final String authorizationCode, final SocialLoginRequest loginRequest) {
 

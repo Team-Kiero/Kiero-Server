@@ -56,6 +56,13 @@ spring:
 open-api:
   service-key: ${OPEN_API_SERVICE_KEY}
 
+# Apple
+apple:
+  bundle-id: ${APPLE_BUNDLE_ID}
+  team-id: ${APPLE_TEAM_ID}
+  key-id: ${APPLE_KEY_ID}
+  private-key: ${APPLE_PRIVATE_KEY}
+
 # Sentry
 sentry:
   dsn: ${SENTRY_DSN}
@@ -69,6 +76,10 @@ sentry:
     - org.springframework.security.authentication.BadCredentialsException
     - org.springframework.web.bind.MethodArgumentNotValidException
     - org.springframework.web.bind.MissingServletRequestParameterException
+    - org.springframework.web.bind.MissingRequestCookieException
+    - org.springframework.web.bind.MissingRequestHeaderException
+    - org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+    - org.springframework.http.converter.HttpMessageNotReadableException
     - org.springframework.web.servlet.NoHandlerFoundException
     - jakarta.validation.ConstraintViolationException
 

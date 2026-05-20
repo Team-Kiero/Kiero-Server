@@ -9,4 +9,5 @@ public class ParentTableConstants {
 	public static final String COLUMN_PROVIDER = "provider";
 	public static final String COLUMN_SOCIAL_ID = "social_id";
 	public static final String COLUMN_IMAGE = "image";
+	public static final String COLUMN_APPLE_REFRESH_TOKEN = "apple_refresh_token";
 }
