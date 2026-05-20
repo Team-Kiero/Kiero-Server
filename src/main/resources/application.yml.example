@@ -105,6 +105,12 @@ open-api:
 # Apple
 apple:
   bundle-id: com.your.app.bundle-id
+  team-id: YOUR_APPLE_TEAM_ID
+  key-id: YOUR_APPLE_KEY_ID
+  private-key: |
+    -----BEGIN PRIVATE KEY-----
+    YOUR_APPLE_PRIVATE_KEY_CONTENT
+    -----END PRIVATE KEY-----
 
 # JWT
 jwt:
