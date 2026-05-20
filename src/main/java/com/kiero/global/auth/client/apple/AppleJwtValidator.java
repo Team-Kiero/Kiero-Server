@@ -83,9 +83,18 @@ public class AppleJwtValidator {
 	private String extractKid(String identityToken) {
 		try {
 			String[] parts = identityToken.split("\\.");
+			if (parts.length < 2) {
+				throw new KieroException(OAuthErrorCode.INVALID_APPLE_ID_TOKEN);
+			}
 			byte[] headerBytes = Base64.getUrlDecoder().decode(parts[0]);
 			Map<String, String> header = objectMapper.readValue(headerBytes, Map.class);
-			return header.get("kid");
+			String kid = header.get("kid");
+			if (kid == null || kid.isBlank()) {
+				throw new KieroException(OAuthErrorCode.INVALID_APPLE_ID_TOKEN);
+			}
+			return kid;
+		} catch (KieroException e) {
+			throw e;
 		} catch (Exception e) {
 			log.error("identityToken 헤더 파싱 실패: {}", e.getMessage());
 			throw new KieroException(OAuthErrorCode.INVALID_APPLE_ID_TOKEN);
