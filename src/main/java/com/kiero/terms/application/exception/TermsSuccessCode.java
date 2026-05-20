@@ -14,6 +14,7 @@ public enum TermsSuccessCode implements BaseCode {
 	200 OK
 	*/
 	REQUIRED_TERMS_GET_SUCCESS(HttpStatus.OK, "필수 동의약관이 성공적으로 조회되었습니다."),
+	REQUIRED_TERMS_AGREEMENT_STATUS_RETRIEVED(HttpStatus.OK, "필수 동의약관 동의 여부가 성공적으로 조회되었습니다."),
 
 	/*
 	201 CREATED
