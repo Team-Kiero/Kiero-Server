@@ -51,6 +51,9 @@ public class Parent extends BaseTimeEntity {
 	@Column(name = ParentTableConstants.COLUMN_SOCIAL_ID, nullable = false)
 	private String socialId;
 
+	@Column(name = ParentTableConstants.COLUMN_APPLE_REFRESH_TOKEN)
+	private String appleRefreshToken;
+
 	public static Parent create(
 		final String name,
 		final String email,
@@ -77,6 +80,10 @@ public class Parent extends BaseTimeEntity {
 
 	public void updateAppleProfile(final String email) {
 		this.email = email;
+	}
+
+	public void updateAppleRefreshToken(final String appleRefreshToken) {
+		this.appleRefreshToken = appleRefreshToken;
 	}
 
 }
