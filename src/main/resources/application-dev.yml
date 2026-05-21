@@ -98,6 +98,8 @@ management:
 aws:
   s3:
     bucket: ${AWS_S3_BUCKET}
+  sqs:
+    notification-queue-url: ${SQS_NOTIFICATION_QUEUE_URL}
   region: ${AWS_REGION}
   credentials:
     access-key: ${AWS_ACCESS_KEY}
