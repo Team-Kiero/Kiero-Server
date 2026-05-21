@@ -21,4 +21,8 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
 	@Modifying
 	@Query("DELETE FROM Coupon c WHERE c.parent.id = :parentId")
 	void deleteAllByParentId(@Param("parentId") Long parentId);
+
+	@Modifying
+	@Query(value = "UPDATE coupon SET parent_id = :newParentId WHERE parent_id = :oldParentId AND child_id = :childId", nativeQuery = true)
+	void transferOwnershipByParentIdAndChildId(@Param("oldParentId") Long oldParentId, @Param("newParentId") Long newParentId, @Param("childId") Long childId);
 }

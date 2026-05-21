@@ -91,4 +91,8 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 	@Modifying
 	@Query("DELETE FROM FeedItem f WHERE f.parent.id = :parentId")
 	void deleteAllByParentId(@Param("parentId") Long parentId);
+
+	@Modifying
+	@Query(value = "UPDATE feed_item SET parent_id = :newParentId WHERE parent_id = :oldParentId AND child_id = :childId", nativeQuery = true)
+	void transferOwnershipByParentIdAndChildId(@Param("oldParentId") Long oldParentId, @Param("newParentId") Long newParentId, @Param("childId") Long childId);
 }

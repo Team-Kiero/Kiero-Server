@@ -51,4 +51,8 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
     @Modifying
     @Query("DELETE FROM Mission m WHERE m.parent.id = :parentId")
     void deleteAllByParentId(@Param("parentId") Long parentId);
+
+    @Modifying
+    @Query(value = "UPDATE mission SET parent_id = :newParentId WHERE parent_id = :oldParentId AND child_id = :childId", nativeQuery = true)
+    void transferOwnershipByParentIdAndChildId(@Param("oldParentId") Long oldParentId, @Param("newParentId") Long newParentId, @Param("childId") Long childId);
 }
