@@ -11,7 +11,7 @@ import com.kiero.mission.application.dto.MissionCompleteEvent;
 import com.kiero.schedule.application.dto.FireLitEvent;
 import com.kiero.schedule.application.dto.ScheduleCreatedEvent;
 import com.kiero.schedule.application.dto.ScheduleDeletedEvent;
-import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
+import com.kiero.schedule.application.dto.ScheduleModifiedPushEvent;
 import com.kiero.schedule.application.dto.ScheduleSkippedEvent;
 import com.kiero.schedule.application.dto.ScheduleVerifiedEvent;
 
@@ -79,7 +79,7 @@ public class PushNotificationEventListener {
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handle(ScheduleModifiedEvent event) {
+	public void handle(ScheduleModifiedPushEvent event) {
 		log.debug("푸시 알림 (여정 변경): childId={}", event.childId());
 		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_MODIFIED);
 	}
