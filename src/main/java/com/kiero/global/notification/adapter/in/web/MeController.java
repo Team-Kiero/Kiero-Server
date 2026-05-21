@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/me")
+@RequestMapping("/api/v1/common/push")
 public class MeController {
 
 	private final FcmTokenRegistrationUseCase fcmTokenRegistrationUseCase;

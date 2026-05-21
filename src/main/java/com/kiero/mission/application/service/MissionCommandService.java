@@ -152,9 +152,7 @@ public class MissionCommandService implements MissionCommandUseCase {
 			LocalDateTime.now()
 		));
 
-		if (mission.getDueAt().isEqual(LocalDate.now())) {
-			eventPort.publish(new MissionCompleteEvent(parentIds, childId));
-		}
+		eventPort.publish(new MissionCompleteEvent(parentIds, childId));
 
 		missionCacheEvictHelper.evictByChildId(childId);
 

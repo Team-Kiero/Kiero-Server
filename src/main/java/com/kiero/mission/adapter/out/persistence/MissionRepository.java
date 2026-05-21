@@ -55,6 +55,6 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
     @Query("SELECT DISTINCT m.child.id FROM Mission m WHERE m.dueAt = :today")
     List<Long> findDistinctChildIdsByDate(@Param("today") LocalDate today);
 
-    @Query("SELECT DISTINCT m.child.id FROM Mission m WHERE m.dueAt = :today AND m.isCompleted = false")
+    @Query("SELECT DISTINCT m.child.id FROM Mission m WHERE m.dueAt <= :today AND m.isCompleted = false")
     List<Long> findChildIdsWithIncompleteMissionsByDate(@Param("today") LocalDate today);
 }
