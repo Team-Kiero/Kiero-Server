@@ -31,10 +31,10 @@ public class Parent extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = ParentTableConstants.COLUMN_NAME, nullable = false)
+	@Column(name = ParentTableConstants.COLUMN_NAME, nullable = true)
 	private String name;
 
-	@Column(name = ParentTableConstants.COLUMN_EMAIL, nullable = false)
+	@Column(name = ParentTableConstants.COLUMN_EMAIL, nullable = true)
 	private String email;
 
 	@Column(name = ParentTableConstants.COLUMN_IMAGE, nullable = true)
@@ -48,7 +48,7 @@ public class Parent extends BaseTimeEntity {
 	@Column(name = ParentTableConstants.COLUMN_PROVIDER, nullable = false)
 	private Provider provider;
 
-	@Column(name = ParentTableConstants.COLUMN_SOCIAL_ID, nullable = false)
+	@Column(name = ParentTableConstants.COLUMN_SOCIAL_ID, nullable = true)
 	private String socialId;
 
 	public static Parent create(
@@ -73,6 +73,14 @@ public class Parent extends BaseTimeEntity {
 		this.name = name;
 		this.email = email;
 		this.image = image;
+	}
+
+	public void withdraw() {
+		this.name = null;
+		this.email = null;
+		this.image = null;
+		this.socialId = null;
+		this.role = Role.WITHDRAWN;
 	}
 
 }
