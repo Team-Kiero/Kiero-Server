@@ -29,6 +29,7 @@ import com.kiero.parent.application.dto.TodayProgressForParentResponse;
 import com.kiero.parent.application.exception.ParentSuccessCode;
 import com.kiero.parent.application.port.in.ParentChildQueryUseCase;
 import com.kiero.parent.application.port.in.ParentLoginUseCase;
+import com.kiero.parent.application.port.in.ParentWithdrawUseCase;
 import com.kiero.parent.application.service.ScheduleMissionFacade;
 import com.kiero.schedule.application.exception.ScheduleSuccessCode;
 
@@ -49,6 +50,7 @@ public class ParentController {
 
 	private final ParentChildQueryUseCase parentChildQueryUseCase;
 	private final ParentLoginUseCase parentLoginUseCase;
+	private final ParentWithdrawUseCase parentWithdrawUseCase;
 
 	private final InviteCodeUseCase inviteCodeUseCase;
 	private final ScheduleMissionFacade scheduleMissionFacade;
@@ -152,5 +154,16 @@ public class ParentController {
 		TodayProgressForParentResponse response = scheduleMissionFacade.getProgress(currentAuth.memberId(), childId);
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ScheduleSuccessCode.CHILD_PROGRESS_GET_SUCCESS, response));
+	}
+
+	@PreAuthorize("hasRole('PARENT')")
+	@PostMapping("/withdraw")
+	public ResponseEntity<SuccessResponse<?>> withdraw(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		parentWithdrawUseCase.withdraw(currentAuth.memberId());
+
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ParentSuccessCode.WITHDRAW_SUCCESS));
 	}
 }
