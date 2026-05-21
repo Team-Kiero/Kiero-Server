@@ -15,6 +15,7 @@ public enum ChildSuccessCode implements BaseCode {
     */
     LOGIN_SUCCESS(HttpStatus.OK, "로그인에 성공하였습니다."),
     GET_INFO_SUCCESS(HttpStatus.OK, "정보 조회에 성공하였습니다."),
+    PARENT_WITHDRAWAL_STATUS_RETRIEVED(HttpStatus.OK, "부모 탈퇴 여부가 성공적으로 조회되었습니다."),
     ;
 
     private final HttpStatus httpStatus;
