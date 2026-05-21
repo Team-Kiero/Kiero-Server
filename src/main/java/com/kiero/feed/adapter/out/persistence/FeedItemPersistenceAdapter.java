@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import com.kiero.feed.application.port.out.FeedItemCommandPort;
+import com.kiero.feed.application.port.out.FeedItemDeletePort;
 import com.kiero.feed.application.port.out.FeedItemQueryPort;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.feed.domain.enums.EventType;
@@ -16,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class FeedItemPersistenceAdapter implements FeedItemCommandPort, FeedItemQueryPort {
+public class FeedItemPersistenceAdapter implements FeedItemCommandPort, FeedItemQueryPort, FeedItemDeletePort {
 
 	private final FeedItemRepository feedItemRepository;
 
@@ -60,5 +61,10 @@ public class FeedItemPersistenceAdapter implements FeedItemCommandPort, FeedItem
 	@Override
 	public List<FeedItem> findUnreadFeedItem(Long parentId) {
 		return feedItemRepository.findUnreadFeedItemByParentId(parentId);
+	}
+
+	@Override
+	public void deleteAllByChildId(Long childId) {
+		feedItemRepository.deleteAllByChildId(childId);
 	}
 }
