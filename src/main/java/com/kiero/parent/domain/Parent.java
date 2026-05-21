@@ -31,10 +31,10 @@ public class Parent extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = ParentTableConstants.COLUMN_NAME, nullable = true)
+	@Column(name = ParentTableConstants.COLUMN_NAME, nullable = false)
 	private String name;
 
-	@Column(name = ParentTableConstants.COLUMN_EMAIL, nullable = true)
+	@Column(name = ParentTableConstants.COLUMN_EMAIL, nullable = false)
 	private String email;
 
 	@Column(name = ParentTableConstants.COLUMN_IMAGE, nullable = true)
@@ -48,7 +48,7 @@ public class Parent extends BaseTimeEntity {
 	@Column(name = ParentTableConstants.COLUMN_PROVIDER, nullable = false)
 	private Provider provider;
 
-	@Column(name = ParentTableConstants.COLUMN_SOCIAL_ID, nullable = true)
+	@Column(name = ParentTableConstants.COLUMN_SOCIAL_ID, nullable = false)
 	private String socialId;
 
 	@Column(name = ParentTableConstants.COLUMN_APPLE_REFRESH_TOKEN)
@@ -78,14 +78,6 @@ public class Parent extends BaseTimeEntity {
 		this.image = image;
 	}
 
-
-	public void withdraw() {
-		this.name = null;
-		this.email = null;
-		this.image = null;
-		this.socialId = null;
-		this.role = Role.WITHDRAWN;
-  }
 
 	public void updateAppleProfile(final String email) {
 		this.email = email;
