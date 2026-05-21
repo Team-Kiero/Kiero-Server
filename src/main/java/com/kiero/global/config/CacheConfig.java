@@ -1,6 +1,7 @@
 package com.kiero.global.config;
 
 import java.time.Duration;
+import java.util.Map;
 
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -38,16 +39,20 @@ public class CacheConfig {
 
 		GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
-		RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-			.entryTtl(Duration.ofMinutes(5)) // 만료시간 5분
-			.serializeKeysWith( // key는 String으로 직렬화
+		RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
+			.entryTtl(Duration.ofMinutes(5))
+			.serializeKeysWith(
 				RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-			.serializeValuesWith( // value는 json으로 직렬화
+			.serializeValuesWith(
 				RedisSerializationContext.SerializationPair.fromSerializer(serializer))
 			.disableCachingNullValues();
 
+		RedisCacheConfiguration applePublicKeysConfig = defaultConfig
+			.entryTtl(Duration.ofHours(1));
+
 		return RedisCacheManager.builder(connectionFactory)
-			.cacheDefaults(config)
+			.cacheDefaults(defaultConfig)
+			.withInitialCacheConfigurations(Map.of(CacheNames.APPLE_PUBLIC_KEYS, applePublicKeysConfig))
 			.build();
 	}
 }

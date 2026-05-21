@@ -44,9 +44,8 @@ public class SecurityConfig {
 					"/v3/api-docs/**",
 					"/health-check",
 					"/actuator/health",
-					"/api/v1/parents/login",
-					"/api/v1/parents/login/access-token",
-					"/api/v1/children/login",
+					"/api/v1/parents/login/**",
+					"/api/v1/children/login/**",
 					"/api/v1/tokens/reissue/*",
 					"/api/v1/tokens/subscribe-token",
 					"/api/v1/admin/login"
