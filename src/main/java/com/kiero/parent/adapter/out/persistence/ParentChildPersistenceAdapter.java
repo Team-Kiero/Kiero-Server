@@ -31,6 +31,11 @@ public class ParentChildPersistenceAdapter implements ParentChildLoadPort, Paren
 	}
 
 	@Override
+	public List<Parent> findActiveParentsByChildId(Long childId) {
+		return parentChildRepository.findActiveParentsByChildId(childId);
+	}
+
+	@Override
 	public List<ParentChild> findAllByParentId(Long parentId) {
 		return parentChildRepository.findAllByParentId(parentId);
 	}

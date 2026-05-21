@@ -138,7 +138,7 @@ public class MissionCommandService implements MissionCommandUseCase {
 		mission.complete();
 		child.addCoin(mission.getReward());
 
-		List<Parent> parents = parentChildLoadPort.findParentsByChildId(child.getId());
+		List<Parent> parents = parentChildLoadPort.findActiveParentsByChildId(child.getId());
 		List<Long> parentIds = parents.stream()
 			.map(Parent::getId)
 			.toList();

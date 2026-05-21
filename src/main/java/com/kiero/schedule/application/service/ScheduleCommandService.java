@@ -203,7 +203,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			throw new KieroException(ScheduleErrorCode.SCHEDULE_COULD_NOT_BE_SKIPPED);
 		}
 
-		List<Long> parentIds = parentChildLoadPort.findParentsByChildId(childId).stream()
+		List<Long> parentIds = parentChildLoadPort.findActiveParentsByChildId(childId).stream()
 				.map(Parent::getId)
 				.toList();
 
@@ -232,7 +232,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		scheduleDetail.changeScheduleStatus(ScheduleStatus.VERIFIED);
 		scheduleDetail.changeImageUrl(request.imageUrl());
 
-		List<Parent> parents = parentChildLoadPort.findParentsByChildId(childId);
+		List<Parent> parents = parentChildLoadPort.findActiveParentsByChildId(childId);
 		List<Long> parentIds = parents.stream()
 			.map(Parent::getId)
 			.toList();
@@ -286,7 +286,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			earnedCoinAmount = ALL_SCHEDULE_SUCCESS_REWARD;
 		}
 
-		List<Parent> parents = parentChildLoadPort.findParentsByChildId(child.getId());
+		List<Parent> parents = parentChildLoadPort.findActiveParentsByChildId(child.getId());
 		List<Long> parentIds = parents.stream()
 			.map(Parent::getId)
 			.toList();

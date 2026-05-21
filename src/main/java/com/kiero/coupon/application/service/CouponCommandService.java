@@ -121,7 +121,7 @@ public class CouponCommandService implements CouponCommandUseCase {
 
     child.deductCoin(coupon.getPrice());
 
-	  List<Parent> parents = parentChildLoadPort.findParentsByChildId(child.getId());
+	  List<Parent> parents = parentChildLoadPort.findActiveParentsByChildId(child.getId());
 
     couponEventPort.publish(new CouponPurchaseEventForFeed(
 		parents,
