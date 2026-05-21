@@ -179,4 +179,43 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 	);
 
 	void deleteAllByScheduleId(Long scheduleId);
+
+	@Query("""
+		SELECT DISTINCT s.child.id
+		FROM ScheduleDetail sd
+		JOIN sd.schedule s
+		WHERE sd.date = :today
+		""")
+	List<Long> findDistinctChildIdsByDate(@Param("today") LocalDate today);
+
+	@Query("""
+		SELECT sd
+		FROM ScheduleDetail sd
+		JOIN FETCH sd.schedule s
+		JOIN FETCH s.child c
+		WHERE sd.date = :today
+		  AND sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.PENDING
+		  AND s.endTime <= :now
+		  AND sd.parentReminderSentAt IS NULL
+		""")
+	List<ScheduleDetail> findPendingPastEndTimeWithoutReminder(
+		@Param("today") LocalDate today,
+		@Param("now") LocalTime now
+	);
+
+	@Query("""
+		SELECT sd
+		FROM ScheduleDetail sd
+		JOIN FETCH sd.schedule s
+		JOIN FETCH s.child c
+		WHERE sd.date = :today
+		  AND sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.PENDING
+		  AND s.startTime >= :targetStart
+		  AND s.startTime < :targetEnd
+		""")
+	List<ScheduleDetail> findPendingByStartTimeWindow(
+		@Param("today") LocalDate today,
+		@Param("targetStart") LocalTime targetStart,
+		@Param("targetEnd") LocalTime targetEnd
+	);
 }

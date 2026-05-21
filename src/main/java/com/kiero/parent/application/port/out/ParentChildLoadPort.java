@@ -9,4 +9,6 @@ public interface ParentChildLoadPort {
 	List<Long> findChildIdsByParentId(Long parentId);
 	List<ParentChild> findAllByParentId(Long parentId);
 	List<Parent> findParentsByChildId(Long childId);
+
+	List<ParentChild> findAll();
 }

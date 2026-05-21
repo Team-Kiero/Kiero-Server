@@ -39,6 +39,11 @@ public class ParentChildPersistenceAdapter implements ParentChildLoadPort, Paren
 	}
 
 	@Override
+	public List<ParentChild> findAll() {
+		return parentChildRepository.findAll();
+	}
+
+	@Override
 	public ParentChild save(ParentChild parentChild) {
 		return parentChildRepository.save(parentChild);
 	}

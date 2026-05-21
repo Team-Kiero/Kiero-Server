@@ -51,4 +51,10 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
     @Modifying
     @Query("DELETE FROM Mission m WHERE m.parent.id = :parentId")
     void deleteAllByParentId(@Param("parentId") Long parentId);
+
+    @Query("SELECT DISTINCT m.child.id FROM Mission m WHERE m.dueAt = :today")
+    List<Long> findDistinctChildIdsByDate(@Param("today") LocalDate today);
+
+    @Query("SELECT DISTINCT m.child.id FROM Mission m WHERE m.dueAt = :today AND m.isCompleted = false")
+    List<Long> findChildIdsWithIncompleteMissionsByDate(@Param("today") LocalDate today);
 }
