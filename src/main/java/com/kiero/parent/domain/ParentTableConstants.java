@@ -10,4 +10,6 @@ public class ParentTableConstants {
 	public static final String COLUMN_SOCIAL_ID = "social_id";
 	public static final String COLUMN_IMAGE = "image";
 	public static final String COLUMN_APPLE_REFRESH_TOKEN = "apple_refresh_token";
+	public static final String COLUMN_FCM_TOKEN = "fcm_token";
+	public static final String COLUMN_PUSH_NOTIFICATION_ENABLED = "push_notification_enabled";
 }

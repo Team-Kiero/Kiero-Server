@@ -43,6 +43,13 @@ public class Child extends BaseTimeEntity {
 	@Column(name = ChildTableConstants.COLUMN_COIN_AMOUNT, nullable = false)
 	private int coinAmount;
 
+	@Column(name = ChildTableConstants.COLUMN_FCM_TOKEN)
+	private String fcmToken;
+
+	@Builder.Default
+	@Column(name = ChildTableConstants.COLUMN_PUSH_NOTIFICATION_ENABLED, nullable = false)
+	private boolean pushNotificationEnabled = true;
+
 	public static Child create(
 		final String lastName,
 		final String firstName,
@@ -70,5 +77,13 @@ public class Child extends BaseTimeEntity {
 
 	public boolean hasEnoughCoin(int amount) {
 		return this.coinAmount >= amount;
+	}
+
+	public void updateFcmToken(final String fcmToken) {
+		this.fcmToken = fcmToken;
+	}
+
+	public void updatePushNotificationEnabled(final boolean pushNotificationEnabled) {
+		this.pushNotificationEnabled = pushNotificationEnabled;
 	}
 }

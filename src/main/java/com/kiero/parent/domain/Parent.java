@@ -54,6 +54,13 @@ public class Parent extends BaseTimeEntity {
 	@Column(name = ParentTableConstants.COLUMN_APPLE_REFRESH_TOKEN)
 	private String appleRefreshToken;
 
+	@Column(name = ParentTableConstants.COLUMN_FCM_TOKEN)
+	private String fcmToken;
+
+	@Builder.Default
+	@Column(name = ParentTableConstants.COLUMN_PUSH_NOTIFICATION_ENABLED, nullable = false)
+	private boolean pushNotificationEnabled = true;
+
 	public static Parent create(
 		final String name,
 		final String email,
@@ -84,6 +91,14 @@ public class Parent extends BaseTimeEntity {
 
 	public void updateAppleRefreshToken(final String appleRefreshToken) {
 		this.appleRefreshToken = appleRefreshToken;
+	}
+
+	public void updateFcmToken(final String fcmToken) {
+		this.fcmToken = fcmToken;
+	}
+
+	public void updatePushNotificationEnabled(final boolean pushNotificationEnabled) {
+		this.pushNotificationEnabled = pushNotificationEnabled;
 	}
 
 }
