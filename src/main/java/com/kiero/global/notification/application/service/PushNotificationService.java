@@ -26,12 +26,16 @@ public class PushNotificationService implements PushNotificationUseCase {
 
 	@Override
 	@Transactional(readOnly = true)
-	public void pushToParent(Long parentId, PushNotificationType type, String childName, String targetId) {
+	public void pushToParent(Long parentId, Long childId, PushNotificationType type, String targetId) {
 		Parent parent = parentLoadPort.findById(parentId).orElse(null);
 		if (parent == null || parent.getFcmToken() == null || !parent.isPushNotificationEnabled()) {
 			log.debug("푸시 알림 스킵 (부모): parentId={}, type={}", parentId, type);
 			return;
 		}
+
+		String childName = childLoadPort.findById(childId)
+			.map(c -> c.getFullName())
+			.orElse("");
 
 		String title = buildParentTitle(type, childName);
 		String body = buildParentBody(type, childName);
