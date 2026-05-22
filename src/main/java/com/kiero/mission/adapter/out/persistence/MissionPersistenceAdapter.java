@@ -6,14 +6,16 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
+import com.kiero.mission.application.port.out.MissionDeletePort;
 import com.kiero.mission.application.port.out.MissionPersistencePort;
+import com.kiero.mission.application.port.out.MissionTransferPort;
 import com.kiero.mission.domain.Mission;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class MissionPersistenceAdapter implements MissionPersistencePort {
+public class MissionPersistenceAdapter implements MissionPersistencePort, MissionDeletePort, MissionTransferPort {
 
 	private final MissionRepository missionRepository;
 
@@ -60,6 +62,16 @@ public class MissionPersistenceAdapter implements MissionPersistencePort {
 	@Override
 	public List<Mission> findAllByChildIdAndDueAt(Long childId, LocalDate date) {
 		return missionRepository.findAllByChildIdAndDueAt(childId, date);
+	}
+
+	@Override
+	public void deleteAllByChildId(Long childId) {
+		missionRepository.deleteAllByChildId(childId);
+	}
+
+	@Override
+	public void transferOwnership(Long fromParentId, Long toParentId, Long childId) {
+		missionRepository.transferOwnershipByParentIdAndChildId(fromParentId, toParentId, childId);
 	}
 
 }

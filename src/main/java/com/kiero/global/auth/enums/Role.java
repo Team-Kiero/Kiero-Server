@@ -12,6 +12,7 @@ public enum Role {
 	PARENT("ROLE_PARENT"),
 	CHILD("ROLE_CHILD"),
 	ADMIN("ROLE_ADMIN"),
+	WITHDRAWN("ROLE_WITHDRAWN"),
 	;
 
 	private final String roleName;

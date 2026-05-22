@@ -27,4 +27,6 @@ public interface TermsAgreementRepository extends JpaRepository<TermsAgreement, 
 			AND ta.withdrawnAt IS NULL
 		""")
 	List<Long> findActiveAgreedTermsIdsByParentId(@Param("parentId") Long parentId);
+
+	void deleteAllByParentId(Long parentId);
 }

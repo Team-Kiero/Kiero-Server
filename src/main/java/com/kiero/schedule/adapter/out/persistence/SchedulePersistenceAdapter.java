@@ -6,13 +6,14 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 import com.kiero.schedule.application.port.out.SchedulePersistencePort;
+import com.kiero.schedule.application.port.out.ScheduleTransferPort;
 import com.kiero.schedule.domain.Schedule;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class SchedulePersistenceAdapter implements SchedulePersistencePort {
+public class SchedulePersistenceAdapter implements SchedulePersistencePort, ScheduleTransferPort {
 
 	private final ScheduleRepository scheduleRepository;
 
@@ -49,6 +50,11 @@ public class SchedulePersistenceAdapter implements SchedulePersistencePort {
 	@Override
 	public void deleteObsoleteNonRecurringSchedules() {
 		scheduleRepository.deleteObsoleteNonRecurringSchedules();
+	}
+
+	@Override
+	public void transferOwnership(Long fromParentId, Long toParentId, Long childId) {
+		scheduleRepository.transferOwnershipByParentIdAndChildId(fromParentId, toParentId, childId);
 	}
 
 }

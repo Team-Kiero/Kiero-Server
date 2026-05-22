@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kiero.child.application.dto.ChildLoginRequest;
 import com.kiero.child.application.dto.ChildLoginResponse;
 import com.kiero.child.application.dto.ChildMeResponse;
+import com.kiero.child.application.dto.ParentWithdrawalStatusResponse;
 import com.kiero.child.application.exception.ChildSuccessCode;
 import com.kiero.child.application.port.in.ChildLoginUseCase;
 import com.kiero.child.application.port.in.ChildQueryUseCase;
+import com.kiero.child.application.port.in.ParentWithdrawalQueryUseCase;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
@@ -34,6 +36,7 @@ public class ChildController {
 	private static final int COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 	private final ChildLoginUseCase childLoginUseCase;
 	private final ChildQueryUseCase childQueryUseCase;
+	private final ParentWithdrawalQueryUseCase parentWithdrawalQueryUseCase;
 
 	@PostMapping("/login")
 	public ResponseEntity<SuccessResponse<ChildLoginResponse>> login(
@@ -62,5 +65,17 @@ public class ChildController {
 
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ChildSuccessCode.GET_INFO_SUCCESS, response));
+	}
+
+	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
+	@GetMapping("/parent-withdrawal-status")
+	public ResponseEntity<SuccessResponse<ParentWithdrawalStatusResponse>> getParentWithdrawalStatus(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		ParentWithdrawalStatusResponse response = parentWithdrawalQueryUseCase.getParentWithdrawalStatus(
+			currentAuth.memberId());
+
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ChildSuccessCode.PARENT_WITHDRAWAL_STATUS_RETRIEVED, response));
 	}
 }

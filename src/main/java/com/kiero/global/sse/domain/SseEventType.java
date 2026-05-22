@@ -17,6 +17,7 @@ public enum SseEventType {
 	MISSION_CREATED("mission", "미션 생성"),
 	SCHEDULE_MODIFIED("schedule", "스케줄 변경"),
 	COUPON_CREATED("coupon", "쿠폰 생성"),
+	PARENT_WITHDRAWN("parentWithdrawn", "부모 탈퇴"),
 
 	// 부모 + 자녀 이벤트
 	SCHEDULE_STATUS_UPDATED("schedule", "일정 상태 업데이트"),
