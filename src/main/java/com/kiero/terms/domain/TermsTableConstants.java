@@ -8,4 +8,5 @@ public class TermsTableConstants {
 	public static final String COLUMN_URL = "url";
 	public static final String COLUMN_TYPE = "type";
 	public static final String COLUMN_IS_ACTIVE = "is_active";
+	public static final String COLUMN_VERSION = "version";
 }

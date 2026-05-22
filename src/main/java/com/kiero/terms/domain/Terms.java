@@ -44,4 +44,7 @@ public class Terms {
 
 	@Column(name = TermsTableConstants.COLUMN_IS_ACTIVE, nullable = false)
 	private boolean isActive;
+
+	@Column(name = TermsTableConstants.COLUMN_VERSION, nullable = false)
+	private String version;
 }
