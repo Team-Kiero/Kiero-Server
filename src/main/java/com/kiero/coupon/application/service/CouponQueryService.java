@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.kiero.coupon.application.dto.CouponHistoryResponse;
 import com.kiero.coupon.application.dto.CouponResponse;
 import com.kiero.coupon.application.exception.CouponErrorCode;
 import com.kiero.coupon.application.port.in.CouponQueryUseCase;
@@ -20,6 +21,7 @@ public class CouponQueryService implements CouponQueryUseCase {
 
 	private final CouponCacheableService couponCacheableService;
 	private final ParentChildAccessPort parentChildAccessPort;
+	private final CouponHistoryPersistencePort couponHistoryPersistencePort;
 
 	@Override
 	public List<CouponResponse> getCouponsByChild(Long childId) {
@@ -32,5 +34,14 @@ public class CouponQueryService implements CouponQueryUseCase {
 			throw new KieroException(CouponErrorCode.NOT_YOUR_CHILD);
 		}
 		return couponCacheableService.getCouponsByChild(childId);
+	}
+
+	@Override
+	public List<CouponHistoryResponse> getCouponHistory(Long childId) {
+		List<CouponHistory> couponHistoryList = couponHistoryPersistencePort.findAllByChildIdCreatedAtDesc(childId);
+
+		return couponHistoryList.stream()
+			.map(CouponHistoryResponse::from)
+			.toList();
 	}
 }
