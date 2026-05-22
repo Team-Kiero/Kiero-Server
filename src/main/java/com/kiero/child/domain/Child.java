@@ -48,7 +48,7 @@ public class Child extends BaseTimeEntity {
 
 	@Builder.Default
 	@Column(name = ChildTableConstants.COLUMN_PUSH_NOTIFICATION_ENABLED, nullable = false)
-	private boolean pushNotificationEnabled = true;
+	private boolean pushNotificationEnabled = false;
 
 	public static Child create(
 		final String lastName,

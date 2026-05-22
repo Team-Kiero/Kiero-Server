@@ -152,7 +152,7 @@ public class MissionCommandService implements MissionCommandUseCase {
 			LocalDateTime.now()
 		));
 
-		eventPort.publish(new MissionCompleteEvent(parentIds, childId));
+		eventPort.publish(new MissionCompleteEvent(parentIds, childId, mission.getName()));
 
 		missionCacheEvictHelper.evictByChildId(childId);
 

@@ -128,14 +128,14 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 		List<ParentChild> allPairs = parentChildLoadPort.findAll();
 		for (ParentChild pc : allPairs) {
 			pushNotificationUseCase.pushToParent(
-				pc.getParent().getId(), pc.getChild().getId(), PushNotificationType.PARENT_DAILY_START, "");
+				pc.getParent().getId(), pc.getChild().getId(), PushNotificationType.PARENT_DAILY_START, "", "");
 		}
 
 		Set<Long> childIds = new HashSet<>(scheduleDetailPersistencePort.findDistinctChildIdsByDate(today));
 		childIds.addAll(missionPersistencePort.findDistinctChildIdsByDate(today));
 
 		for (Long childId : childIds) {
-			pushNotificationUseCase.pushToChild(childId, PushNotificationType.CHILD_DAILY_START);
+			pushNotificationUseCase.pushToChild(childId, PushNotificationType.CHILD_DAILY_START, "");
 		}
 	}
 
@@ -156,7 +156,7 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 				sd.getCreatedAt().isAfter(LocalDateTime.now(clock).minusMinutes(5))) {
 				continue;
 			}
-			pushNotificationUseCase.pushToChild(sd.getSchedule().getChild().getId(), PushNotificationType.CHILD_NEXT_JOURNEY);
+			pushNotificationUseCase.pushToChild(sd.getSchedule().getChild().getId(), PushNotificationType.CHILD_NEXT_JOURNEY, sd.getSchedule().getName());
 		}
 	}
 
@@ -170,7 +170,7 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 			List<Parent> parents = parentChildLoadPort.findParentsByChildId(childId);
 
 			for (Parent parent : parents) {
-				pushNotificationUseCase.pushToParent(parent.getId(), childId, PushNotificationType.PARENT_SCHEDULE_REMINDER, "");
+				pushNotificationUseCase.pushToParent(parent.getId(), childId, PushNotificationType.PARENT_SCHEDULE_REMINDER, "", sd.getSchedule().getName());
 			}
 
 			sd.markParentReminderSent(LocalDateTime.now(clock));
@@ -183,7 +183,7 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 	public void sendMissionIncompleteNotifications(LocalDate today) {
 		List<Long> childIds = missionPersistencePort.findChildIdsWithIncompleteMissionsByDate(today);
 		for (Long childId : childIds) {
-			pushNotificationUseCase.pushToChild(childId, PushNotificationType.CHILD_MISSION_INCOMPLETE);
+			pushNotificationUseCase.pushToChild(childId, PushNotificationType.CHILD_MISSION_INCOMPLETE, "");
 		}
 	}
 

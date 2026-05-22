@@ -30,7 +30,7 @@ public class PushNotificationEventListener {
 		String targetId = event.feedItemId() != null ? String.valueOf(event.feedItemId()) : "";
 		for (Long parentId : event.parentIds()) {
 			log.debug("푸시 알림 (일정 인증): parentId={}, childId={}", parentId, event.childId());
-			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.SCHEDULE_VERIFIED, targetId);
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.SCHEDULE_VERIFIED, targetId, event.scheduleName());
 		}
 	}
 
@@ -38,7 +38,7 @@ public class PushNotificationEventListener {
 	public void handle(FireLitEvent event) {
 		for (Long parentId : event.parentIds()) {
 			log.debug("푸시 알림 (불꽃 피우기): parentId={}, childId={}", parentId, event.childId());
-			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.FIRE_LIT, "");
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.FIRE_LIT, "", "");
 		}
 	}
 
@@ -46,7 +46,7 @@ public class PushNotificationEventListener {
 	public void handle(MissionCompleteEvent event) {
 		for (Long parentId : event.parentIds()) {
 			log.debug("푸시 알림 (미션 완료): parentId={}, childId={}", parentId, event.childId());
-			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.MISSION_COMPLETE, "");
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.MISSION_COMPLETE, "", event.missionName());
 		}
 	}
 
@@ -54,7 +54,7 @@ public class PushNotificationEventListener {
 	public void handle(CouponPurchasedEvent event) {
 		for (Long parentId : event.parentIds()) {
 			log.debug("푸시 알림 (쿠폰 구매): parentId={}, childId={}", parentId, event.childId());
-			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.COUPON_PURCHASED, "");
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.COUPON_PURCHASED, "", event.couponName());
 		}
 	}
 
@@ -62,25 +62,25 @@ public class PushNotificationEventListener {
 	public void handle(ScheduleSkippedEvent event) {
 		for (Long parentId : event.parentIds()) {
 			log.debug("푸시 알림 (일정 스킵): parentId={}, childId={}", parentId, event.childId());
-			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.SCHEDULE_SKIPPED, "");
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.SCHEDULE_SKIPPED, "", event.scheduleName());
 		}
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleCreatedEvent event) {
 		log.debug("푸시 알림 (여정 추가): childId={}", event.childId());
-		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_CREATED);
+		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_CREATED, "");
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleDeletedEvent event) {
 		log.debug("푸시 알림 (여정 삭제): childId={}", event.childId());
-		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_DELETED);
+		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_DELETED, "");
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleModifiedPushEvent event) {
 		log.debug("푸시 알림 (여정 변경): childId={}", event.childId());
-		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_MODIFIED);
+		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_MODIFIED, "");
 	}
 }

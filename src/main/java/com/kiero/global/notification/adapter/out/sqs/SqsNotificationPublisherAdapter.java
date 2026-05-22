@@ -44,12 +44,12 @@ public class SqsNotificationPublisherAdapter implements NotificationPublisherPor
 				)
 			));
 
+			log.debug("SQS 메시지 발행: {}", messageBody);
+
 			sqsClient.sendMessage(SendMessageRequest.builder()
 				.queueUrl(queueUrl)
 				.messageBody(messageBody)
 				.build());
-
-			log.debug("SQS 메시지 발행 완료: type={}", payload.type());
 		} catch (JsonProcessingException e) {
 			log.error("SQS 메시지 직렬화 실패: type={}", payload.type(), e);
 		}

@@ -216,7 +216,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.toList();
 
 		scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(childId, parentIds));
-		scheduleEventPort.publish(new ScheduleSkippedEvent(parentIds, childId));
+		scheduleEventPort.publish(new ScheduleSkippedEvent(parentIds, childId, scheduleDetail.getSchedule().getName()));
 	}
 
 	@Override
@@ -255,7 +255,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			LocalDateTime.now(clock)
 		));
 
-		scheduleEventPort.publish(new ScheduleVerifiedEvent(parentIds, childId, scheduleDetail.getId()));
+		scheduleEventPort.publish(new ScheduleVerifiedEvent(parentIds, childId, scheduleDetail.getId(), scheduleDetail.getSchedule().getName()));
 		scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(childId, parentIds));
 	}
 

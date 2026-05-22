@@ -4,6 +4,7 @@ import java.util.List;
 
 public record CouponPurchasedEvent(
 	List<Long> parentIds,
-	Long childId
+	Long childId,
+	String couponName
 ) {
 }

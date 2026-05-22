@@ -133,7 +133,7 @@ public class CouponCommandService implements CouponCommandUseCase {
         coupon.getPrice(),
         LocalDateTime.now()
     ));
-	  couponEventPort.publish(new CouponPurchasedEvent(parentIds, child.getId()));
+	  couponEventPort.publish(new CouponPurchasedEvent(parentIds, child.getId(), coupon.getName()));
 
     return new CouponResponse(coupon.getId(), coupon.getName(), coupon.getPrice());
   }

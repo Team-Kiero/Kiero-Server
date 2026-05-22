@@ -32,14 +32,15 @@ exports.handler = async (event) => {
 
       if (!res.ok) {
         const json = await res.json();
-        const errorCode = json.error?.details?.[0]?.errorCode;
+        const errorCode = json.error?.details?.[0]?.errorCode ?? json.error?.status;
 
         // 토큰 만료 또는 잘못된 토큰 → 재시도 불필요
         if (errorCode === 'UNREGISTERED' || errorCode === 'INVALID_ARGUMENT') {
-          console.warn(`FCM 토큰 무효 (스킵): ${fcmToken}`);
+          console.warn(`FCM 토큰 무효 (스킵): ${fcmToken}, errorCode: ${errorCode}`);
           return;
         }
 
+        console.error(`FCM 오류 응답: ${JSON.stringify(json)}`);
         throw new Error(`FCM 오류: ${json.error?.message}`);
       }
     })
