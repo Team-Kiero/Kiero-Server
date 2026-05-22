@@ -146,14 +146,16 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 		LocalTime targetEnd = targetStart.plusMinutes(1);
 
 		// 08:00~08:15 시작 여정은 하루 시작 알림과 중복 → 스킵
-		if (targetStart.isBefore(LocalTime.of(8, 15))) return;
+		if (!targetStart.isAfter(LocalTime.of(8, 15))) return;
 
 		List<ScheduleDetail> targets = scheduleDetailPersistencePort.findPendingByStartTimeWindow(today, targetStart, targetEnd);
 
+		LocalDateTime fiveMinutesAgo = LocalDateTime.now(clock).minusMinutes(5);
 		for (ScheduleDetail sd : targets) {
-			// 당일 여정 추가/변경 후 5분 이내 → 스킵 (createdAt 기준)
-			if (sd.getCreatedAt() != null &&
-				sd.getCreatedAt().isAfter(LocalDateTime.now(clock).minusMinutes(5))) {
+			// 당일 여정 추가/변경 알림 발송 후 5분 이내 → 스킵
+			boolean recentlyCreated = sd.getCreatedAt() != null && sd.getCreatedAt().isAfter(fiveMinutesAgo);
+			boolean recentlyModified = sd.getUpdatedAt() != null && sd.getUpdatedAt().isAfter(fiveMinutesAgo);
+			if (recentlyCreated || recentlyModified) {
 				continue;
 			}
 			pushNotificationUseCase.pushToChild(sd.getSchedule().getChild().getId(), PushNotificationType.CHILD_NEXT_JOURNEY, sd.getSchedule().getName());
@@ -163,7 +165,7 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 	@Override
 	@Transactional
 	public void sendParentReminderNotifications(LocalDate today, LocalTime now) {
-		List<ScheduleDetail> targets = scheduleDetailPersistencePort.findPendingPastEndTimeWithoutReminder(today, now);
+		List<ScheduleDetail> targets = scheduleDetailPersistencePort.findFailedPastEndTimeWithoutReminder(today, now);
 
 		for (ScheduleDetail sd : targets) {
 			Long childId = sd.getSchedule().getChild().getId();

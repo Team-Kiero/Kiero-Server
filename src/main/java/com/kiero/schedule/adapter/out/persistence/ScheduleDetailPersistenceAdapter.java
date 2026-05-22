@@ -128,8 +128,8 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 	}
 
 	@Override
-	public List<ScheduleDetail> findPendingPastEndTimeWithoutReminder(LocalDate today, LocalTime now) {
-		return scheduleDetailRepository.findPendingPastEndTimeWithoutReminder(today, now);
+	public List<ScheduleDetail> findFailedPastEndTimeWithoutReminder(LocalDate today, LocalTime now) {
+		return scheduleDetailRepository.findFailedPastEndTimeWithoutReminder(today, now);
 	}
 
 	@Override

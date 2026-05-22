@@ -372,7 +372,12 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					null
 				);
 				Schedule saved = schedulePersistencePort.save(newSchedule);
-				originalScheduleDetail.ifPresent(detail -> detail.changeSchedule(saved));
+				originalScheduleDetail.ifPresent(detail -> {
+					detail.changeSchedule(saved);
+					if (selectedDate.isEqual(today)) {
+						detail.markScheduleModified(LocalDateTime.now(clock));
+					}
+				});
 
 				if (selectedDate.isEqual(today)) {
 					recalculateTodayStoneTypes(childId);
@@ -473,6 +478,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), today);
 
 					ScheduleDetail scheduleDetail = ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, saved);
+					scheduleDetail.markScheduleModified(LocalDateTime.now(clock));
 					scheduleDetailPersistencePort.save(scheduleDetail);
 
 					isEffectsToChildSchedule = true;

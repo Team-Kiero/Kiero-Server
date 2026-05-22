@@ -198,7 +198,7 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 		  AND s.endTime < :now
 		  AND sd.parentReminderSentAt IS NULL
 		""")
-	List<ScheduleDetail> findPendingPastEndTimeWithoutReminder(
+	List<ScheduleDetail> findFailedPastEndTimeWithoutReminder(
 		@Param("today") LocalDate today,
 		@Param("now") LocalTime now
 	);

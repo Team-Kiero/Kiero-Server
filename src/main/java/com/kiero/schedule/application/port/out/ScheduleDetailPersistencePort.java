@@ -53,7 +53,7 @@ public interface ScheduleDetailPersistencePort {
 
 	List<Long> findDistinctChildIdsByDate(LocalDate today);
 
-	List<ScheduleDetail> findPendingPastEndTimeWithoutReminder(LocalDate today, LocalTime now);
+	List<ScheduleDetail> findFailedPastEndTimeWithoutReminder(LocalDate today, LocalTime now);
 
 	List<ScheduleDetail> findPendingByStartTimeWindow(LocalDate today, LocalTime targetStart, LocalTime targetEnd);
 }
