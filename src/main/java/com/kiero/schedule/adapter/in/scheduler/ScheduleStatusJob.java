@@ -30,13 +30,5 @@ public class ScheduleStatusJob {
 		scheduleSchedulerUseCase.pushEventIfScheduleStart(today, now);
 		scheduleSchedulerUseCase.sendNextJourneyNotifications(today, now);
 		scheduleSchedulerUseCase.sendParentReminderNotifications(today, now);
-
-		if (now.getHour() == 8 && now.getMinute() == 0) {
-			scheduleSchedulerUseCase.sendDailyStartNotifications(today);
-		}
-
-		if (now.getHour() == 17 && now.getMinute() == 0) {
-			scheduleSchedulerUseCase.sendMissionIncompleteNotifications(today);
-		}
 	}
 }
