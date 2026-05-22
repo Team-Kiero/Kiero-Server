@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.coupon.application.dto.CouponResponse;
-import com.kiero.coupon.application.port.out.CouponLoadPort;
+import com.kiero.coupon.application.port.out.CouponPersistencePort;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,13 +17,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CouponCacheableService {
 
-	private final CouponLoadPort couponLoadPort;
+	private final CouponPersistencePort couponPersistencePort;
 	private final Clock clock;
 
 	@Transactional(readOnly = true)
 	@Cacheable(cacheNames = "coupons", key = "#root.target.cacheKey(#childId)", condition = "#childId != null")
 	public List<CouponResponse> getCouponsByChild(Long childId) {
-		return couponLoadPort.findAllByChildIdOrderByPriceAsc(childId)
+		return couponPersistencePort.findAllByChildIdOrderByPriceAsc(childId)
 			.stream()
 			.map(CouponResponse::from)
 			.toList();

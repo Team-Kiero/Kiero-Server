@@ -36,7 +36,6 @@ public class CouponCommandService implements CouponCommandUseCase {
 	private final ParentChildAccessPort parentChildAccessPort;
 	private final ParentLoadPort parentLoadPort;
 	private final ChildLoadPort childLoadPort;
-	private final CouponLoadPort couponLoadPort;
 	private final CouponPersistencePort couponPersistencePort;
 	private final CouponEventPort couponEventPort;
 	private final ParentChildLoadPort parentChildLoadPort;
@@ -70,7 +69,7 @@ public class CouponCommandService implements CouponCommandUseCase {
 	@Override
 	@Transactional
 	public CouponResponse updateCoupon(Long parentId, Long couponId, CouponUpdateRequest request) {
-		Coupon coupon = couponLoadPort.findById(couponId)
+		Coupon coupon = couponPersistencePort.findById(couponId)
 			.orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
 
 		if (!coupon.getParent().getId().equals(parentId)) {
@@ -89,7 +88,7 @@ public class CouponCommandService implements CouponCommandUseCase {
 	@Override
 	@Transactional
 	public void deleteCoupon(Long parentId, Long couponId) {
-		Coupon coupon = couponLoadPort.findById(couponId)
+		Coupon coupon = couponPersistencePort.findById(couponId)
 			.orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
 
 		if (!coupon.getParent().getId().equals(parentId)) {
