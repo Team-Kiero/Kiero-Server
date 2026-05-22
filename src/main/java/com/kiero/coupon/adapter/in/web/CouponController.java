@@ -18,7 +18,7 @@ import com.kiero.coupon.application.dto.CouponResponse;
 import com.kiero.coupon.application.dto.CouponUpdateRequest;
 import com.kiero.coupon.application.exception.CouponSuccessCode;
 import com.kiero.coupon.application.port.in.CouponCommandUseCase;
-import com.kiero.coupon.application.port.in.CouponsQueryUseCase;
+import com.kiero.coupon.application.port.in.CouponQueryUseCase;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/coupons")
 public class CouponController {
 
-	private final CouponsQueryUseCase couponsQueryUseCase;
+	private final CouponQueryUseCase couponQueryUseCase;
 	private final CouponCommandUseCase couponCommandUseCase;
 
 	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
@@ -39,7 +39,7 @@ public class CouponController {
 	public ResponseEntity<SuccessResponse<List<CouponResponse>>> getCouponsByChild(
     @CurrentMember CurrentAuth currentAuth
   ) {
-    List<CouponResponse> response = couponsQueryUseCase.getCouponsByChild(currentAuth.memberId());
+    List<CouponResponse> response = couponQueryUseCase.getCouponsByChild(currentAuth.memberId());
 
     return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPONS_RETRIEVED, response));
 	}
@@ -50,7 +50,7 @@ public class CouponController {
 		@CurrentMember CurrentAuth currentAuth,
 		@PathVariable Long childId
 	) {
-		List<CouponResponse> response = couponsQueryUseCase.getCouponsByParent(currentAuth.memberId(), childId);
+		List<CouponResponse> response = couponQueryUseCase.getCouponsByParent(currentAuth.memberId(), childId);
 
 		return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPONS_RETRIEVED, response));
 	}
