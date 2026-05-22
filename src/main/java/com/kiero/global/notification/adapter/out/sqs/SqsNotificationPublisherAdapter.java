@@ -44,7 +44,7 @@ public class SqsNotificationPublisherAdapter implements NotificationPublisherPor
 				)
 			));
 
-			log.debug("SQS 메시지 발행: {}", messageBody);
+			log.debug("SQS 메시지 발행: type={}, targetId={}", payload.type(), payload.targetId());
 
 			sqsClient.sendMessage(SendMessageRequest.builder()
 				.queueUrl(queueUrl)
@@ -52,6 +52,8 @@ public class SqsNotificationPublisherAdapter implements NotificationPublisherPor
 				.build());
 		} catch (JsonProcessingException e) {
 			log.error("SQS 메시지 직렬화 실패: type={}", payload.type(), e);
+		} catch (Exception e) {
+			log.error("SQS 메시지 발행 실패: type={}", payload.type(), e);
 		}
 	}
 }
