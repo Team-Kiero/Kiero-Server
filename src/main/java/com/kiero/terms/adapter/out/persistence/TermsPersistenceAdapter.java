@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.kiero.terms.application.port.out.TermsLoadPort;
 import com.kiero.terms.domain.Terms;
+import com.kiero.terms.domain.enums.TermsType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,6 +20,11 @@ public class TermsPersistenceAdapter implements TermsLoadPort {
 	@Override
 	public List<Terms> findAllByIsRequiredTrueAndIsActiveTrue() {
 		return termsRepository.findAllByIsRequiredTrueAndIsActiveTrue();
+	}
+
+	@Override
+	public List<Terms> findAllByTypeIn(List<TermsType> types) {
+		return termsRepository.findAllByTypeIn(types);
 	}
 
 	@Override

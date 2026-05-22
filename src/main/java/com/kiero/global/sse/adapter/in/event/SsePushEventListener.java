@@ -9,6 +9,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.kiero.child.application.dto.ChildJoinedEvent;
 import com.kiero.coupon.application.dto.CouponCreatedEvent;
+import com.kiero.parent.application.dto.ParentWithdrawnEvent;
 import com.kiero.feed.infrastructure.dto.FeedItemsCreatedEvent;
 import com.kiero.global.sse.application.port.in.SsePushUseCase;
 import com.kiero.global.sse.domain.SseEventType;
@@ -126,5 +127,14 @@ public class SsePushEventListener {
 			log.debug("부모 SSE 푸시 (오늘의 불 피우기 완료): parentId={}, childId={}", parentId, event.childId());
 			ssePushUseCase.pushToParent(parentId, SseEventType.FIRE_LIT, data);
 		}
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handle(ParentWithdrawnEvent event) {
+		Map<String, Object> data = new LinkedHashMap<>();
+		data.put("eventType", SseEventType.PARENT_WITHDRAWN.name());
+
+		log.debug("자녀 SSE 푸시 (부모 탈퇴): childId={}", event.childId());
+		ssePushUseCase.pushToChild(event.childId(), SseEventType.PARENT_WITHDRAWN, data);
 	}
 }

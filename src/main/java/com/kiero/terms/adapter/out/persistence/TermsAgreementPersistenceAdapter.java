@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import com.kiero.terms.application.port.out.TermsAgreementDeletePort;
 import com.kiero.terms.application.port.out.TermsAgreementLoadPort;
 import com.kiero.terms.application.port.out.TermsAgreementPersistencePort;
 import com.kiero.terms.domain.TermsAgreement;
@@ -12,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class TermsAgreementPersistenceAdapter implements TermsAgreementLoadPort, TermsAgreementPersistencePort {
+public class TermsAgreementPersistenceAdapter implements TermsAgreementLoadPort, TermsAgreementPersistencePort, TermsAgreementDeletePort {
 
 	private final TermsAgreementRepository termsAgreementRepository;
 
@@ -29,5 +30,10 @@ public class TermsAgreementPersistenceAdapter implements TermsAgreementLoadPort,
 	@Override
 	public void save(TermsAgreement termsAgreement) {
 		termsAgreementRepository.save(termsAgreement);
+	}
+
+	@Override
+	public void deleteAllByParentId(Long parentId) {
+		termsAgreementRepository.deleteAllByParentId(parentId);
 	}
 }

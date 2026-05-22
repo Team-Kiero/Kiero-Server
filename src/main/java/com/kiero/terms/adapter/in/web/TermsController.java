@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.dto.CurrentAuth;
 import com.kiero.global.response.dto.SuccessResponse;
+import com.kiero.terms.application.dto.ExternalLinkResponse;
 import com.kiero.terms.application.dto.RequiredTermsAgreeRequest;
 import com.kiero.terms.application.dto.RequiredTermsResponse;
 import com.kiero.terms.application.dto.TermsAgreementStatusResponse;
@@ -49,6 +50,22 @@ public class TermsController {
 
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(TermsSuccessCode.REQUIRED_TERMS_AGREEMENT_STATUS_RETRIEVED, response));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@GetMapping("/parent")
+	public ResponseEntity<SuccessResponse<List<ExternalLinkResponse>>> getParentExternalLinks() {
+		List<ExternalLinkResponse> response = termsQueryUseCase.getParentExternalLinks();
+
+		return ResponseEntity.ok(SuccessResponse.of(TermsSuccessCode.EXTERNAL_LINKS_RETRIEVED, response));
+	}
+
+	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
+	@GetMapping("/child")
+	public ResponseEntity<SuccessResponse<List<ExternalLinkResponse>>> getChildExternalLinks() {
+		List<ExternalLinkResponse> response = termsQueryUseCase.getChildExternalLinks();
+
+		return ResponseEntity.ok(SuccessResponse.of(TermsSuccessCode.EXTERNAL_LINKS_RETRIEVED, response));
 	}
 
 	@PreAuthorize("hasRole('PARENT')")

@@ -31,6 +31,14 @@ public interface ParentChildRepository extends JpaRepository<ParentChild, Long> 
 		""")
 	List<Parent> findParentsByChildId(@Param("childId") Long childId);
 
+	@Query("""
+		select pc.parent
+		from ParentChild pc
+		where pc.child.id = :childId
+		and pc.parent.role <> 'WITHDRAWN'
+		""")
+	List<Parent> findActiveParentsByChildId(@Param("childId") Long childId);
+
 	@Modifying
 	@Query("DELETE FROM ParentChild pc WHERE pc.child.id = :childId")
 	void deleteAllByChildId(@Param("childId") Long childId);
