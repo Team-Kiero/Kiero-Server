@@ -9,6 +9,7 @@ import com.kiero.child.application.port.out.ChildSavePort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.auth.enums.Role;
 import com.kiero.global.exception.KieroException;
+import com.kiero.global.response.code.ErrorCode;
 import com.kiero.global.notification.application.dto.NotificationSettingsResponse;
 import com.kiero.global.notification.application.port.in.FcmTokenRegistrationUseCase;
 import com.kiero.parent.application.exception.ParentErrorCode;
@@ -35,11 +36,13 @@ public class FcmTokenRegistrationService implements FcmTokenRegistrationUseCase 
 				.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
 			parent.updateFcmToken(fcmToken);
 			parentSavePort.save(parent);
-		} else {
+		} else if (role == Role.CHILD) {
 			Child child = childLoadPort.findById(memberId)
 				.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 			child.updateFcmToken(fcmToken);
 			childSavePort.save(child);
+		} else {
+			throw new KieroException(ErrorCode.ACCESS_DENIED);
 		}
 	}
 
@@ -50,10 +53,12 @@ public class FcmTokenRegistrationService implements FcmTokenRegistrationUseCase 
 			Parent parent = parentLoadPort.findById(memberId)
 				.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
 			return new NotificationSettingsResponse(parent.isPushNotificationEnabled());
-		} else {
+		} else if (role == Role.CHILD) {
 			Child child = childLoadPort.findById(memberId)
 				.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 			return new NotificationSettingsResponse(child.isPushNotificationEnabled());
+		} else {
+			throw new KieroException(ErrorCode.ACCESS_DENIED);
 		}
 	}
 
@@ -65,11 +70,13 @@ public class FcmTokenRegistrationService implements FcmTokenRegistrationUseCase 
 				.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
 			parent.updatePushNotificationEnabled(enabled);
 			parentSavePort.save(parent);
-		} else {
+		} else if (role == Role.CHILD) {
 			Child child = childLoadPort.findById(memberId)
 				.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
 			child.updatePushNotificationEnabled(enabled);
 			childSavePort.save(child);
+		} else {
+			throw new KieroException(ErrorCode.ACCESS_DENIED);
 		}
 	}
 }

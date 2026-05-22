@@ -28,7 +28,7 @@ public class PushNotificationService implements PushNotificationUseCase {
 	@Transactional(readOnly = true)
 	public void pushToParent(Long parentId, Long childId, PushNotificationType type, String targetId, String targetName) {
 		Parent parent = parentLoadPort.findById(parentId).orElse(null);
-		if (parent == null || parent.getFcmToken() == null || !parent.isPushNotificationEnabled()) {
+		if (parent == null || parent.getFcmToken() == null || parent.getFcmToken().isBlank() || !parent.isPushNotificationEnabled()) {
 			log.debug("푸시 알림 스킵 (부모): parentId={}, type={}", parentId, type);
 			return;
 		}
@@ -50,7 +50,7 @@ public class PushNotificationService implements PushNotificationUseCase {
 	@Transactional(readOnly = true)
 	public void pushToChild(Long childId, PushNotificationType type, String targetName) {
 		Child child = childLoadPort.findById(childId).orElse(null);
-		if (child == null || child.getFcmToken() == null || !child.isPushNotificationEnabled()) {
+		if (child == null || child.getFcmToken() == null || child.getFcmToken().isBlank() || !child.isPushNotificationEnabled()) {
 			log.debug("푸시 알림 스킵 (자녀): childId={}, type={}", childId, type);
 			return;
 		}
@@ -78,15 +78,16 @@ public class PushNotificationService implements PushNotificationUseCase {
 	}
 
 	private String buildParentBody(PushNotificationType type, String childName, String targetName) {
+		String safeTargetName = targetName == null ? "" : targetName;
 		String nameWithParticle = appendParticle(childName);
 		return switch (type) {
 			case PARENT_DAILY_START -> appendPossessive(childName) + " 하루가 시작됐어요!\n오늘의 일정과 미션을 확인해볼까요?";
-			case SCHEDULE_VERIFIED -> nameWithParticle + " '" + targetName + "'에 도착했어요!\n인증사진을 확인해볼까요?";
+			case SCHEDULE_VERIFIED -> nameWithParticle + " '" + safeTargetName + "'에 도착했어요!\n인증사진을 확인해볼까요?";
 			case FIRE_LIT -> nameWithParticle + " 오늘 일정을 모두 완료했어요!\n하루를 잘 마무리했는지 확인해볼까요?";
-			case MISSION_COMPLETE -> nameWithParticle + " '" + targetName + "' 미션을 완료했어요.\n보상 금화가 지급됐어요!";
-			case COUPON_PURCHASED -> nameWithParticle + " '" + targetName + "' 쿠폰을 사용했어요.\n사용한 보상을 확인해볼까요?";
-			case SCHEDULE_SKIPPED -> nameWithParticle + " '" + targetName + "' 일정을 건너뛰었어요.\n오늘 여정을 확인해볼까요?";
-			case PARENT_SCHEDULE_REMINDER -> "'" + targetName + "' 시간이 지났지만 아직 인증이 없어요.\n" + appendPossessive(childName) + " 상태를 확인해볼까요?";
+			case MISSION_COMPLETE -> nameWithParticle + " '" + safeTargetName + "' 미션을 완료했어요.\n보상 금화가 지급됐어요!";
+			case COUPON_PURCHASED -> nameWithParticle + " '" + safeTargetName + "' 쿠폰을 사용했어요.\n사용한 보상을 확인해볼까요?";
+			case SCHEDULE_SKIPPED -> nameWithParticle + " '" + safeTargetName + "' 일정을 건너뛰었어요.\n오늘 여정을 확인해볼까요?";
+			case PARENT_SCHEDULE_REMINDER -> "'" + safeTargetName + "' 시간이 지났지만 아직 인증이 없어요.\n" + appendPossessive(childName) + " 상태를 확인해볼까요?";
 			default -> nameWithParticle + " 활동했어요!";
 		};
 	}
@@ -104,9 +105,10 @@ public class PushNotificationService implements PushNotificationUseCase {
 	}
 
 	private String buildChildBody(PushNotificationType type, String targetName) {
+		String safeTargetName = targetName == null ? "" : targetName;
 		return switch (type) {
 			case CHILD_DAILY_START -> "오늘 할 일이 기다리고 있어. 여정을 시작하자!";
-			case CHILD_NEXT_JOURNEY -> "'" + targetName + "' 갈 시간이야. 도착하면 불조각을 모아줘!";
+			case CHILD_NEXT_JOURNEY -> "'" + safeTargetName + "' 갈 시간이야. 도착하면 불조각을 모아줘!";
 			case CHILD_MISSION_INCOMPLETE -> "아직 끝내지 않은 미션이 있어. 완료하고 금화를 받자!";
 			case SCHEDULE_CREATED -> "새롭게 추가된 여정이 있어! 확인하고 불조각을 모아줘!";
 			case SCHEDULE_DELETED -> "오늘 취소된 여정이 있어. 확인해줘!";
