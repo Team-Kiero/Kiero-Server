@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kiero.coupon.application.dto.CouponCreateRequest;
+import com.kiero.coupon.application.dto.CouponHistoryResponse;
 import com.kiero.coupon.application.dto.CouponResponse;
 import com.kiero.coupon.application.dto.CouponUpdateRequest;
 import com.kiero.coupon.application.exception.CouponSuccessCode;
@@ -103,5 +104,16 @@ public class CouponController {
 		CouponResponse response = new CouponResponse(dto.couponId(), dto.name(), dto.price());
 
 		return ResponseEntity.ok(SuccessResponse.of(CouponSuccessCode.COUPON_PURCHASED, response));
+	}
+
+	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
+	@GetMapping("/history")
+	public ResponseEntity<SuccessResponse<List<CouponHistoryResponse>>> getCouponHistory(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		List<CouponHistoryResponse> response = couponQueryUseCase.getCouponHistory(currentAuth.memberId());
+
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(CouponSuccessCode.COUPON_HISTORY_RETRIEVED, response));
 	}
 }
