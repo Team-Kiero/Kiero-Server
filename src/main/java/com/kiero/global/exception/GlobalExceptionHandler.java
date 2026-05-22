@@ -3,6 +3,7 @@ package com.kiero.global.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.MissingRequestHeaderException;
@@ -66,6 +67,12 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
 		return buildErrorResponse(ErrorCode.INVALID_REQUEST_BODY, e.getMessage());
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException e) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+			.body(ErrorResponse.of(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."));
 	}
 
 	@ExceptionHandler(Exception.class)
