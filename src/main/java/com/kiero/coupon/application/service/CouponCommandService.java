@@ -122,6 +122,9 @@ public class CouponCommandService implements CouponCommandUseCase {
 
 		child.deductCoin(coupon.getPrice());
 
+		CouponHistory couponHistory = CouponHistory.create(coupon.getName(), coupon.getPrice(), child);
+		couponHistoryPersistencePort.save(couponHistory);
+
 		List<Parent> parents = parentChildLoadPort.findActiveParentsByChildId(child.getId());
 
 		couponEventPort.publish(new CouponPurchaseEventForFeed(
@@ -132,9 +135,6 @@ public class CouponCommandService implements CouponCommandUseCase {
 			coupon.getPrice(),
 			LocalDateTime.now()
 		));
-
-		CouponHistory couponHistory = CouponHistory.create(coupon.getName(), coupon.getPrice(), child);
-		couponHistoryPersistencePort.save(couponHistory);
 
 		return new CouponResponse(coupon.getId(), coupon.getName(), coupon.getPrice());
 	}
