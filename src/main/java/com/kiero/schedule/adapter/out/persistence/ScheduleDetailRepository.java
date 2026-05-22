@@ -194,8 +194,8 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 		JOIN FETCH sd.schedule s
 		JOIN FETCH s.child c
 		WHERE sd.date = :today
-		  AND sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.PENDING
-		  AND s.endTime <= :now
+		  AND sd.scheduleStatus = com.kiero.schedule.domain.enums.ScheduleStatus.FAILED
+		  AND s.endTime < :now
 		  AND sd.parentReminderSentAt IS NULL
 		""")
 	List<ScheduleDetail> findPendingPastEndTimeWithoutReminder(

@@ -80,13 +80,13 @@ public class PushNotificationService implements PushNotificationUseCase {
 	private String buildParentBody(PushNotificationType type, String childName, String targetName) {
 		String nameWithParticle = appendParticle(childName);
 		return switch (type) {
-			case PARENT_DAILY_START -> childName + "의 하루가 시작됐어요!\n오늘의 일정과 미션을 확인해볼까요?";
+			case PARENT_DAILY_START -> appendPossessive(childName) + " 하루가 시작됐어요!\n오늘의 일정과 미션을 확인해볼까요?";
 			case SCHEDULE_VERIFIED -> nameWithParticle + " '" + targetName + "'에 도착했어요!\n인증사진을 확인해볼까요?";
 			case FIRE_LIT -> nameWithParticle + " 오늘 일정을 모두 완료했어요!\n하루를 잘 마무리했는지 확인해볼까요?";
 			case MISSION_COMPLETE -> nameWithParticle + " '" + targetName + "' 미션을 완료했어요.\n보상 금화가 지급됐어요!";
 			case COUPON_PURCHASED -> nameWithParticle + " '" + targetName + "' 쿠폰을 사용했어요.\n사용한 보상을 확인해볼까요?";
 			case SCHEDULE_SKIPPED -> nameWithParticle + " '" + targetName + "' 일정을 건너뛰었어요.\n오늘 여정을 확인해볼까요?";
-			case PARENT_SCHEDULE_REMINDER -> "'" + targetName + "' 시간이 지났지만 아직 인증이 없어요.\n" + childName + "의 상태를 확인해볼까요?";
+			case PARENT_SCHEDULE_REMINDER -> "'" + targetName + "' 시간이 지났지만 아직 인증이 없어요.\n" + appendPossessive(childName) + " 상태를 확인해볼까요?";
 			default -> nameWithParticle + " 활동했어요!";
 		};
 	}
@@ -113,6 +113,18 @@ public class PushNotificationService implements PushNotificationUseCase {
 			case SCHEDULE_MODIFIED -> "오늘 변경된 여정이 있어. 확인해줘!";
 			default -> "확인해봐요!";
 		};
+	}
+
+	private String appendPossessive(String name) {
+		if (name == null || name.isEmpty()) {
+			return name;
+		}
+		char last = name.charAt(name.length() - 1);
+		if (last >= 0xAC00 && last <= 0xD7A3) {
+			boolean hasBatchim = (last - 0xAC00) % 28 != 0;
+			return name + (hasBatchim ? "이의" : "의");
+		}
+		return name + "의";
 	}
 
 	private String appendParticle(String name) {
