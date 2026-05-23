@@ -11,6 +11,7 @@ import com.kiero.global.auth.jwt.application.port.in.MemberTokenUseCase;
 import com.kiero.global.auth.jwt.application.port.out.AuthTokenPort;
 import com.kiero.global.auth.jwt.application.port.out.ParentChildRelationQueryPort;
 import com.kiero.global.auth.jwt.application.port.out.TokenCommandPort;
+import com.kiero.global.notification.application.port.in.FcmTokenRegistrationUseCase;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,10 +24,12 @@ public class MemberTokenService implements MemberTokenUseCase {
 	private final TokenCommandPort tokenCommandPort;
 	private final AuthTokenPort authTokenPort;
 	private final ParentChildRelationQueryPort parentChildRelationQueryPort;
+	private final FcmTokenRegistrationUseCase fcmTokenRegistrationUseCase;
 
 	@Override
 	@Transactional
 	public void logout(Long memberId, Role role) {
+		fcmTokenRegistrationUseCase.clearFcmToken(memberId, role);
 
 		if (role == Role.PARENT) {
 			tokenCommandPort.deleteRefreshToken(memberId, role);

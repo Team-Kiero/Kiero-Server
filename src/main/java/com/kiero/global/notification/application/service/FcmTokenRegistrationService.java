@@ -47,6 +47,24 @@ public class FcmTokenRegistrationService implements FcmTokenRegistrationUseCase 
 	}
 
 	@Override
+	@Transactional
+	public void clearFcmToken(Long memberId, Role role) {
+		if (role == Role.PARENT) {
+			Parent parent = parentLoadPort.findById(memberId)
+				.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
+			parent.updateFcmToken(null);
+			parentSavePort.save(parent);
+		} else if (role == Role.CHILD) {
+			Child child = childLoadPort.findById(memberId)
+				.orElseThrow(() -> new KieroException(ChildErrorCode.CHILD_NOT_FOUND));
+			child.updateFcmToken(null);
+			childSavePort.save(child);
+		} else {
+			throw new KieroException(ErrorCode.ACCESS_DENIED);
+		}
+	}
+
+	@Override
 	@Transactional(readOnly = true)
 	public NotificationSettingsResponse getNotificationSettings(Long memberId, Role role) {
 		if (role == Role.PARENT) {

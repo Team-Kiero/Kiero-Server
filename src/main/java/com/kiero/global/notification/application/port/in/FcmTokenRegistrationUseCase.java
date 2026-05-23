@@ -5,6 +5,7 @@ import com.kiero.global.notification.application.dto.NotificationSettingsRespons
 
 public interface FcmTokenRegistrationUseCase {
 	void registerFcmToken(Long memberId, Role role, String fcmToken);
+	void clearFcmToken(Long memberId, Role role);
 	NotificationSettingsResponse getNotificationSettings(Long memberId, Role role);
 	void updateNotificationSettings(Long memberId, Role role, boolean enabled);
 }
