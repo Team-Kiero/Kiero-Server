@@ -27,7 +27,7 @@ public class MeController {
 
 	private final FcmTokenRegistrationUseCase fcmTokenRegistrationUseCase;
 
-	@PreAuthorize("hasAnyRole('PARENT', 'CHILD', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('PARENT', 'CHILD')")
 	@PatchMapping("/fcm-token")
 	public ResponseEntity<SuccessResponse<Void>> registerFcmToken(
 		@CurrentMember CurrentAuth currentAuth,
@@ -39,7 +39,7 @@ public class MeController {
 		return ResponseEntity.ok(SuccessResponse.of(NotificationSuccessCode.FCM_TOKEN_REGISTERED));
 	}
 
-	@PreAuthorize("hasAnyRole('PARENT', 'CHILD', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('PARENT', 'CHILD')")
 	@GetMapping("/notification-settings")
 	public ResponseEntity<SuccessResponse<NotificationSettingsResponse>> getNotificationSettings(
 		@CurrentMember CurrentAuth currentAuth
@@ -50,7 +50,7 @@ public class MeController {
 		return ResponseEntity.ok(SuccessResponse.of(NotificationSuccessCode.NOTIFICATION_SETTINGS_FETCHED, response));
 	}
 
-	@PreAuthorize("hasAnyRole('PARENT', 'CHILD', 'ADMIN')")
+	@PreAuthorize("hasAnyRole('PARENT', 'CHILD')")
 	@PatchMapping("/notification-settings")
 	public ResponseEntity<SuccessResponse<Void>> updateNotificationSettings(
 		@CurrentMember CurrentAuth currentAuth,
