@@ -67,5 +67,4 @@ application.yml
 
 ### Lambda (Node.js) ###
 lambda/notification/node_modules/
-lambda/notification/package-lock.json
 lambda-notification.zip
