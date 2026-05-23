@@ -29,7 +29,10 @@ public class MemberTokenService implements MemberTokenUseCase {
 	@Override
 	@Transactional
 	public void logout(Long memberId, Role role) {
-		fcmTokenRegistrationUseCase.clearFcmToken(memberId, role);
+		// Admin 엔티티에는 fcmToken 필드가 없으므로 PARENT/CHILD만 처리
+		if (role == Role.PARENT || role == Role.CHILD) {
+			fcmTokenRegistrationUseCase.clearFcmToken(memberId, role);
+		}
 
 		if (role == Role.PARENT) {
 			tokenCommandPort.deleteRefreshToken(memberId, role);
