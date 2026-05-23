@@ -17,12 +17,13 @@ public enum CouponSuccessCode implements BaseCode {
     COUPON_PURCHASED(HttpStatus.OK, "쿠폰 구매에 성공하였습니다."),
     COUPON_UPDATED(HttpStatus.OK, "쿠폰이 성공적으로 수정되었습니다."),
     COUPON_DELETED(HttpStatus.OK, "쿠폰이 성공적으로 삭제되었습니다."),
+    COUPON_HISTORY_RETRIEVED(HttpStatus.OK, "쿠폰 이용내역을 조회했습니다."),
 
     /*
     201 CREATED
     */
     COUPON_CREATED(HttpStatus.CREATED, "쿠폰이 성공적으로 생성되었습니다."),
-    ;
+	;
 
     private final HttpStatus httpStatus;
     private final String message;

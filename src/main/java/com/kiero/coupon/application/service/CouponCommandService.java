@@ -16,9 +16,10 @@ import com.kiero.coupon.application.dto.CouponUpdateRequest;
 import com.kiero.coupon.application.exception.CouponErrorCode;
 import com.kiero.coupon.application.port.in.CouponCommandUseCase;
 import com.kiero.coupon.application.port.out.CouponEventPort;
-import com.kiero.coupon.application.port.out.CouponLoadPort;
+import com.kiero.coupon.application.port.out.CouponHistoryPersistencePort;
 import com.kiero.coupon.application.port.out.CouponPersistencePort;
 import com.kiero.coupon.domain.Coupon;
+import com.kiero.coupon.domain.CouponHistory;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentChildLoadPort;
@@ -36,12 +37,12 @@ public class CouponCommandService implements CouponCommandUseCase {
 	private final ParentChildAccessPort parentChildAccessPort;
 	private final ParentLoadPort parentLoadPort;
 	private final ChildLoadPort childLoadPort;
-	private final CouponLoadPort couponLoadPort;
 	private final CouponPersistencePort couponPersistencePort;
 	private final CouponEventPort couponEventPort;
 	private final ParentChildLoadPort parentChildLoadPort;
 
 	private final CouponCacheEvictHelper couponCacheEvictHelper;
+	private final CouponHistoryPersistencePort couponHistoryPersistencePort;
 
 	@Override
 	@Transactional
@@ -70,7 +71,7 @@ public class CouponCommandService implements CouponCommandUseCase {
 	@Override
 	@Transactional
 	public CouponResponse updateCoupon(Long parentId, Long couponId, CouponUpdateRequest request) {
-		Coupon coupon = couponLoadPort.findById(couponId)
+		Coupon coupon = couponPersistencePort.findById(couponId)
 			.orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
 
 		if (!coupon.getParent().getId().equals(parentId)) {
@@ -89,7 +90,7 @@ public class CouponCommandService implements CouponCommandUseCase {
 	@Override
 	@Transactional
 	public void deleteCoupon(Long parentId, Long couponId) {
-		Coupon coupon = couponLoadPort.findById(couponId)
+		Coupon coupon = couponPersistencePort.findById(couponId)
 			.orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
 
 		if (!coupon.getParent().getId().equals(parentId)) {
@@ -101,37 +102,40 @@ public class CouponCommandService implements CouponCommandUseCase {
 		couponPersistencePort.delete(coupon);
 	}
 
-  @Override
-  @Transactional
-  public CouponResponse purchaseCoupon(Long childId, Long couponId) {
+	@Override
+	@Transactional
+	public CouponResponse purchaseCoupon(Long childId, Long couponId) {
 
-    Child child = childLoadPort.findByIdWithLock(childId)
-        .orElseThrow(() -> new KieroException(CouponErrorCode.CHILD_NOT_FOUND));
+		Child child = childLoadPort.findByIdWithLock(childId)
+			.orElseThrow(() -> new KieroException(CouponErrorCode.CHILD_NOT_FOUND));
 
-    Coupon coupon = couponLoadPort.findById(couponId)
-        .orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
+		Coupon coupon = couponPersistencePort.findById(couponId)
+			.orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
 
-    if (!coupon.getChild().getId().equals(childId)) {
-      throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
-    }
+		if (!coupon.getChild().getId().equals(childId)) {
+			throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
+		}
 
-    if (!child.hasEnoughCoin(coupon.getPrice())) {
-      throw new KieroException(CouponErrorCode.INSUFFICIENT_COINS);
-    }
+		if (!child.hasEnoughCoin(coupon.getPrice())) {
+			throw new KieroException(CouponErrorCode.INSUFFICIENT_COINS);
+		}
 
-    child.deductCoin(coupon.getPrice());
+		child.deductCoin(coupon.getPrice());
 
-	  List<Parent> parents = parentChildLoadPort.findActiveParentsByChildId(child.getId());
+		CouponHistory couponHistory = CouponHistory.create(coupon.getName(), coupon.getPrice(), child);
+		couponHistoryPersistencePort.save(couponHistory);
 
-    couponEventPort.publish(new CouponPurchaseEventForFeed(
-		parents,
-        child.getId(),
-		coupon.getId(),
-        coupon.getName(),
-        coupon.getPrice(),
-        LocalDateTime.now()
-    ));
+		List<Parent> parents = parentChildLoadPort.findActiveParentsByChildId(child.getId());
 
-    return new CouponResponse(coupon.getId(), coupon.getName(), coupon.getPrice());
-  }
+		couponEventPort.publish(new CouponPurchaseEventForFeed(
+			parents,
+			child.getId(),
+			coupon.getId(),
+			coupon.getName(),
+			coupon.getPrice(),
+			LocalDateTime.now()
+		));
+
+		return new CouponResponse(coupon.getId(), coupon.getName(), coupon.getPrice());
+	}
 }
