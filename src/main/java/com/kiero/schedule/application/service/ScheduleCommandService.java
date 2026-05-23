@@ -216,7 +216,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.toList();
 
 		scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(childId, parentIds));
-		scheduleEventPort.publish(new ScheduleSkippedEvent(parentIds, childId, scheduleDetail.getSchedule().getName()));
+		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.SKIPPED) {
+			scheduleEventPort.publish(new ScheduleSkippedEvent(parentIds, childId, scheduleDetail.getSchedule().getName()));
+		}
 	}
 
 	@Override
