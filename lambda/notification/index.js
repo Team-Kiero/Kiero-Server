@@ -17,6 +17,7 @@ exports.handler = async (event) => {
 
       const res = await fetch(FCM_URL, {
         method: 'POST',
+        signal: AbortSignal.timeout(8000),
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -34,9 +35,20 @@ exports.handler = async (event) => {
         const json = await res.json();
         const errorCode = json.error?.details?.[0]?.errorCode ?? json.error?.status;
 
-        // 토큰 만료 또는 잘못된 토큰 → 재시도 불필요
-        if (errorCode === 'UNREGISTERED' || errorCode === 'INVALID_ARGUMENT') {
-          console.warn(`FCM 토큰 무효 (스킵): ${fcmToken}, errorCode: ${errorCode}`);
+        const maskedToken =
+          fcmToken && fcmToken.length > 8
+            ? `${fcmToken.slice(0, 4)}...${fcmToken.slice(-4)}`
+            : '****';
+
+        const isInvalidToken =
+          errorCode === 'UNREGISTERED' ||
+          (errorCode === 'INVALID_ARGUMENT' &&
+            /registration token|not a valid fcm registration token/i.test(
+              json.error?.message ?? ''
+            ));
+
+        if (isInvalidToken) {
+          console.warn(`FCM 토큰 무효 (스킵): ${maskedToken}, errorCode: ${errorCode}`);
           return;
         }
 
