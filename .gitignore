@@ -64,3 +64,7 @@ application.yml
 
 # 템플릿 파일은 Git에 포함
 !.env*.example
+
+### Lambda (Node.js) ###
+lambda/notification/node_modules/
+lambda-notification.zip

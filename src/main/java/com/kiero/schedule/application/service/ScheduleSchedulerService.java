@@ -2,7 +2,9 @@ package com.kiero.schedule.application.service;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,6 +13,12 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kiero.global.notification.application.port.in.PushNotificationUseCase;
+import com.kiero.global.notification.domain.PushNotificationType;
+import com.kiero.mission.application.port.out.MissionPersistencePort;
+import com.kiero.parent.application.port.out.ParentChildLoadPort;
+import com.kiero.parent.domain.Parent;
+import com.kiero.parent.domain.ParentChild;
 import com.kiero.schedule.application.dto.ScheduleEventTarget;
 import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
 import com.kiero.schedule.application.port.in.ScheduleSchedulerUseCase;
@@ -38,6 +46,9 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 	private final DiscardedSchedulePersistencePort discardedSchedulePersistencePort;
 	private final ScheduleDetailPersistencePort scheduleDetailPersistencePort;
 	private final ScheduleEventPort scheduleEventPort;
+	private final PushNotificationUseCase pushNotificationUseCase;
+	private final MissionPersistencePort missionPersistencePort;
+	private final ParentChildLoadPort parentChildLoadPort;
 
 	private final ScheduleCommandService scheduleCommandService;
 	private final SchedulePersistencePort schedulePersistencePort;
@@ -109,6 +120,73 @@ public class ScheduleSchedulerService implements ScheduleSchedulerUseCase {
 	@Transactional
 	public void deleteObsoleteNonRecurringSchedules() {
 		schedulePersistencePort.deleteObsoleteNonRecurringSchedules();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public void sendDailyStartNotifications(LocalDate today) {
+		List<ParentChild> allPairs = parentChildLoadPort.findAll();
+		for (ParentChild pc : allPairs) {
+			pushNotificationUseCase.pushToParent(
+				pc.getParent().getId(), pc.getChild().getId(), PushNotificationType.PARENT_DAILY_START, "", "");
+		}
+
+		Set<Long> childIds = new HashSet<>(scheduleDetailPersistencePort.findDistinctChildIdsByDate(today));
+		childIds.addAll(missionPersistencePort.findDistinctChildIdsByDate(today));
+
+		for (Long childId : childIds) {
+			pushNotificationUseCase.pushToChild(childId, PushNotificationType.CHILD_DAILY_START, "");
+		}
+	}
+
+	@Override
+	@Transactional
+	public void sendNextJourneyNotifications(LocalDate today, LocalTime now) {
+		LocalTime targetStart = now.plusMinutes(10).withSecond(0).withNano(0);
+		LocalTime targetEnd = targetStart.plusMinutes(1);
+
+		// 08:00~08:15 시작 여정은 하루 시작 알림과 중복 → 스킵
+		if (!targetStart.isAfter(LocalTime.of(8, 15))) return;
+
+		List<ScheduleDetail> targets = scheduleDetailPersistencePort.findPendingByStartTimeWindow(today, targetStart, targetEnd);
+
+		LocalDateTime fiveMinutesAgo = LocalDateTime.now(clock).minusMinutes(5);
+		for (ScheduleDetail sd : targets) {
+			// 당일 여정 추가/변경 알림 발송 후 5분 이내 → 스킵
+			boolean recentlyCreated = sd.getCreatedAt() != null && sd.getCreatedAt().isAfter(fiveMinutesAgo);
+			boolean recentlyModified = sd.getUpdatedAt() != null && sd.getUpdatedAt().isAfter(fiveMinutesAgo);
+			if (recentlyCreated || recentlyModified) {
+				continue;
+			}
+			pushNotificationUseCase.pushToChild(sd.getSchedule().getChild().getId(), PushNotificationType.CHILD_NEXT_JOURNEY, sd.getSchedule().getName());
+		}
+	}
+
+	@Override
+	@Transactional
+	public void sendParentReminderNotifications(LocalDate today, LocalTime now) {
+		List<ScheduleDetail> targets = scheduleDetailPersistencePort.findFailedPastEndTimeWithoutReminder(today, now);
+
+		for (ScheduleDetail sd : targets) {
+			Long childId = sd.getSchedule().getChild().getId();
+			List<Parent> parents = parentChildLoadPort.findParentsByChildId(childId);
+
+			for (Parent parent : parents) {
+				pushNotificationUseCase.pushToParent(parent.getId(), childId, PushNotificationType.PARENT_SCHEDULE_REMINDER, "", sd.getSchedule().getName());
+			}
+
+			sd.markParentReminderSent(LocalDateTime.now(clock));
+			scheduleDetailPersistencePort.save(sd);
+		}
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public void sendMissionIncompleteNotifications(LocalDate today) {
+		List<Long> childIds = missionPersistencePort.findChildIdsWithIncompleteMissionsByDate(today);
+		for (Long childId : childIds) {
+			pushNotificationUseCase.pushToChild(childId, PushNotificationType.CHILD_MISSION_INCOMPLETE, "");
+		}
 	}
 
 }

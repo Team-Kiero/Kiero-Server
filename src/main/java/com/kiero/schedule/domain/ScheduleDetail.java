@@ -63,6 +63,12 @@ public class ScheduleDetail extends BaseTimeEntity {
 	@Column(name = ScheduleDetailTableConstants.COLUMN_STONE_TYPE, nullable = true)
 	private StoneType stoneType;
 
+	@Column(name = ScheduleDetailTableConstants.COLUMN_PARENT_REMINDER_SENT_AT)
+	private LocalDateTime parentReminderSentAt;
+
+	@Column(name = ScheduleDetailTableConstants.COLUMN_UPDATED_AT)
+	private LocalDateTime updatedAt;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = ScheduleDetailTableConstants.COLUMN_SCHEDULE_ID, nullable = false)
 	private Schedule schedule;
@@ -103,6 +109,14 @@ public class ScheduleDetail extends BaseTimeEntity {
 
 	public void changeSchedule(Schedule schedule) {
 		this.schedule = schedule;
+	}
+
+	public void markParentReminderSent(LocalDateTime sentAt) {
+		this.parentReminderSentAt = sentAt;
+	}
+
+	public void markScheduleModified(LocalDateTime modifiedAt) {
+		this.updatedAt = modifiedAt;
 	}
 
 }

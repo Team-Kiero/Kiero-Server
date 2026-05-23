@@ -28,6 +28,7 @@ public class ScheduleStatusJob {
 
 		scheduleSchedulerUseCase.bulkMarkAndPushEventIfUpdateExists(today, now);
 		scheduleSchedulerUseCase.pushEventIfScheduleStart(today, now);
-
+		scheduleSchedulerUseCase.sendNextJourneyNotifications(today, now);
+		scheduleSchedulerUseCase.sendParentReminderNotifications(today, now);
 	}
 }

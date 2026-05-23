@@ -30,10 +30,15 @@ import com.kiero.schedule.application.dto.NowScheduleCompleteEventForFeed;
 import com.kiero.schedule.application.dto.NowScheduleCompleteRequest;
 import com.kiero.schedule.application.dto.ScheduleAddRequest;
 import com.kiero.schedule.application.dto.ScheduleCacheEvent;
+import com.kiero.schedule.application.dto.ScheduleCreatedEvent;
 import com.kiero.schedule.application.dto.ScheduleDeleteRequest;
+import com.kiero.schedule.application.dto.ScheduleDeletedEvent;
 import com.kiero.schedule.application.dto.ScheduleModifiedEvent;
+import com.kiero.schedule.application.dto.ScheduleModifiedPushEvent;
 import com.kiero.schedule.application.dto.ScheduleModifyRequest;
+import com.kiero.schedule.application.dto.ScheduleSkippedEvent;
 import com.kiero.schedule.application.dto.ScheduleStatusUpdatedEvent;
+import com.kiero.schedule.application.dto.ScheduleVerifiedEvent;
 import com.kiero.schedule.application.exception.ScheduleErrorCode;
 import com.kiero.schedule.application.port.in.ScheduleCommandUseCase;
 import com.kiero.schedule.application.port.out.DiscardedSchedulePersistencePort;
@@ -176,7 +181,10 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 		}
 
 		// 아이의 오늘 일정에 영향이 있을 때만 SSE 이벤트 전송
-		if (isEffectsToChildSchedule) scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+		if (isEffectsToChildSchedule) {
+			scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+			scheduleEventPort.publish(new ScheduleCreatedEvent(childId));
+		}
 
 		scheduleEventPort.publish(new ScheduleCacheEvent(childId));
 	}
@@ -208,6 +216,9 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				.toList();
 
 		scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(childId, parentIds));
+		if (scheduleDetail.getScheduleStatus() == ScheduleStatus.SKIPPED) {
+			scheduleEventPort.publish(new ScheduleSkippedEvent(parentIds, childId, scheduleDetail.getSchedule().getName()));
+		}
 	}
 
 	@Override
@@ -246,6 +257,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			LocalDateTime.now(clock)
 		));
 
+		scheduleEventPort.publish(new ScheduleVerifiedEvent(parentIds, childId, scheduleDetail.getId(), scheduleDetail.getSchedule().getName()));
 		scheduleEventPort.publish(new ScheduleStatusUpdatedEvent(childId, parentIds));
 	}
 
@@ -362,11 +374,17 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					null
 				);
 				Schedule saved = schedulePersistencePort.save(newSchedule);
-				originalScheduleDetail.ifPresent(detail -> detail.changeSchedule(saved));
+				originalScheduleDetail.ifPresent(detail -> {
+					detail.changeSchedule(saved);
+					if (selectedDate.isEqual(today)) {
+						detail.markScheduleModified(LocalDateTime.now(clock));
+					}
+				});
 
 				if (selectedDate.isEqual(today)) {
 					recalculateTodayStoneTypes(childId);
 					scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+					scheduleEventPort.publish(new ScheduleModifiedPushEvent(childId));
 				}
 			} else {
 				throw new KieroException(ScheduleErrorCode.SCHEDULE_CANNOT_BE_MANIPULATED);
@@ -462,6 +480,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), today);
 
 					ScheduleDetail scheduleDetail = ScheduleDetail.create(today, null, null, ScheduleStatus.PENDING, null, saved);
+					scheduleDetail.markScheduleModified(LocalDateTime.now(clock));
 					scheduleDetailPersistencePort.save(scheduleDetail);
 
 					isEffectsToChildSchedule = true;
@@ -471,6 +490,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 
 			if (isEffectsToChildSchedule) {
 				scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+				scheduleEventPort.publish(new ScheduleModifiedPushEvent(childId));
 			}
 		}
 		scheduleEventPort.publish(new ScheduleCacheEvent(childId));
@@ -537,6 +557,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					deleteScheduleSet(originalSchedule);
 					if (repeatDates.contains(today)) {
 						scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+						scheduleEventPort.publish(new ScheduleDeletedEvent(childId));
 						recalculateTodayStoneTypes(childId);
 					}
 					return;
@@ -550,6 +571,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					if (isTodayScheduleCanBeManipulated) {
 						scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
 						scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+						scheduleEventPort.publish(new ScheduleDeletedEvent(childId));
 						recalculateTodayStoneTypes(childId);
 					}
 				}
@@ -573,6 +595,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 					if (isTodayScheduleCanBeManipulated) {
 						scheduleDetailPersistencePort.deleteScheduleDetail(scheduleDetail.get());
 						scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+						scheduleEventPort.publish(new ScheduleDeletedEvent(childId));
 						recalculateTodayStoneTypes(childId);
 					}
 				}
@@ -589,6 +612,7 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 				if (isTodayScheduleCanBeManipulated) {
 					scheduleDetailPersistencePort.deleteByScheduleIdAndDate(originalSchedule.getId(), selectedDate);
 					scheduleEventPort.publish(new ScheduleModifiedEvent(childId));
+					scheduleEventPort.publish(new ScheduleDeletedEvent(childId));
 					recalculateTodayStoneTypes(childId);
 				}
 				else {

@@ -10,5 +10,8 @@ public class ScheduleDetailTableConstants {
 	public static final String COLUMN_STONE_USED_AT = "stone_used_at";
 	public static final String COLUMN_SCHEDULE_ID = "schedule_id";
 
+	public static final String COLUMN_PARENT_REMINDER_SENT_AT = "parent_reminder_sent_at";
+	public static final String COLUMN_UPDATED_AT = "updated_at";
+
 	public static final String INDEX_DATE_STATUS = "idx_date_status";
 }

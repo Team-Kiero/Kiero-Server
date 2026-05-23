@@ -25,4 +25,8 @@ public interface MissionPersistencePort {
 
 	List<Mission> findAllByChildIdAndDueAt(Long childId, LocalDate date);
 
+	List<Long> findDistinctChildIdsByDate(LocalDate today);
+
+	List<Long> findChildIdsWithIncompleteMissionsByDate(LocalDate today);
+
 }

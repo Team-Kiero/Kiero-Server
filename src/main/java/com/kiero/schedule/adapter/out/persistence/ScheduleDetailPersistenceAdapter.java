@@ -122,4 +122,19 @@ public class ScheduleDetailPersistenceAdapter implements ScheduleDetailPersisten
 		scheduleDetailRepository.deleteAllByScheduleId(scheduleId);
 	}
 
+	@Override
+	public List<Long> findDistinctChildIdsByDate(LocalDate today) {
+		return scheduleDetailRepository.findDistinctChildIdsByDate(today);
+	}
+
+	@Override
+	public List<ScheduleDetail> findFailedPastEndTimeWithoutReminder(LocalDate today, LocalTime now) {
+		return scheduleDetailRepository.findFailedPastEndTimeWithoutReminder(today, now);
+	}
+
+	@Override
+	public List<ScheduleDetail> findPendingByStartTimeWindow(LocalDate today, LocalTime targetStart, LocalTime targetEnd) {
+		return scheduleDetailRepository.findPendingByStartTimeWindow(today, targetStart, targetEnd);
+	}
+
 }

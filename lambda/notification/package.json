@@ -1,0 +1,9 @@
+{
+  "name": "kiero-notification-sender",
+  "version": "1.0.0",
+  "description": "FCM 푸시 알림 발송 Lambda 함수",
+  "main": "index.js",
+  "dependencies": {
+    "google-auth-library": "^9.0.0"
+  }
+}

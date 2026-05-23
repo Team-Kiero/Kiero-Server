@@ -1,0 +1,86 @@
+package com.kiero.global.notification.adapter.in.event;
+
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+
+import com.kiero.coupon.application.dto.CouponPurchasedEvent;
+import com.kiero.global.notification.application.port.in.PushNotificationUseCase;
+import com.kiero.global.notification.domain.PushNotificationType;
+import com.kiero.mission.application.dto.MissionCompleteEvent;
+import com.kiero.schedule.application.dto.FireLitEvent;
+import com.kiero.schedule.application.dto.ScheduleCreatedEvent;
+import com.kiero.schedule.application.dto.ScheduleDeletedEvent;
+import com.kiero.schedule.application.dto.ScheduleModifiedPushEvent;
+import com.kiero.schedule.application.dto.ScheduleSkippedEvent;
+import com.kiero.schedule.application.dto.ScheduleVerifiedEvent;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class PushNotificationEventListener {
+
+	private final PushNotificationUseCase pushNotificationUseCase;
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handle(ScheduleVerifiedEvent event) {
+		String targetId = event.feedItemId() != null ? String.valueOf(event.feedItemId()) : "";
+		for (Long parentId : event.parentIds()) {
+			log.debug("푸시 알림 (일정 인증): parentId={}, childId={}", parentId, event.childId());
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.SCHEDULE_VERIFIED, targetId, event.scheduleName());
+		}
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handle(FireLitEvent event) {
+		for (Long parentId : event.parentIds()) {
+			log.debug("푸시 알림 (불꽃 피우기): parentId={}, childId={}", parentId, event.childId());
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.FIRE_LIT, "", "");
+		}
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handle(MissionCompleteEvent event) {
+		for (Long parentId : event.parentIds()) {
+			log.debug("푸시 알림 (미션 완료): parentId={}, childId={}", parentId, event.childId());
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.MISSION_COMPLETE, "", event.missionName());
+		}
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handle(CouponPurchasedEvent event) {
+		for (Long parentId : event.parentIds()) {
+			log.debug("푸시 알림 (쿠폰 구매): parentId={}, childId={}", parentId, event.childId());
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.COUPON_PURCHASED, "", event.couponName());
+		}
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handle(ScheduleSkippedEvent event) {
+		for (Long parentId : event.parentIds()) {
+			log.debug("푸시 알림 (일정 스킵): parentId={}, childId={}", parentId, event.childId());
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.SCHEDULE_SKIPPED, "", event.scheduleName());
+		}
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handle(ScheduleCreatedEvent event) {
+		log.debug("푸시 알림 (여정 추가): childId={}", event.childId());
+		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_CREATED, "");
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handle(ScheduleDeletedEvent event) {
+		log.debug("푸시 알림 (여정 삭제): childId={}", event.childId());
+		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_DELETED, "");
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handle(ScheduleModifiedPushEvent event) {
+		log.debug("푸시 알림 (여정 변경): childId={}", event.childId());
+		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_MODIFIED, "");
+	}
+}

@@ -12,4 +12,12 @@ public interface ScheduleSchedulerUseCase {
 	void pushEventIfScheduleStart(LocalDate today, LocalTime now);
 
 	void deleteObsoleteNonRecurringSchedules();
+
+	void sendDailyStartNotifications(LocalDate today);
+
+	void sendNextJourneyNotifications(LocalDate today, LocalTime now);
+
+	void sendParentReminderNotifications(LocalDate today, LocalTime now);
+
+	void sendMissionIncompleteNotifications(LocalDate today);
 }

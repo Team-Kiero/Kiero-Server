@@ -65,6 +65,16 @@ public class MissionPersistenceAdapter implements MissionPersistencePort, Missio
 	}
 
 	@Override
+	public List<Long> findDistinctChildIdsByDate(LocalDate today) {
+		return missionRepository.findDistinctChildIdsByDate(today);
+	}
+
+	@Override
+	public List<Long> findChildIdsWithIncompleteMissionsByDate(LocalDate today) {
+		return missionRepository.findChildIdsWithIncompleteMissionsByDate(today);
+	}
+
+	@Override
 	public void deleteAllByChildId(Long childId) {
 		missionRepository.deleteAllByChildId(childId);
 	}

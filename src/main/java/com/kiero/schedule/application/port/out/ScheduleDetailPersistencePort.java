@@ -50,4 +50,10 @@ public interface ScheduleDetailPersistencePort {
 	Optional<ScheduleDetail> findByIdWithSchedule(Long scheduleDetailId);
 
 	void deleteAllByScheduleId(Long scheduleId);
+
+	List<Long> findDistinctChildIdsByDate(LocalDate today);
+
+	List<ScheduleDetail> findFailedPastEndTimeWithoutReminder(LocalDate today, LocalTime now);
+
+	List<ScheduleDetail> findPendingByStartTimeWindow(LocalDate today, LocalTime targetStart, LocalTime targetEnd);
 }
