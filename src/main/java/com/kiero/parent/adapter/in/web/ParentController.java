@@ -18,18 +18,20 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kiero.global.auth.annotation.CurrentMember;
 import com.kiero.global.auth.client.dto.SocialLoginRequest;
 import com.kiero.global.auth.dto.CurrentAuth;
-import com.kiero.parent.application.dto.AppleLoginRequest;
 import com.kiero.global.response.dto.SuccessResponse;
 import com.kiero.invitation.application.port.in.InviteCodeUseCase;
+import com.kiero.parent.application.dto.AppleLoginRequest;
 import com.kiero.parent.application.dto.ChildInfoResponse;
 import com.kiero.parent.application.dto.InviteCodeCreateRequest;
 import com.kiero.parent.application.dto.InviteCodeCreateResponse;
 import com.kiero.parent.application.dto.InviteStatusResponse;
 import com.kiero.parent.application.dto.ParentLoginResponse;
+import com.kiero.parent.application.dto.ParentMeResponse;
 import com.kiero.parent.application.dto.TodayProgressForParentResponse;
 import com.kiero.parent.application.exception.ParentSuccessCode;
 import com.kiero.parent.application.port.in.ParentChildQueryUseCase;
 import com.kiero.parent.application.port.in.ParentLoginUseCase;
+import com.kiero.parent.application.port.in.ParentQueryUseCase;
 import com.kiero.parent.application.port.in.ParentWithdrawUseCase;
 import com.kiero.parent.application.service.ScheduleMissionFacade;
 import com.kiero.schedule.application.exception.ScheduleSuccessCode;
@@ -52,6 +54,7 @@ public class ParentController {
 	private final ParentChildQueryUseCase parentChildQueryUseCase;
 	private final ParentLoginUseCase parentLoginUseCase;
 	private final ParentWithdrawUseCase parentWithdrawUseCase;
+	private final ParentQueryUseCase parentQueryUseCase;
 
 	private final InviteCodeUseCase inviteCodeUseCase;
 	private final ScheduleMissionFacade scheduleMissionFacade;
@@ -180,7 +183,7 @@ public class ParentController {
 			.body(SuccessResponse.of(ScheduleSuccessCode.CHILD_PROGRESS_GET_SUCCESS, response));
 	}
 
-	@PreAuthorize("hasRole('PARENT')")
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
 	@PostMapping("/withdraw")
 	public ResponseEntity<SuccessResponse<?>> withdraw(
 		@CurrentMember CurrentAuth currentAuth
@@ -189,5 +192,16 @@ public class ParentController {
 
 		return ResponseEntity.ok()
 			.body(SuccessResponse.of(ParentSuccessCode.WITHDRAW_SUCCESS));
+	}
+
+	@PreAuthorize("hasAnyRole('PARENT', 'ADMIN')")
+	@GetMapping("/me")
+	public ResponseEntity<SuccessResponse<ParentMeResponse>> getMyInfo(
+		@CurrentMember CurrentAuth currentAuth
+	) {
+		ParentMeResponse response = parentQueryUseCase.getMyInfo(currentAuth.memberId());
+
+		return ResponseEntity.ok()
+			.body(SuccessResponse.of(ParentSuccessCode.GET_MY_INFO_SUCCESS, response));
 	}
 }
