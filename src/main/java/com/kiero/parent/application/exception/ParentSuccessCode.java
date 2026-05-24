@@ -17,6 +17,7 @@ public enum ParentSuccessCode implements BaseCode {
 	GET_CHILDREN_SUCCESS(HttpStatus.OK, "자녀 목록 조회에 성공하였습니다."),
 	INVITE_STATUS_CHECKED(HttpStatus.OK, "초대 상태를 확인했습니다."),
 	WITHDRAW_SUCCESS(HttpStatus.OK, "서비스 탈퇴에 성공하였습니다."),
+	GET_MY_INFO_SUCCESS(HttpStatus.OK, "프로필 정보가 조회되었습니다."),
 
     /*
     201 CREATED
