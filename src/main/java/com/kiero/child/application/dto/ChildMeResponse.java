@@ -10,14 +10,16 @@ public record ChildMeResponse(
         String lastName,
         String firstName,
         int coinAmount,
-        String today
+        String today,
+        boolean isPushNotificationEnabled
 ) {
     public static ChildMeResponse from(Child child, LocalDate today) {
         return new ChildMeResponse(
                 child.getLastName(),
                 child.getFirstName(),
                 child.getCoinAmount(),
-                today.format(FORMATTER)
+                today.format(FORMATTER),
+                child.isPushNotificationEnabled()
         );
     }
 
