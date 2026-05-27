@@ -61,7 +61,7 @@ public class TermsController {
 	}
 
 	@PreAuthorize("hasAnyRole('CHILD', 'ADMIN')")
-	@GetMapping("/child")
+	@GetMapping("/children")
 	public ResponseEntity<SuccessResponse<List<ExternalLinkResponse>>> getChildExternalLinks() {
 		List<ExternalLinkResponse> response = termsQueryUseCase.getChildExternalLinks();
 
