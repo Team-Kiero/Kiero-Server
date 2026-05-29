@@ -30,56 +30,56 @@ public class PushNotificationEventListener {
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleVerifiedEvent event) {
 		for (Long parentId : event.parentIds()) {
-			String feedId = feedItemLookupPort.findFeedIdByParentAndScheduleDetail(parentId, event.scheduleDetailId())
+			String feedItemId = feedItemLookupPort.findFeedItemIdByParentAndScheduleDetail(parentId, event.scheduleDetailId())
 				.map(String::valueOf)
 				.orElseGet(() -> {
-					log.warn("feedId 조회 실패: type=SCHEDULE_VERIFIED, parentId={}, scheduleDetailId={}", parentId, event.scheduleDetailId());
+					log.warn("feedItemId 조회 실패: type=SCHEDULE_VERIFIED, parentId={}, scheduleDetailId={}", parentId, event.scheduleDetailId());
 					return "";
 				});
-			log.debug("푸시 알림 (일정 인증): parentId={}, childId={}, feedId={}", parentId, event.childId(), feedId);
-			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.SCHEDULE_VERIFIED, feedId, event.scheduleName());
+			log.debug("푸시 알림 (일정 인증): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.SCHEDULE_VERIFIED, feedItemId, event.scheduleName());
 		}
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(FireLitEvent event) {
 		for (Long parentId : event.parentIds()) {
-			String feedId = feedItemLookupPort.findFeedIdByParentAndChildComplete(parentId, event.childId(), event.occurredDate())
+			String feedItemId = feedItemLookupPort.findFeedItemIdByParentAndChildComplete(parentId, event.childId(), event.occurredDate())
 				.map(String::valueOf)
 				.orElseGet(() -> {
-					log.warn("feedId 조회 실패: type=FIRE_LIT, parentId={}, childId={}, date={}", parentId, event.childId(), event.occurredDate());
+					log.warn("feedItemId 조회 실패: type=FIRE_LIT, parentId={}, childId={}, date={}", parentId, event.childId(), event.occurredDate());
 					return "";
 				});
-			log.debug("푸시 알림 (불꽃 피우기): parentId={}, childId={}, feedId={}", parentId, event.childId(), feedId);
-			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.FIRE_LIT, feedId, "");
+			log.debug("푸시 알림 (불꽃 피우기): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.FIRE_LIT, feedItemId, "");
 		}
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(MissionCompleteEvent event) {
 		for (Long parentId : event.parentIds()) {
-			String feedId = feedItemLookupPort.findFeedIdByParentAndMission(parentId, event.missionId())
+			String feedItemId = feedItemLookupPort.findFeedItemIdByParentAndMission(parentId, event.missionId())
 				.map(String::valueOf)
 				.orElseGet(() -> {
-					log.warn("feedId 조회 실패: type=MISSION_COMPLETE, parentId={}, missionId={}", parentId, event.missionId());
+					log.warn("feedItemId 조회 실패: type=MISSION_COMPLETE, parentId={}, missionId={}", parentId, event.missionId());
 					return "";
 				});
-			log.debug("푸시 알림 (미션 완료): parentId={}, childId={}, feedId={}", parentId, event.childId(), feedId);
-			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.MISSION_COMPLETE, feedId, event.missionName());
+			log.debug("푸시 알림 (미션 완료): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.MISSION_COMPLETE, feedItemId, event.missionName());
 		}
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(CouponPurchasedEvent event) {
 		for (Long parentId : event.parentIds()) {
-			String feedId = feedItemLookupPort.findFeedIdByParentAndCoupon(parentId, event.couponId())
+			String feedItemId = feedItemLookupPort.findFeedItemIdByParentAndCoupon(parentId, event.couponId())
 				.map(String::valueOf)
 				.orElseGet(() -> {
-					log.warn("feedId 조회 실패: type=COUPON_PURCHASED, parentId={}, couponId={}", parentId, event.couponId());
+					log.warn("feedItemId 조회 실패: type=COUPON_PURCHASED, parentId={}, couponId={}", parentId, event.couponId());
 					return "";
 				});
-			log.debug("푸시 알림 (쿠폰 구매): parentId={}, childId={}, feedId={}", parentId, event.childId(), feedId);
-			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.COUPON_PURCHASED, feedId, event.couponName());
+			log.debug("푸시 알림 (쿠폰 구매): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
+			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.COUPON_PURCHASED, feedItemId, event.couponName());
 		}
 	}
 

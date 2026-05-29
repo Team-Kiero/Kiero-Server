@@ -4,8 +4,8 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 public interface FeedItemLookupPort {
-	Optional<Long> findFeedIdByParentAndScheduleDetail(Long parentId, Long scheduleDetailId);
-	Optional<Long> findFeedIdByParentAndMission(Long parentId, Long missionId);
-	Optional<Long> findFeedIdByParentAndCoupon(Long parentId, Long couponId);
-	Optional<Long> findFeedIdByParentAndChildComplete(Long parentId, Long childId, LocalDate date);
+	Optional<Long> findFeedItemIdByParentAndScheduleDetail(Long parentId, Long scheduleDetailId);
+	Optional<Long> findFeedItemIdByParentAndMission(Long parentId, Long missionId);
+	Optional<Long> findFeedItemIdByParentAndCoupon(Long parentId, Long couponId);
+	Optional<Long> findFeedItemIdByParentAndChildComplete(Long parentId, Long childId, LocalDate date);
 }
