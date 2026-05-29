@@ -84,6 +84,47 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		@Param("parentId") Long parentId
 	);
 
+	@Query(value = """
+		SELECT *
+		FROM feed_item f
+		WHERE f.parent_id = :parentId
+		  AND f.event_type = 'MISSION'
+		  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.missionId')) = :missionId
+		LIMIT 1
+	""", nativeQuery = true)
+	Optional<FeedItem> findByParentIdAndMissionId(
+		@Param("parentId") Long parentId,
+		@Param("missionId") String missionId
+	);
+
+	@Query(value = """
+		SELECT *
+		FROM feed_item f
+		WHERE f.parent_id = :parentId
+		  AND f.event_type = 'COUPON'
+		  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.couponId')) = :couponId
+		LIMIT 1
+	""", nativeQuery = true)
+	Optional<FeedItem> findByParentIdAndCouponId(
+		@Param("parentId") Long parentId,
+		@Param("couponId") String couponId
+	);
+
+	@Query(value = """
+		SELECT *
+		FROM feed_item f
+		WHERE f.parent_id = :parentId
+		  AND f.child_id = :childId
+		  AND f.event_type = 'COMPLETE'
+		  AND DATE(f.occurred_at) = :date
+		LIMIT 1
+	""", nativeQuery = true)
+	Optional<FeedItem> findByParentAndChildComplete(
+		@Param("parentId") Long parentId,
+		@Param("childId") Long childId,
+		@Param("date") java.time.LocalDate date
+	);
+
 	@Modifying
 	@Query("DELETE FROM FeedItem f WHERE f.child.id = :childId")
 	void deleteAllByChildId(@Param("childId") Long childId);
