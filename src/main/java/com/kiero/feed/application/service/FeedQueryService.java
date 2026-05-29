@@ -100,6 +100,7 @@ public class FeedQueryService implements FeedQueryUseCase {
 
 	private FeedItemDto toItemDto(FeedItem feedItem) {
 		return new FeedItemDto(
+			feedItem.getId(),
 			feedItem.getEventType(),
 			feedItem.getOccurredAt(),
 			feedItem.getMetadata()
