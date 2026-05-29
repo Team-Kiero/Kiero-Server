@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.kiero.feed.domain.enums.EventType;
 
 public record FeedItemDto(
+	Long id,
 	EventType eventType,
 	@JsonFormat(pattern = "yyyy.MM.dd HH:mm")
 	LocalDateTime occurredAt,

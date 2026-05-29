@@ -303,8 +303,8 @@ public class ScheduleCommandService implements ScheduleCommandUseCase {
 			.map(Parent::getId)
 			.toList();
 
-		scheduleEventPort.publish(new FireLitEvent(parentIds, child.getId()));
-		scheduleEventPort.publish(new FireLitEventForFeed(parents, child.getId(), earnedCoinAmount, LocalDateTime.now(clock)));
+		scheduleEventPort.publish(new FireLitEventForFeed(parents, child.getId(), earnedCoinAmount, now));
+		scheduleEventPort.publish(new FireLitEvent(parentIds, child.getId(), now.toLocalDate()));
 		return FireLitResponse.of(gotStones, earnedCoinAmount);
 	}
 

@@ -66,6 +66,7 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		WHERE f.parent_id = :parentId
 		  AND f.event_type = :eventType
 		  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.scheduleDetailId')) = :scheduleDetailId
+		ORDER BY f.id DESC
 		LIMIT 1
 	""", nativeQuery = true)
 	Optional<FeedItem> findByParentIdAndScheduleDetailIdAndEventType(
@@ -82,6 +83,50 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 """)
 	List<FeedItem> findUnreadFeedItemByParentId(
 		@Param("parentId") Long parentId
+	);
+
+	@Query(value = """
+		SELECT *
+		FROM feed_item f
+		WHERE f.parent_id = :parentId
+		  AND f.event_type = 'MISSION'
+		  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.missionId')) = :missionId
+		ORDER BY f.id DESC
+		LIMIT 1
+	""", nativeQuery = true)
+	Optional<FeedItem> findByParentIdAndMissionId(
+		@Param("parentId") Long parentId,
+		@Param("missionId") String missionId
+	);
+
+	@Query(value = """
+		SELECT *
+		FROM feed_item f
+		WHERE f.parent_id = :parentId
+		  AND f.event_type = 'COUPON'
+		  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.couponId')) = :couponId
+		ORDER BY f.id DESC
+		LIMIT 1
+	""", nativeQuery = true)
+	Optional<FeedItem> findByParentIdAndCouponId(
+		@Param("parentId") Long parentId,
+		@Param("couponId") String couponId
+	);
+
+	@Query(value = """
+		SELECT *
+		FROM feed_item f
+		WHERE f.parent_id = :parentId
+		  AND f.child_id = :childId
+		  AND f.event_type = 'COMPLETE'
+		  AND DATE(f.occurred_at) = :date
+		ORDER BY f.id DESC
+		LIMIT 1
+	""", nativeQuery = true)
+	Optional<FeedItem> findByParentAndChildComplete(
+		@Param("parentId") Long parentId,
+		@Param("childId") Long childId,
+		@Param("date") java.time.LocalDate date
 	);
 
 	@Modifying
