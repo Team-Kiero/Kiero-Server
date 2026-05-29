@@ -1,5 +1,6 @@
 package com.kiero.feed.adapter.out.persistence;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +58,21 @@ public class FeedItemPersistenceAdapter implements FeedItemCommandPort, FeedItem
 	@Override
 	public Optional<FeedItem> findByParentIdAndScheduleDetailIdAndEventType(Long parentId, Long scheduleDetailId, EventType eventType) {
 		return feedItemRepository.findByParentIdAndScheduleDetailIdAndEventType(parentId, String.valueOf(scheduleDetailId), eventType.name());
+	}
+
+	@Override
+	public Optional<FeedItem> findByParentIdAndMissionId(Long parentId, Long missionId) {
+		return feedItemRepository.findByParentIdAndMissionId(parentId, String.valueOf(missionId));
+	}
+
+	@Override
+	public Optional<FeedItem> findByParentIdAndCouponId(Long parentId, Long couponId) {
+		return feedItemRepository.findByParentIdAndCouponId(parentId, String.valueOf(couponId));
+	}
+
+	@Override
+	public Optional<FeedItem> findByParentAndChildComplete(Long parentId, Long childId, LocalDate date) {
+		return feedItemRepository.findByParentAndChildComplete(parentId, childId, date);
 	}
 
 	@Override
