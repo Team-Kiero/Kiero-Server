@@ -66,6 +66,7 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		WHERE f.parent_id = :parentId
 		  AND f.event_type = :eventType
 		  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.scheduleDetailId')) = :scheduleDetailId
+		ORDER BY f.id DESC
 		LIMIT 1
 	""", nativeQuery = true)
 	Optional<FeedItem> findByParentIdAndScheduleDetailIdAndEventType(
@@ -90,6 +91,7 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		WHERE f.parent_id = :parentId
 		  AND f.event_type = 'MISSION'
 		  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.missionId')) = :missionId
+		ORDER BY f.id DESC
 		LIMIT 1
 	""", nativeQuery = true)
 	Optional<FeedItem> findByParentIdAndMissionId(
@@ -103,6 +105,7 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		WHERE f.parent_id = :parentId
 		  AND f.event_type = 'COUPON'
 		  AND JSON_UNQUOTE(JSON_EXTRACT(f.metadata, '$.couponId')) = :couponId
+		ORDER BY f.id DESC
 		LIMIT 1
 	""", nativeQuery = true)
 	Optional<FeedItem> findByParentIdAndCouponId(
@@ -117,6 +120,7 @@ public interface FeedItemRepository extends JpaRepository<FeedItem, Long> {
 		  AND f.child_id = :childId
 		  AND f.event_type = 'COMPLETE'
 		  AND DATE(f.occurred_at) = :date
+		ORDER BY f.id DESC
 		LIMIT 1
 	""", nativeQuery = true)
 	Optional<FeedItem> findByParentAndChildComplete(
