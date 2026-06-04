@@ -62,7 +62,7 @@ public class ParentWithdrawService implements ParentWithdrawUseCase {
 
 	@Override
 	public void withdraw(Long parentId) {
-		Parent parent = parentLoadPort.findById(parentId)
+		parentLoadPort.findById(parentId)
 			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
 
 		List<Long> childIds = parentChildLoadPort.findChildIdsByParentId(parentId);
@@ -104,9 +104,6 @@ public class ParentWithdrawService implements ParentWithdrawUseCase {
 		// 부모 refresh token 삭제
 		tokenCommandPort.deleteRefreshToken(parentId, Role.PARENT);
 
-		// 부모 하드딜리트
-		parentDeletePort.deleteParent(parentId);
-
 		// 유일한 부모였던 아이: 관련 리소스 삭제 + 알림 + refresh token 삭제 + 아이 삭제
 		for (Long childId : soloChildIds) {
 			scheduleDeletePort.deleteAllByChildId(childId);
@@ -120,5 +117,8 @@ public class ParentWithdrawService implements ParentWithdrawUseCase {
 			tokenCommandPort.deleteRefreshToken(childId, Role.CHILD);
 			childDeletePort.deleteById(childId);
 		}
+
+		// 부모 하드딜리트 (soloChild 리소스 전부 정리 후 마지막에 삭제)
+		parentDeletePort.deleteParent(parentId);
 	}
 }

@@ -17,6 +17,7 @@ import com.kiero.schedule.adapter.out.persistence.ScheduleDetailRepository;
 import com.kiero.schedule.adapter.out.persistence.ScheduleRepeatDaysRepository;
 import com.kiero.schedule.adapter.out.persistence.ScheduleRepository;
 import com.kiero.schedule.domain.Schedule;
+import com.kiero.terms.adapter.out.persistence.TermsAgreementRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +36,7 @@ public class AdminDeleteAdapter implements AdminDeletePort {
 	private final ParentChildRepository parentChildRepository;
 	private final ChildRepository childRepository;
 	private final ParentRepository parentRepository;
+	private final TermsAgreementRepository termsAgreementRepository;
 
 	@Override
 	public void deleteAllSchedulesByChildId(Long childId) {
@@ -91,6 +93,11 @@ public class AdminDeleteAdapter implements AdminDeletePort {
 	@Override
 	public void deleteAllFeedItemsByParentId(Long parentId) {
 		feedItemRepository.deleteAllByParentId(parentId);
+	}
+
+	@Override
+	public void deleteAllTermsAgreementsByParentId(Long parentId) {
+		termsAgreementRepository.deleteAllByParentId(parentId);
 	}
 
 	@Override
