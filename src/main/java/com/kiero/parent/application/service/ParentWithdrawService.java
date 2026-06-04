@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.kiero.child.application.port.out.ChildDeletePort;
 import com.kiero.coupon.application.port.out.CouponDeletePort;
+import com.kiero.coupon.application.port.out.CouponHistoryDeletePort;
 import com.kiero.coupon.application.port.out.CouponTransferPort;
 import com.kiero.feed.application.port.out.FeedItemDeletePort;
 import com.kiero.feed.application.port.out.FeedItemTransferPort;
@@ -52,6 +53,7 @@ public class ParentWithdrawService implements ParentWithdrawUseCase {
 	private final MissionDeletePort missionDeletePort;
 	private final MissionTransferPort missionTransferPort;
 	private final CouponDeletePort couponDeletePort;
+	private final CouponHistoryDeletePort couponHistoryDeletePort;
 	private final CouponTransferPort couponTransferPort;
 	private final FeedItemDeletePort feedItemDeletePort;
 	private final FeedItemTransferPort feedItemTransferPort;
@@ -59,7 +61,6 @@ public class ParentWithdrawService implements ParentWithdrawUseCase {
 	private final ChildDeletePort childDeletePort;
 
 	@Override
-	@Transactional
 	public void withdraw(Long parentId) {
 		Parent parent = parentLoadPort.findById(parentId)
 			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
@@ -112,6 +113,7 @@ public class ParentWithdrawService implements ParentWithdrawUseCase {
 			missionDeletePort.deleteAllByChildId(childId);
 			couponDeletePort.deleteAllByChildId(childId);
 			feedItemDeletePort.deleteAllByChildId(childId);
+			couponHistoryDeletePort.deleteAllByChildId(childId);
 
 			parentWithdrawEventPort.publish(new ParentWithdrawnEvent(childId));
 			parentWithdrawNotificationPort.storeWithdrawalMarker(childId);

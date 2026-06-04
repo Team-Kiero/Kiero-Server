@@ -6,6 +6,7 @@ public interface AdminDeletePort {
 	void deleteAllSchedulesByChildId(Long childId);
 	void deleteAllMissionsByChildId(Long childId);
 	void deleteAllCouponsByChildId(Long childId);
+	void deleteAllCouponHistoriesByChildId(Long childId);
 	void deleteAllFeedItemsByChildId(Long childId);
 	void deleteAllParentChildRelationsByChildId(Long childId);
 	void deleteChild(Long childId);

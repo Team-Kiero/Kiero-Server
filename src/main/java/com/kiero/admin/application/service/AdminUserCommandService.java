@@ -43,6 +43,7 @@ public class AdminUserCommandService implements AdminUserCommandUseCase {
 		adminDeletePort.deleteAllSchedulesByChildId(childId);
 		adminDeletePort.deleteAllMissionsByChildId(childId);
 		adminDeletePort.deleteAllCouponsByChildId(childId);
+		adminDeletePort.deleteAllCouponHistoriesByChildId(childId);
 		adminDeletePort.deleteAllFeedItemsByChildId(childId);
 		adminDeletePort.deleteAllParentChildRelationsByChildId(childId);
 		adminDeletePort.deleteChild(childId);

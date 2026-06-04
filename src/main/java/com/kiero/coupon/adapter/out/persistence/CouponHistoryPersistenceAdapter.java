@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.kiero.coupon.application.port.out.CouponHistoryDeletePort;
 import com.kiero.coupon.application.port.out.CouponHistoryPersistencePort;
 import com.kiero.coupon.domain.CouponHistory;
 
@@ -11,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class CouponHistoryPersistenceAdapter implements CouponHistoryPersistencePort {
+public class CouponHistoryPersistenceAdapter implements CouponHistoryPersistencePort, CouponHistoryDeletePort {
 
 	private final CouponHistoryRepository couponHistoryRepository;
 
@@ -23,5 +24,10 @@ public class CouponHistoryPersistenceAdapter implements CouponHistoryPersistence
 	@Override
 	public List<CouponHistory> findAllByChildIdCreatedAtDesc(Long childId) {
 		return couponHistoryRepository.findAllByChildIdOrderByCreatedAtDesc(childId);
+	}
+
+	@Override
+	public void deleteAllByChildId(Long childId) {
+		couponHistoryRepository.deleteAllByChildId(childId);
 	}
 }
