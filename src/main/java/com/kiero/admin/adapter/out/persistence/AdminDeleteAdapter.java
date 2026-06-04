@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import com.kiero.admin.application.port.out.AdminDeletePort;
 import com.kiero.child.adapter.out.persistence.ChildRepository;
+import com.kiero.coupon.adapter.out.persistence.CouponHistoryRepository;
 import com.kiero.coupon.adapter.out.persistence.CouponRepository;
 import com.kiero.feed.adapter.out.persistence.FeedItemRepository;
 import com.kiero.mission.adapter.out.persistence.MissionRepository;
@@ -29,6 +30,7 @@ public class AdminDeleteAdapter implements AdminDeletePort {
 	private final ScheduleRepeatDaysRepository scheduleRepeatDaysRepository;
 	private final MissionRepository missionRepository;
 	private final CouponRepository couponRepository;
+	private final CouponHistoryRepository couponHistoryRepository;
 	private final FeedItemRepository feedItemRepository;
 	private final ParentChildRepository parentChildRepository;
 	private final ChildRepository childRepository;
@@ -48,6 +50,11 @@ public class AdminDeleteAdapter implements AdminDeletePort {
 	@Override
 	public void deleteAllCouponsByChildId(Long childId) {
 		couponRepository.deleteAllByChildId(childId);
+	}
+
+	@Override
+	public void deleteAllCouponHistoriesByChildId(Long childId) {
+		couponHistoryRepository.deleteAllByChildId(childId);
 	}
 
 	@Override
