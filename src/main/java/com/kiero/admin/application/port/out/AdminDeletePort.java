@@ -16,6 +16,7 @@ public interface AdminDeletePort {
 	void deleteAllMissionsByParentId(Long parentId);
 	void deleteAllCouponsByParentId(Long parentId);
 	void deleteAllFeedItemsByParentId(Long parentId);
+	void deleteAllTermsAgreementsByParentId(Long parentId);
 	void deleteAllParentChildRelationsByParentId(Long parentId);
 	void deleteParent(Long parentId);
 
