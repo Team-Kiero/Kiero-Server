@@ -44,7 +44,7 @@ public class SqsNotificationPublisherAdapter implements NotificationPublisherPor
 				)
 			));
 
-			log.debug("SQS 메시지 발행: type={}, targetId={}", payload.type(), payload.targetId());
+			log.info("SQS 메시지 발행: type={}, targetId={}", payload.type(), payload.targetId());
 
 			sqsClient.sendMessage(SendMessageRequest.builder()
 				.queueUrl(queueUrl)
