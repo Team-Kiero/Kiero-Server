@@ -38,6 +38,22 @@ public final class TodayScheduleStatusResolver {
 				// 모든 일정을 스킵하거나 실패해서 얻은 불조각 수가 0개일 때
 				if (earnedStones == 0) { return TodayScheduleStatus.NO_SCHEDULE; }
 
+				// 마지막 완료 일정의 시간 내에 현재 시각이 있으면 아직 진행 중으로 처리
+				LocalTime now = LocalTime.now();
+				ScheduleDetail lastCompleted = filteredAllScheduleDetails.stream()
+					.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.PENDING
+						&& sd.getScheduleStatus() != ScheduleStatus.SKIPPED)
+					.reduce((a, b) -> b)
+					.orElse(null);
+
+				if (lastCompleted != null) {
+					LocalTime start = lastCompleted.getSchedule().getStartTime();
+					LocalTime end = lastCompleted.getSchedule().getEndTime();
+					if (!now.isBefore(start) && now.isBefore(end)) {
+						return TodayScheduleStatus.NOW_SCHEDULE_EXIST;
+					}
+				}
+
 				return TodayScheduleStatus.FIRE_NOT_LIT;
 			}
 
