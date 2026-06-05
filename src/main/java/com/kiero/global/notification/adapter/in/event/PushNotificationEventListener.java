@@ -36,7 +36,7 @@ public class PushNotificationEventListener {
 					log.warn("feedItemId 조회 실패: type=SCHEDULE_VERIFIED, parentId={}, scheduleDetailId={}", parentId, event.scheduleDetailId());
 					return "";
 				});
-			log.debug("푸시 알림 (일정 인증): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
+			log.info("푸시 알림 (일정 인증): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
 			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.SCHEDULE_VERIFIED, feedItemId, event.scheduleName());
 		}
 	}
@@ -50,7 +50,7 @@ public class PushNotificationEventListener {
 					log.warn("feedItemId 조회 실패: type=FIRE_LIT, parentId={}, childId={}, date={}", parentId, event.childId(), event.occurredDate());
 					return "";
 				});
-			log.debug("푸시 알림 (불꽃 피우기): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
+			log.info("푸시 알림 (불꽃 피우기): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
 			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.FIRE_LIT, feedItemId, "");
 		}
 	}
@@ -64,7 +64,7 @@ public class PushNotificationEventListener {
 					log.warn("feedItemId 조회 실패: type=MISSION_COMPLETE, parentId={}, missionId={}", parentId, event.missionId());
 					return "";
 				});
-			log.debug("푸시 알림 (미션 완료): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
+			log.info("푸시 알림 (미션 완료): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
 			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.MISSION_COMPLETE, feedItemId, event.missionName());
 		}
 	}
@@ -78,7 +78,7 @@ public class PushNotificationEventListener {
 					log.warn("feedItemId 조회 실패: type=COUPON_PURCHASED, parentId={}, couponId={}", parentId, event.couponId());
 					return "";
 				});
-			log.debug("푸시 알림 (쿠폰 구매): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
+			log.info("푸시 알림 (쿠폰 구매): parentId={}, childId={}, feedItemId={}", parentId, event.childId(), feedItemId);
 			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.COUPON_PURCHASED, feedItemId, event.couponName());
 		}
 	}
@@ -86,26 +86,26 @@ public class PushNotificationEventListener {
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleSkippedEvent event) {
 		for (Long parentId : event.parentIds()) {
-			log.debug("푸시 알림 (일정 스킵): parentId={}, childId={}", parentId, event.childId());
+			log.info("푸시 알림 (일정 스킵): parentId={}, childId={}", parentId, event.childId());
 			pushNotificationUseCase.pushToParent(parentId, event.childId(), PushNotificationType.SCHEDULE_SKIPPED, "", event.scheduleName());
 		}
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleCreatedEvent event) {
-		log.debug("푸시 알림 (여정 추가): childId={}", event.childId());
+		log.info("푸시 알림 (여정 추가): childId={}", event.childId());
 		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_CREATED, "");
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleDeletedEvent event) {
-		log.debug("푸시 알림 (여정 삭제): childId={}", event.childId());
+		log.info("푸시 알림 (여정 삭제): childId={}", event.childId());
 		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_DELETED, "");
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ScheduleModifiedPushEvent event) {
-		log.debug("푸시 알림 (여정 변경): childId={}", event.childId());
+		log.info("푸시 알림 (여정 변경): childId={}", event.childId());
 		pushNotificationUseCase.pushToChild(event.childId(), PushNotificationType.SCHEDULE_MODIFIED, "");
 	}
 }

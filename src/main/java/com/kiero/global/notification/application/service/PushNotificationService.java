@@ -29,7 +29,7 @@ public class PushNotificationService implements PushNotificationUseCase {
 	public void pushToParent(Long parentId, Long childId, PushNotificationType type, String targetId, String targetName) {
 		Parent parent = parentLoadPort.findById(parentId).orElse(null);
 		if (parent == null || parent.getFcmToken() == null || parent.getFcmToken().isBlank() || !parent.isPushNotificationEnabled()) {
-			log.debug("푸시 알림 스킵 (부모): parentId={}, type={}", parentId, type);
+			log.info("푸시 알림 스킵 (부모): parentId={}, type={}", parentId, type);
 			return;
 		}
 
@@ -43,7 +43,7 @@ public class PushNotificationService implements PushNotificationUseCase {
 		notificationPublisherPort.publish(new PushNotificationPayload(
 			parent.getFcmToken(), title, body, type, targetId
 		));
-		log.debug("푸시 알림 발행 (부모): parentId={}, type={}", parentId, type);
+		log.info("푸시 알림 발행 (부모): parentId={}, type={}", parentId, type);
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public class PushNotificationService implements PushNotificationUseCase {
 	public void pushToChild(Long childId, PushNotificationType type, String targetName) {
 		Child child = childLoadPort.findById(childId).orElse(null);
 		if (child == null || child.getFcmToken() == null || child.getFcmToken().isBlank() || !child.isPushNotificationEnabled()) {
-			log.debug("푸시 알림 스킵 (자녀): childId={}, type={}", childId, type);
+			log.info("푸시 알림 스킵 (자녀): childId={}, type={}", childId, type);
 			return;
 		}
 
@@ -61,7 +61,7 @@ public class PushNotificationService implements PushNotificationUseCase {
 		notificationPublisherPort.publish(new PushNotificationPayload(
 			child.getFcmToken(), title, body, type, ""
 		));
-		log.debug("푸시 알림 발행 (자녀): childId={}, type={}", childId, type);
+		log.info("푸시 알림 발행 (자녀): childId={}, type={}", childId, type);
 	}
 
 	private String buildParentTitle(PushNotificationType type, String childName) {
