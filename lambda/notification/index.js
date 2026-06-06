@@ -25,8 +25,14 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           message: {
             token: fcmToken,
-            notification: { title, body },
-            data: data ?? {},
+            data: {
+              title,
+              body,
+              ...(data ?? {}),
+            },
+            android: {
+              priority: 'high',
+            },
           },
         }),
       });
