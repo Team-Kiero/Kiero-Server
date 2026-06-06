@@ -38,6 +38,12 @@ exports.handler = async (event) => {
                 'apns-push-type': 'alert',
                 'apns-priority': '10',
               },
+              payload: {
+                aps: {
+                  alert: { title, body },
+                  sound: 'default',
+                },
+              },
             },
           },
         }),
@@ -52,12 +58,18 @@ exports.handler = async (event) => {
             ? `${fcmToken.slice(0, 4)}...${fcmToken.slice(-4)}`
             : '****';
 
+        const fieldViolations =
+          json.error?.details?.find((d) => d.fieldViolations)?.fieldViolations ?? [];
+        const isTokenFieldViolation = fieldViolations.some(
+          (v) => v.field === 'message.token' || /registration token/i.test(v.description ?? '')
+        );
+
         const isInvalidToken =
           errorCode === 'UNREGISTERED' ||
           (errorCode === 'INVALID_ARGUMENT' &&
-            /registration token|not a valid fcm registration token/i.test(
+            (/registration token|not a valid fcm registration token/i.test(
               json.error?.message ?? ''
-            ));
+            ) || isTokenFieldViolation));
 
         if (isInvalidToken) {
           console.warn(`FCM 토큰 무효 (스킵): ${maskedToken}, errorCode: ${errorCode}`);
