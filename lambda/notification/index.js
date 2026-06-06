@@ -33,6 +33,12 @@ exports.handler = async (event) => {
             android: {
               priority: 'high',
             },
+            apns: {
+              headers: {
+                'apns-push-type': 'alert',
+                'apns-priority': '10',
+              },
+            },
           },
         }),
       });
