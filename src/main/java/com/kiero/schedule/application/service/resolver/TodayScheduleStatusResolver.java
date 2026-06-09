@@ -42,7 +42,7 @@ public final class TodayScheduleStatusResolver {
 				LocalTime now = LocalTime.now();
 				ScheduleDetail lastCompleted = filteredAllScheduleDetails.stream()
 					.filter(sd -> sd.getScheduleStatus() != ScheduleStatus.PENDING
-						&& sd.getScheduleStatus() != ScheduleStatus.SKIPPED)
+						&& sd.getScheduleStatus() != ScheduleStatus.SKIPPED && sd.getScheduleStatus() != ScheduleStatus.COMPLETED)
 					.reduce((a, b) -> b)
 					.orElse(null);
 
