@@ -48,7 +48,8 @@ public class SecurityConfig {
 					"/api/v1/children/login/**",
 					"/api/v1/tokens/reissue/*",
 					"/api/v1/tokens/subscribe-token",
-					"/api/v1/admin/login"
+					"/api/v1/admin/login",
+					"/api/v1/apple/events"
 				).permitAll()
 
 				.requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
