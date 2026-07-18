@@ -34,16 +34,19 @@ log_error() {
 COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.dev.yml}
 log_info "사용할 Compose 파일: $COMPOSE_FILE"
 
-# 환경에 따른 컨테이너 이름 접두사 및 env 파일 결정
+# 환경에 따른 컨테이너 이름 접두사, env 파일, 함께 띄울 지원 컨테이너 결정
 if [[ "$COMPOSE_FILE" == *"dev"* ]]; then
     CONTAINER_PREFIX="kiero-dev-app"
     ENV_FILE=".env.dev"
+    SUPPORT_SERVICES="mysql redis prometheus grafana nocodb"
 else
     CONTAINER_PREFIX="kiero-prod-app"
     ENV_FILE=".env.prod"
+    SUPPORT_SERVICES="redis"
 fi
 log_info "컨테이너 이름 접두사: $CONTAINER_PREFIX"
 log_info "환경변수 파일: $ENV_FILE"
+log_info "지원 컨테이너: $SUPPORT_SERVICES"
 
 # Docker Compose 명령어 (env-file 포함)
 DOCKER_COMPOSE="docker compose -f $COMPOSE_FILE --env-file $ENV_FILE"
@@ -65,8 +68,8 @@ cd "$PROJECT_ROOT"
 
 log_info "프로젝트 디렉토리: $PROJECT_ROOT"
 
-log_info "redis, prometheus, grafana, nocodb 컨테이너를 띄웁니다."
-$DOCKER_COMPOSE up -d redis prometheus grafana nocodb
+log_info "지원 컨테이너를 띄웁니다: $SUPPORT_SERVICES"
+$DOCKER_COMPOSE up -d $SUPPORT_SERVICES
 
 # EC2 Nginx 설정 파일 경로
 NGINX_CONF="/etc/nginx/sites-available/kiero"
