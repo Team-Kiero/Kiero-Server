@@ -10,6 +10,7 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.kiero.global.response.base.BaseCode;
@@ -72,6 +73,12 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(AccessDeniedException.class)
 	public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException e) {
 		return buildErrorResponse(ErrorCode.ACCESS_DENIED, null);
+	}
+
+	// 클라이언트가 응답을 다 받기 전에 연결을 끊은 경우(Broken pipe).
+	@ExceptionHandler(AsyncRequestNotUsableException.class)
+	public void handleAsyncRequestNotUsable(AsyncRequestNotUsableException e) {
+		log.debug("클라이언트 연결 종료로 응답 쓰기 실패(Broken pipe): {}", e.getMessage());
 	}
 
 	@ExceptionHandler(Exception.class)

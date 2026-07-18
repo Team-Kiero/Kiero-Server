@@ -2,8 +2,7 @@ name: CD-Production
 
 on:
   push:
-    tags:
-      - 'v*.*.*'  # 예: v1.0.0 태그가 푸시되면 동작
+    branches: [ main ]
 
 env:
   AWS_REGION: ap-northeast-2
