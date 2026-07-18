@@ -1,7 +1,7 @@
 services:
   # Blue 환경 (Prod)
   app-blue:
-    image: ${DOCKERHUB_USERNAME}/kiero:${BLUE_TAG:-latest}
+    image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${BLUE_TAG:-latest}
     container_name: kiero-prod-app-blue
     ports:
       - "8080:8080"
@@ -36,7 +36,7 @@ services:
 
   # Green 환경 (Prod)
   app-green:
-    image: ${DOCKERHUB_USERNAME}/kiero:${GREEN_TAG:-latest}
+    image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${GREEN_TAG:-latest}
     container_name: kiero-prod-app-green
     ports:
       - "8081:8080"
@@ -86,64 +86,9 @@ services:
       timeout: 3s
       retries: 3
 
-  # Prometheus
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: kiero-prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
-    networks:
-      - app-network
-    restart: always
-
-  # Grafana
-  grafana:
-    image: grafana/grafana:latest
-    container_name: kiero-grafana
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env.prod
-    volumes:
-      - grafana-data:/var/lib/grafana
-    environment:
-      - TZ=Asia/Seoul
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-    depends_on:
-      - prometheus
-    networks:
-      - app-network
-    restart: always
-
-  # NocoDB
-  nocodb:
-    image: nocodb/nocodb:0.265.1
-    container_name: kiero-nocodb
-    ports:
-      - "9001:8080"
-    env_file:
-      - .env.prod
-    environment:
-      - NC_DB=mysql2://${NOCODB_DB_HOST}:3306?u=${DB_USERNAME}&p=${DB_PASSWORD}&d=${NOCODB_DB_NAME}
-      - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET:-nocodb-jwt-secret-change-me}
-      - NC_ADMIN_EMAIL=${NOCODB_ADMIN_EMAIL}
-      - NC_ADMIN_PASSWORD=${NOCODB_ADMIN_PASSWORD}
-      - TZ=Asia/Seoul
-    volumes:
-      - nocodb-data:/usr/app/data
-    networks:
-      - app-network
-    restart: always
-
 networks:
   app-network:
     driver: bridge
 
 volumes:
   redis-data:
-  prometheus-data:
-  grafana-data:
-  nocodb-data:
