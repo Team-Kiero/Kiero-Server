@@ -1,0 +1,23 @@
+package com.kiero.schedule.application.port.in;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+public interface ScheduleSchedulerUseCase {
+
+	void createTodayScheduleDetail();
+
+	void bulkMarkAndPushEventIfUpdateExists(LocalDate today, LocalTime now);
+
+	void pushEventIfScheduleStart(LocalDate today, LocalTime now);
+
+	void deleteObsoleteNonRecurringSchedules();
+
+	void sendDailyStartNotifications(LocalDate today);
+
+	void sendNextJourneyNotifications(LocalDate today, LocalTime now);
+
+	void sendParentReminderNotifications(LocalDate today, LocalTime now);
+
+	void sendMissionIncompleteNotifications(LocalDate today);
+}

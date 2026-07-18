@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'kiero-app-blue'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['app-blue:8080']
+
+  - job_name: 'kiero-app-green'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['app-green:8080']

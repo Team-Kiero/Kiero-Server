@@ -1,0 +1,144 @@
+package com.kiero.coupon.application.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.kiero.child.application.port.out.ChildLoadPort;
+import com.kiero.child.domain.Child;
+import com.kiero.coupon.application.dto.CouponCreateRequest;
+import com.kiero.coupon.application.dto.CouponCreatedEvent;
+import com.kiero.coupon.application.dto.CouponPurchaseEventForFeed;
+import com.kiero.coupon.application.dto.CouponPurchasedEvent;
+import com.kiero.coupon.application.dto.CouponResponse;
+import com.kiero.coupon.application.dto.CouponUpdateRequest;
+import com.kiero.coupon.application.exception.CouponErrorCode;
+import com.kiero.coupon.application.port.in.CouponCommandUseCase;
+import com.kiero.coupon.application.port.out.CouponEventPort;
+import com.kiero.coupon.application.port.out.CouponHistoryPersistencePort;
+import com.kiero.coupon.application.port.out.CouponPersistencePort;
+import com.kiero.coupon.domain.Coupon;
+import com.kiero.coupon.domain.CouponHistory;
+import com.kiero.global.exception.KieroException;
+import com.kiero.parent.application.port.out.ParentChildAccessPort;
+import com.kiero.parent.application.port.out.ParentChildLoadPort;
+import com.kiero.parent.application.port.out.ParentLoadPort;
+import com.kiero.parent.domain.Parent;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class CouponCommandService implements CouponCommandUseCase {
+
+	private static final int MAX_COUPON_PRICE = 500;
+
+	private final ParentChildAccessPort parentChildAccessPort;
+	private final ParentLoadPort parentLoadPort;
+	private final ChildLoadPort childLoadPort;
+	private final CouponPersistencePort couponPersistencePort;
+	private final CouponEventPort couponEventPort;
+	private final ParentChildLoadPort parentChildLoadPort;
+
+	private final CouponCacheEvictHelper couponCacheEvictHelper;
+	private final CouponHistoryPersistencePort couponHistoryPersistencePort;
+
+	@Override
+	@Transactional
+	public CouponResponse createCoupon(Long parentId, Long childId, CouponCreateRequest request) {
+		if (!parentChildAccessPort.existsByParentIdAndChildId(parentId, childId)) {
+			throw new KieroException(CouponErrorCode.NOT_YOUR_CHILD);
+		}
+
+		Parent parent = parentLoadPort.findById(parentId)
+			.orElseThrow(() -> new KieroException(CouponErrorCode.PARENT_NOT_FOUND));
+
+		Child child = childLoadPort.findById(childId)
+			.orElseThrow(() -> new KieroException(CouponErrorCode.CHILD_NOT_FOUND));
+
+		int price = Math.min(request.price(), MAX_COUPON_PRICE);
+		Coupon coupon = Coupon.create(request.name(), price, parent, child);
+		Coupon saved = couponPersistencePort.save(coupon);
+
+		couponCacheEvictHelper.evictByChildId(childId);
+
+		couponEventPort.publish(new CouponCreatedEvent(childId, saved.getName(), saved.getPrice()));
+
+		return CouponResponse.from(saved);
+	}
+
+	@Override
+	@Transactional
+	public CouponResponse updateCoupon(Long parentId, Long couponId, CouponUpdateRequest request) {
+		Coupon coupon = couponPersistencePort.findById(couponId)
+			.orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
+
+		if (!coupon.getParent().getId().equals(parentId)) {
+			throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
+		}
+
+		int price = Math.min(request.price(), MAX_COUPON_PRICE);
+
+		coupon.update(request.name(), price);
+
+		couponCacheEvictHelper.evictByChildId(coupon.getChild().getId());
+
+		return CouponResponse.from(coupon);
+	}
+
+	@Override
+	@Transactional
+	public void deleteCoupon(Long parentId, Long couponId) {
+		Coupon coupon = couponPersistencePort.findById(couponId)
+			.orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
+
+		if (!coupon.getParent().getId().equals(parentId)) {
+			throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
+		}
+
+		couponCacheEvictHelper.evictByChildId(coupon.getChild().getId());
+
+		couponPersistencePort.delete(coupon);
+	}
+
+	@Override
+	@Transactional
+	public CouponResponse purchaseCoupon(Long childId, Long couponId) {
+
+		Child child = childLoadPort.findByIdWithLock(childId)
+			.orElseThrow(() -> new KieroException(CouponErrorCode.CHILD_NOT_FOUND));
+
+		Coupon coupon = couponPersistencePort.findById(couponId)
+			.orElseThrow(() -> new KieroException(CouponErrorCode.COUPON_NOT_FOUND));
+
+		if (!coupon.getChild().getId().equals(childId)) {
+			throw new KieroException(CouponErrorCode.NOT_YOUR_COUPON);
+		}
+
+		if (!child.hasEnoughCoin(coupon.getPrice())) {
+			throw new KieroException(CouponErrorCode.INSUFFICIENT_COINS);
+		}
+
+		child.deductCoin(coupon.getPrice());
+
+		CouponHistory couponHistory = CouponHistory.create(coupon.getName(), coupon.getPrice(), child);
+		couponHistoryPersistencePort.save(couponHistory);
+
+		List<Parent> parents = parentChildLoadPort.findActiveParentsByChildId(child.getId());
+		List<Long> parentIds = parents.stream().map(Parent::getId).toList();
+
+		couponEventPort.publish(new CouponPurchaseEventForFeed(
+			parents,
+			child.getId(),
+			coupon.getId(),
+			coupon.getName(),
+			coupon.getPrice(),
+			LocalDateTime.now()
+		));
+		couponEventPort.publish(new CouponPurchasedEvent(parentIds, child.getId(), coupon.getId(), coupon.getName()));
+
+		return new CouponResponse(coupon.getId(), coupon.getName(), coupon.getPrice());
+	}
+}

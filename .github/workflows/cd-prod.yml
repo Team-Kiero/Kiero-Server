@@ -1,0 +1,108 @@
+name: CD-Production
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # 예: v1.0.0 태그가 푸시되면 동작
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: kiero-prod
+
+jobs:
+  build-and-push:
+    name: Build & Push Production Image (ECR)
+    runs-on: ubuntu-latest
+    environment: prod
+    outputs:
+      version: ${{ steps.extract_version.outputs.VERSION }}
+      registry: ${{ steps.login-ecr.outputs.registry }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: extract_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.extract_version.outputs.VERSION }}
+
+  deploy-production:
+    name: Deploy to Production Server (Blue-Green)
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: SSH deploy (production - Blue-Green)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          envs: PROD_ENV_FILE,AWS_REGION,ECR_REGISTRY,ECR_REPOSITORY,IMAGE_VERSION
+          script: |
+            set -e
+
+            # ECR 로그인
+            aws ecr get-login-password --region "$AWS_REGION" \
+              | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+            cd /opt/kiero
+
+            # Git 최신 변경사항 가져오기
+            git pull origin main
+
+            # .env.prod 파일 생성
+            echo "$PROD_ENV_FILE" > .env.prod
+
+            # 사용할 Docker Compose 파일 지정
+            export COMPOSE_FILE=docker-compose.prod.yml
+
+            # compose가 이미지 경로 조립에 사용할 ECR 정보 지정
+            export ECR_REGISTRY="$ECR_REGISTRY"
+            export ECR_REPOSITORY="$ECR_REPOSITORY"
+
+            # 배포할 이미지 태그 지정
+            export BLUE_TAG="$IMAGE_VERSION"
+            export GREEN_TAG="$IMAGE_VERSION"
+
+            # Blue-Green 배포 스크립트 실행 (배포 성공 후에도 롤백에 대비하여 이전 컨테이너를 끄지 않고 남겨둠)
+            chmod +x scripts/deploy-blue-green.sh
+            ./scripts/deploy-blue-green.sh --keep-old
+
+            # 성공 시 정리
+            docker image prune -f
+        env:
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          ECR_REGISTRY: ${{ needs.build-and-push.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_VERSION: ${{ needs.build-and-push.outputs.version }}
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "Production deployment successful!"
+          echo "Deployed Version: ${{ needs.build-and-push.outputs.version }}"

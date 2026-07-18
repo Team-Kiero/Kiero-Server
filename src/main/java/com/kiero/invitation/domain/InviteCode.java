@@ -1,0 +1,37 @@
+package com.kiero.invitation.domain;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.index.Indexed;
+
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@RedisHash(value = "inviteCode", timeToLive = 60L * 10)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+public class InviteCode {
+
+    @Id
+    private String code;
+
+    @Indexed
+    private String parentKey;
+
+    private Long parentId;
+
+    private String childLastName;
+
+    private String childFirstName;
+
+    public static InviteCode of(String code, Long parentId, String childLastName, String childFirstName) {
+        return new InviteCode(code, parentId.toString(), parentId, childLastName, childFirstName);
+    }
+
+    public String getChildFullName() {
+        return childLastName + childFirstName;
+    }
+}

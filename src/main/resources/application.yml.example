@@ -1,0 +1,146 @@
+spring:
+  application:
+    name: kiero
+
+  # Database - Local MySQL
+  datasource:
+    url: jdbc:mysql://localhost:3306/kiero?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: root
+    password: your-local-password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        show_sql: true
+    open-in-view: false
+
+  # Redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  # OAuth2 (Kakao)
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: YOUR_KAKAO_CLIENT_ID
+            client-secret: YOUR_KAKAO_CLIENT_SECRET
+            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+            scope:
+              - profile_nickname
+              - profile_image
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+  # OpenAI
+  ai:
+    openai:
+      api-key: YOUR_OPENAI_API_KEY
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.1
+
+# Sentry
+sentry:
+  enabled: false
+  dsn: YOUR_SENTRY_DSN
+  exception-resolver-order: -2147483647
+  max-request-body-size: always
+  send-default-pii: true
+  traces-sample-rate: 1.0
+  environment: ${spring.profiles.active:local}
+  ignored-exceptions-for-type:
+    - org.springframework.security.access.AccessDeniedException
+    - org.springframework.security.authentication.BadCredentialsException
+    - org.springframework.web.bind.MethodArgumentNotValidException
+    - org.springframework.web.bind.MissingServletRequestParameterException
+    - org.springframework.web.bind.MissingRequestCookieException
+    - org.springframework.web.bind.MissingRequestHeaderException
+    - org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+    - org.springframework.http.converter.HttpMessageNotReadableException
+    - org.springframework.web.servlet.NoHandlerFoundException
+    - jakarta.validation.ConstraintViolationException
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# AWS S3
+aws:
+  s3:
+    bucket: kiero-bucket
+  region: ap-northeast-2
+  credentials:
+    access-key: YOUR_AWS_ACCESS_KEY
+    secret-key: YOUR_AWS_SECRET_KEY
+
+# 공공데이터 Open API
+open-api:
+  service-key: YOUR_OPEN_API_SERVICE_KEY
+
+# Apple
+apple:
+  bundle-id: com.your.app.bundle-id
+  team-id: YOUR_APPLE_TEAM_ID
+  key-id: YOUR_APPLE_KEY_ID
+  private-key: |
+    -----BEGIN PRIVATE KEY-----
+    YOUR_APPLE_PRIVATE_KEY_CONTENT
+    -----END PRIVATE KEY-----
+
+# JWT
+jwt:
+  secret: your-jwt-secret-key-min-256-bits
+  access-token-expire-time: 3600000
+  refresh-token-expire-time: 604800000
+
+# CORS
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:5173
+
+# Swagger
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  show-actuator: true
+
+# Logging
+logging:
+  level:
+    root: info
+    org:
+      hibernate:
+        SQL: debug
+        type:
+          descriptor:
+            sql:
+              BasicBinder: trace

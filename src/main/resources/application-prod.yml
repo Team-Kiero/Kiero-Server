@@ -1,0 +1,128 @@
+spring:
+  application:
+    name: kiero
+
+  # Database - Production RDS
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: false
+        show_sql: false
+    open-in-view: false
+
+  # Redis
+  data:
+    redis:
+      host: ${REDIS_HOST:kiero-redis}
+      port: ${REDIS_PORT:6379}
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            redirect-uri: ${KAKAO_REDIRECT_URI}
+            authorization-grant-type: authorization_code
+            client-name: kakao
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+  # Spring AI - OpenAI
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4.1
+          temperature: 0.0
+
+# 공공데이터 Open API
+open-api:
+  service-key: ${OPEN_API_SERVICE_KEY}
+
+# Apple
+apple:
+  bundle-id: ${APPLE_BUNDLE_ID}
+  team-id: ${APPLE_TEAM_ID}
+  key-id: ${APPLE_KEY_ID}
+  private-key: ${APPLE_PRIVATE_KEY}
+
+# Sentry
+sentry:
+  dsn: ${SENTRY_DSN}
+  exception-resolver-order: -2147483647
+  max-request-body-size: always
+  send-default-pii: true
+  traces-sample-rate: 0.2
+  environment: ${spring.profiles.active:local}
+  ignored-exceptions-for-type:
+    - org.springframework.security.access.AccessDeniedException
+    - org.springframework.security.authentication.BadCredentialsException
+    - org.springframework.web.bind.MethodArgumentNotValidException
+    - org.springframework.web.bind.MissingServletRequestParameterException
+    - org.springframework.web.bind.MissingRequestCookieException
+    - org.springframework.web.bind.MissingRequestHeaderException
+    - org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+    - org.springframework.http.converter.HttpMessageNotReadableException
+    - org.springframework.web.servlet.NoHandlerFoundException
+    - jakarta.validation.ConstraintViolationException
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  endpoint:
+    health:
+      show-details: always
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+  sqs:
+    notification-queue-url: ${SQS_NOTIFICATION_QUEUE_URL}
+  region: ${AWS_REGION}
+  credentials:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expire-time: ${JWT_ACCESS_TOKEN_EXPIRE_TIME}
+  refresh-token-expire-time: ${JWT_REFRESH_TOKEN_EXPIRE_TIME}
+
+cors:
+  allowed-origins: ${ALLOWED_ORIGINS}
+
+logging:
+  level:
+    root: warn
+    com.kiero: info
+    org:
+      hibernate:
+        SQL: warn
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false

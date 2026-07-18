@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: kiero-test
+
+  # JPA 설정
+  # 데이터소스는 각 테스트에서 TestContainers로 동적 설정
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # 테스트 실행 시마다 스키마 재생성
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect  # MySQL 사용 (실제 환경과 동일)
+        format_sql: true
+        show_sql: true
+    open-in-view: false
+
+# AWS 설정 (테스트용 더미 값)
+aws:
+  s3:
+    bucket: test-bucket
+  region: ap-northeast-2
+  credentials:
+    access-key: test-access-key
+    secret-key: test-secret-key
+
+# 로깅 레벨
+logging:
+  level:
+    org.springframework: INFO
+    com.kiero: DEBUG
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN

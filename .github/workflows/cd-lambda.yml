@@ -1,0 +1,68 @@
+name: CD-Lambda
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '배포 환경'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+jobs:
+  deploy-lambda:
+    name: Deploy Lambda (kiero-notification-sender)
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: lambda/notification
+        run: npm ci --omit=dev
+
+      - name: Zip Lambda package
+        working-directory: lambda/notification
+        run: zip -r ../../lambda-notification.zip .
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Set Lambda function name
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "prod" ]; then
+            echo "LAMBDA_FUNCTION_NAME=kiero-notification-sender-prod" >> $GITHUB_ENV
+          else
+            echo "LAMBDA_FUNCTION_NAME=kiero-notification-sender" >> $GITHUB_ENV
+          fi
+
+      - name: Deploy to Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --zip-file fileb://lambda-notification.zip
+
+      - name: Wait for update to complete
+        run: |
+          aws lambda wait function-updated \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
+
+      - name: Verify deployment
+        run: |
+          aws lambda get-function \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --query 'Configuration.[FunctionName, Runtime, LastModified]' \
+            --output table

@@ -1,0 +1,141 @@
+services:
+  # Blue 환경 (Dev)
+  app-blue:
+    image: ${DOCKERHUB_USERNAME}/kiero:${BLUE_TAG:-latest}
+    container_name: kiero-dev-app-blue
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.dev
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - TZ=Asia/Seoul
+      - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # Green 환경 (Dev)
+  app-green:
+    image: ${DOCKERHUB_USERNAME}/kiero:${GREEN_TAG:-latest}
+    container_name: kiero-dev-app-green
+    ports:
+      - "8081:8080"
+    env_file:
+      - .env.dev
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - TZ=Asia/Seoul
+      - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: kiero-mysql
+    ports:
+      - "3306:3306"
+    env_file:
+      - .env.dev
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - TZ=Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: kiero-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # NocoDB
+  nocodb:
+    image: nocodb/nocodb:0.265.1
+    container_name: kiero-nocodb
+    ports:
+      - "9001:8080"
+    env_file:
+      - .env.dev
+    environment:
+      - NC_DB=mysql2://${NOCODB_DB_HOST}:3306?u=${DB_USERNAME}&p=${DB_PASSWORD}&d=${NOCODB_DB_NAME}
+      - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}
+      - NC_ADMIN_EMAIL=${NOCODB_ADMIN_EMAIL}
+      - NC_ADMIN_PASSWORD=${NOCODB_ADMIN_PASSWORD}
+      - TZ=Asia/Seoul
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - nocodb-data:/usr/app/data
+    networks:
+      - app-network
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:
+  nocodb-data:

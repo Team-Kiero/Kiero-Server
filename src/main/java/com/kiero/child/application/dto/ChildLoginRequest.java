@@ -1,0 +1,15 @@
+package com.kiero.child.application.dto;
+
+import jakarta.validation.constraints.NotBlank;
+
+public record ChildLoginRequest(
+        @NotBlank(message = "초대 코드를 입력해주세요.")
+        String inviteCode,
+
+        @NotBlank(message = "성을 입력해주세요.")
+        String lastName,
+
+        @NotBlank(message = "이름을 입력해주세요.")
+        String firstName
+) {
+}

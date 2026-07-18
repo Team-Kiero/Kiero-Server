@@ -1,0 +1,64 @@
+package com.kiero.mission.adapter.out.persistence;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.kiero.mission.domain.Mission;
+
+import jakarta.persistence.LockModeType;
+
+public interface MissionRepository extends JpaRepository<Mission, Long> {
+
+    @Query("SELECT m FROM Mission m " +
+           "WHERE m.child.id = :childId AND m.dueAt >= :date " +
+           "ORDER BY m.dueAt ASC, m.isCompleted ASC, m.completedAt DESC nulls last, COALESCE(m.updatedAt, m.createdAt) DESC, m.name ASC")
+    List<Mission> findAllByChildIdAndDueAtGreaterThanEqual(@Param("childId") Long childId, @Param("date") LocalDate date);
+
+    @Query("SELECT m FROM Mission m " +
+           "WHERE m.parent.id = :parentId AND m.dueAt >= :date " +
+           "ORDER BY m.dueAt ASC, m.isCompleted ASC, m.completedAt DESC nulls last, COALESCE(m.updatedAt, m.createdAt) DESC, m.name ASC")
+    List<Mission> findAllByParentIdAndDueAtGreaterThanEqual(@Param("parentId") Long parentId, @Param("date") LocalDate date);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @EntityGraph(attributePaths = {"child"})
+    @Query("SELECT m FROM Mission m WHERE m.id = :missionId")
+    Optional<Mission> findByIdWithLockForChild(@Param("missionId") Long missionId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @EntityGraph(attributePaths = {"parent"})
+    @Query("SELECT m FROM Mission m WHERE m.id = :missionId")
+    Optional<Mission> findByIdWithLockForParent(@Param("missionId") Long missionId);
+
+    @Query("SELECT m FROM Mission m " +
+           "WHERE m.child.id = :childId AND m.dueAt = :date " +
+           "ORDER BY COALESCE(m.updatedAt, m.createdAt) DESC, m.name ASC")
+    List<Mission> findAllByChildIdAndDueAt(Long childId, LocalDate date);
+
+    List<Mission> findAllByChildId(Long childId);
+
+    @Modifying
+    @Query("DELETE FROM Mission m WHERE m.child.id = :childId")
+    void deleteAllByChildId(@Param("childId") Long childId);
+
+    @Modifying
+    @Query("DELETE FROM Mission m WHERE m.parent.id = :parentId")
+    void deleteAllByParentId(@Param("parentId") Long parentId);
+
+    @Query("SELECT DISTINCT m.child.id FROM Mission m WHERE m.dueAt = :today")
+    List<Long> findDistinctChildIdsByDate(@Param("today") LocalDate today);
+
+    @Query("SELECT DISTINCT m.child.id FROM Mission m WHERE m.dueAt <= :today AND m.isCompleted = false")
+    List<Long> findChildIdsWithIncompleteMissionsByDate(@Param("today") LocalDate today);
+
+    @Modifying
+    @Query(value = "UPDATE mission SET parent_id = :newParentId WHERE parent_id = :oldParentId AND child_id = :childId", nativeQuery = true)
+    void transferOwnershipByParentIdAndChildId(@Param("oldParentId") Long oldParentId, @Param("newParentId") Long newParentId, @Param("childId") Long childId);
+}

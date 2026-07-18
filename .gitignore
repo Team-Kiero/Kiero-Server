@@ -1,3 +1,7 @@
+# QueryDSL
+/build/generated/
+/**/generated/**
+
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -41,3 +45,26 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+.claude
+docs
+
+### Application Config ###
+# 로컬 개발 환경 설정만 제외 (민감 정보 포함)
+application.yml
+
+# dev, prod는 환경변수 기반이므로 Git에 커밋 가능
+
+### Environment Files ###
+# 실제 환경변수 파일은 Git에서 제외 (민감 정보 포함)
+.env
+.env.dev
+.env.prod
+.env.local
+
+# 템플릿 파일은 Git에 포함
+!.env*.example
+
+### Lambda (Node.js) ###
+lambda/notification/node_modules/
+lambda-notification.zip
