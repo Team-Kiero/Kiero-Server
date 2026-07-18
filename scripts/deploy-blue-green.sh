@@ -38,7 +38,7 @@ log_info "사용할 Compose 파일: $COMPOSE_FILE"
 if [[ "$COMPOSE_FILE" == *"dev"* ]]; then
     CONTAINER_PREFIX="kiero-dev-app"
     ENV_FILE=".env.dev"
-    SUPPORT_SERVICES="mysql redis prometheus grafana nocodb"
+    SUPPORT_SERVICES="mysql redis nocodb"
 else
     CONTAINER_PREFIX="kiero-prod-app"
     ENV_FILE=".env.prod"
