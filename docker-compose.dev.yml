@@ -11,6 +11,9 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - TZ=Asia/Seoul
       - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - app-network
     restart: always
@@ -33,6 +36,9 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - TZ=Asia/Seoul
       - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - app-network
     restart: always
@@ -55,6 +61,35 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+
+  # MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: kiero-mysql
+    ports:
+      - "3306:3306"
+    env_file:
+      - .env.dev
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - TZ=Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # Redis
   redis:
@@ -119,6 +154,9 @@ services:
       - NC_ADMIN_EMAIL=${NOCODB_ADMIN_EMAIL}
       - NC_ADMIN_PASSWORD=${NOCODB_ADMIN_PASSWORD}
       - TZ=Asia/Seoul
+    depends_on:
+      mysql:
+        condition: service_healthy
     volumes:
       - nocodb-data:/usr/app/data
     networks:
@@ -130,6 +168,7 @@ networks:
     driver: bridge
 
 volumes:
+  mysql-data:
   redis-data:
   prometheus-data:
   grafana-data:
