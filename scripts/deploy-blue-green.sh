@@ -141,7 +141,7 @@ log_info "$INACTIVE 컨테이너 시작 완료. Health check 대기 중..."
 # 4. Health Check
 ###############################################################################
 
-HEALTH_CHECK_TIMEOUT=240
+HEALTH_CHECK_TIMEOUT=300
 HEALTH_CHECK_INTERVAL=5
 ELAPSED=0
 
