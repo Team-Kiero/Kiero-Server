@@ -12,13 +12,19 @@ spring:
   # JPA
   jpa:
     hibernate:
-      ddl-auto: validate  # 운영 환경에서는 validate 사용
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: false  # 운영 환경에서는 성능을 위해 false
+        format_sql: false
         show_sql: false
     open-in-view: false
+
+  # Redis
+  data:
+    redis:
+      host: ${REDIS_HOST:kiero-redis}
+      port: ${REDIS_PORT:6379}
 
   security:
     oauth2:
@@ -27,7 +33,7 @@ spring:
           kakao:
             client-id: ${KAKAO_CLIENT_ID}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+            redirect-uri: ${KAKAO_REDIRECT_URI}
             authorization-grant-type: authorization_code
             client-name: kakao
         provider:
@@ -36,12 +42,6 @@ spring:
             token-uri: https://kauth.kakao.com/oauth/token
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
-
-  # Redis
-  data:
-    redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT:6379}
 
   # Spring AI - OpenAI
   ai:
@@ -121,6 +121,6 @@ logging:
 
 springdoc:
   swagger-ui:
-    enabled: false  # 운영 환경에서는 Swagger UI 비활성화
+    enabled: false
   api-docs:
     enabled: false
