@@ -108,38 +108,6 @@ services:
       timeout: 3s
       retries: 3
 
-  # Prometheus
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: kiero-prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
-    networks:
-      - app-network
-    restart: always
-
-  # Grafana
-  grafana:
-    image: grafana/grafana:latest
-    container_name: kiero-grafana
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env.dev
-    volumes:
-      - grafana-data:/var/lib/grafana
-    environment:
-      - TZ=Asia/Seoul
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-    depends_on:
-      - prometheus
-    networks:
-      - app-network
-    restart: always
-
   # NocoDB
   nocodb:
     image: nocodb/nocodb:0.265.1
@@ -170,6 +138,4 @@ networks:
 volumes:
   mysql-data:
   redis-data:
-  prometheus-data:
-  grafana-data:
   nocodb-data:
