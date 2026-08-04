@@ -29,6 +29,7 @@ public class ParentQueryService implements ParentQueryUseCase {
 		boolean hasPendingChildSession = inviteCodeQueryPort.findByParentKey(parentId.toString()).isPresent();
 
 		return new ParentMeResponse(
+			parent.getId(),
 			parent.getImage(),
 			parent.getName(),
 			hasPendingChildSession,
