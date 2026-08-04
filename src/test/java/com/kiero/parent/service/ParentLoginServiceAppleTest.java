@@ -62,7 +62,7 @@ class ParentLoginServiceAppleTest {
 		// given
 		String name = "홍길동";
 		SocialLoginResponse socialResponse = SocialLoginResponse.of(SOCIAL_ID, Provider.APPLE, null, EMAIL, null);
-		ParentLoginResponse loginResponse = ParentLoginResponse.of(name, EMAIL, null, Role.PARENT, "access", "refresh");
+		ParentLoginResponse loginResponse = ParentLoginResponse.of(1L,name, EMAIL, null, Role.PARENT, "access", "refresh");
 
 		when(appleSocialLoginPort.loginWithIdentityToken(IDENTITY_TOKEN)).thenReturn(socialResponse);
 		when(appleAuthPort.exchangeAuthorizationCode(AUTHORIZATION_CODE)).thenReturn(APPLE_REFRESH_TOKEN);
@@ -88,7 +88,7 @@ class ParentLoginServiceAppleTest {
 	void loginWithAppleIdentityToken_nullName_usesEmailAsDisplayName() {
 		// given
 		SocialLoginResponse socialResponse = SocialLoginResponse.of(SOCIAL_ID, Provider.APPLE, null, EMAIL, null);
-		ParentLoginResponse loginResponse = ParentLoginResponse.of(EMAIL, EMAIL, null, Role.PARENT, "access", "refresh");
+		ParentLoginResponse loginResponse = ParentLoginResponse.of(1L,EMAIL, EMAIL, null, Role.PARENT, "access", "refresh");
 
 		when(appleSocialLoginPort.loginWithIdentityToken(IDENTITY_TOKEN)).thenReturn(socialResponse);
 		when(appleAuthPort.exchangeAuthorizationCode(AUTHORIZATION_CODE)).thenReturn(APPLE_REFRESH_TOKEN);
@@ -110,7 +110,7 @@ class ParentLoginServiceAppleTest {
 	void loginWithAppleIdentityToken_blankName_usesEmailAsDisplayName() {
 		// given
 		SocialLoginResponse socialResponse = SocialLoginResponse.of(SOCIAL_ID, Provider.APPLE, null, EMAIL, null);
-		ParentLoginResponse loginResponse = ParentLoginResponse.of(EMAIL, EMAIL, null, Role.PARENT, "access", "refresh");
+		ParentLoginResponse loginResponse = ParentLoginResponse.of(1L,EMAIL, EMAIL, null, Role.PARENT, "access", "refresh");
 
 		when(appleSocialLoginPort.loginWithIdentityToken(IDENTITY_TOKEN)).thenReturn(socialResponse);
 		when(appleAuthPort.exchangeAuthorizationCode(AUTHORIZATION_CODE)).thenReturn(APPLE_REFRESH_TOKEN);
@@ -134,7 +134,7 @@ class ParentLoginServiceAppleTest {
 		String newEmail = "new@apple.com";
 		SocialLoginResponse socialResponse = SocialLoginResponse.of(SOCIAL_ID, Provider.APPLE, null, newEmail, null);
 		Parent existingParent = Parent.create("홍길동", "old@apple.com", null, Role.PARENT, Provider.APPLE, SOCIAL_ID);
-		ParentLoginResponse loginResponse = ParentLoginResponse.of("홍길동", newEmail, null, Role.PARENT, "access", "refresh");
+		ParentLoginResponse loginResponse = ParentLoginResponse.of(1L,"홍길동", newEmail, null, Role.PARENT, "access", "refresh");
 
 		when(appleSocialLoginPort.loginWithIdentityToken(IDENTITY_TOKEN)).thenReturn(socialResponse);
 		when(appleAuthPort.exchangeAuthorizationCode(AUTHORIZATION_CODE)).thenReturn(APPLE_REFRESH_TOKEN);
