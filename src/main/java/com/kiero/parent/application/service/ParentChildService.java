@@ -54,7 +54,7 @@ public class ParentChildService implements ParentChildQueryUseCase, ParentChildS
 		List<ParentChild> parentChildren = parentChildLoadPort.findAllByParentId(parentId);
 
 		return parentChildren.stream()
-			.map(pc -> ChildInfoResponse.of(pc.getChild()))
+			.map(ChildInfoResponse::of)
 			.collect(Collectors.toList());
 	}
 

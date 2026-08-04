@@ -43,7 +43,7 @@ public class AuthService {
 		String refreshToken = issueAndSaveRefreshToken(parent.getId(), authenticationToken);
 		String accessToken = jwtTokenProvider.issueAccessToken(authenticationToken);
 
-		return ParentLoginResponse.of(parent.getName(), parent.getEmail(), parent.getImage(), parent.getRole(),
+		return ParentLoginResponse.of(parent.getId(), parent.getName(), parent.getEmail(), parent.getImage(), parent.getRole(),
 			accessToken, refreshToken);
 	}
 
@@ -64,7 +64,7 @@ public class AuthService {
 		String refreshToken = issueAndSaveRefreshToken(child.getId(), authenticationToken);
 		String accessToken = jwtTokenProvider.issueAccessToken(authenticationToken);
 
-		return ChildLoginResponse.of(child.getLastName(), child.getFirstName(), child.getRole(), accessToken, refreshToken);
+		return ChildLoginResponse.of(child.getId(), child.getLastName(), child.getFirstName(), child.getRole(), accessToken, refreshToken);
 	}
 
 	@Transactional

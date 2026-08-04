@@ -7,6 +7,7 @@ import java.util.Locale;
 import com.kiero.child.domain.Child;
 
 public record ChildMeResponse(
+        Long id,
         String lastName,
         String firstName,
         int coinAmount,
@@ -15,6 +16,7 @@ public record ChildMeResponse(
 ) {
     public static ChildMeResponse from(Child child, LocalDate today) {
         return new ChildMeResponse(
+                child.getId(),
                 child.getLastName(),
                 child.getFirstName(),
                 child.getCoinAmount(),
