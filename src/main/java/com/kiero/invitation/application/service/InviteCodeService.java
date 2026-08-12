@@ -1,5 +1,8 @@
 package com.kiero.invitation.application.service;
 
+// ------ 앱 심사용 로직 시작 ------
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +30,19 @@ public class InviteCodeService implements InviteCodeUseCase {
     private final InviteCodeGeneratorPort inviteCodeGeneratorPort;
     private final InviteLockPort inviteLockPort;
 
+    // ------ 앱 심사용 로직 시작 ------
+    @Value("${review.invite-code:}")
+    private String reviewInviteCode;
+
+    @Value("${review.parent-id:0}")
+    private Long reviewParentId;
+
+    @Value("${review.child-last-name:}")
+    private String reviewChildLastName;
+
+    @Value("${review.child-first-name:}")
+    private String reviewChildFirstName;
+    // ------ 앱 심사용 로직 종료 ------
     @Override
     @Transactional
     public String createInviteCode(Long parentId, String childLastName, String childFirstName) {
@@ -51,6 +67,15 @@ public class InviteCodeService implements InviteCodeUseCase {
     @Override
     @Transactional
     public InviteCode validateAndConsume(String code, String inputLastName, String inputFirstName) {
+        // ------ 앱 심사용 로직 시작 ------
+        if (isReviewInviteCode(code)) {
+            if (!reviewChildLastName.equals(inputLastName) || !reviewChildFirstName.equals(inputFirstName)) {
+                throw new KieroException(InvitationErrorCode.INVITE_CODE_NAME_MISMATCH);
+            }
+            log.info("Review invite code used (not consumed): parentId={}", reviewParentId);
+            return InviteCode.of(reviewInviteCode, reviewParentId, reviewChildLastName, reviewChildFirstName);
+        }
+        // ------ 앱 심사용 로직 종료 ------
         // 핵심: 락 잡고 -> 검증 -> 삭제(consume)
         return inviteLockPort.withInviteCodeLock(code, () -> {
 
@@ -73,6 +98,11 @@ public class InviteCodeService implements InviteCodeUseCase {
         });
     }
 
+    // ------ 앱 심사용 로직 시작 ------
+    private boolean isReviewInviteCode(String code) {
+        return reviewInviteCode != null && !reviewInviteCode.isBlank() && reviewInviteCode.equals(code);
+    }
+    // ------ 앱 심사용 로직 종료 ------
     private String generateUniqueCode() {
         for (int i = 0; i < MAX_GENERATION_ATTEMPTS; i++) {
             String code = inviteCodeGeneratorPort.generate();

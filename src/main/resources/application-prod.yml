@@ -63,6 +63,13 @@ apple:
   key-id: ${APPLE_KEY_ID}
   private-key: ${APPLE_PRIVATE_KEY}
 
+# ---- 앱 심사용 고정 초대코드 ----
+review:
+  invite-code: ${REVIEW_INVITE_CODE:}
+  parent-id: ${REVIEW_PARENT_ID:0}
+  child-last-name: ${REVIEW_CHILD_LAST_NAME:}
+  child-first-name: ${REVIEW_CHILD_FIRST_NAME:}
+#  ------ 앱 심사용 고정 초대코드------
 # Sentry
 sentry:
   dsn: ${SENTRY_DSN}
