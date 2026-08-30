@@ -8,7 +8,6 @@ import com.kiero.global.auth.enums.Role;
 import com.kiero.global.auth.jwt.application.exception.TokenErrorCode;
 import com.kiero.global.exception.KieroException;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,7 +18,6 @@ public class TokenService {
 
 	private final TokenRepository tokenRepository;
 
-	@Transactional
 	public void saveRefreshToken(final Long memberId, final String refreshToken, final Role role) {
 		log.info("Saving refresh token for memberId: {}", memberId);
 		tokenRepository.save(Token.of(memberId, refreshToken, role));
@@ -33,7 +31,6 @@ public class TokenService {
 			.orElseThrow(() -> new KieroException(TokenErrorCode.JWT_TOKEN_NOT_FOUND));
 	}
 
-	@Transactional
 	public void deleteRefreshToken(final Long memberId, final Role role) {
 		String key = TokenKeyGenerator.refreshKey(memberId, role);
 		Token token = tokenRepository.findById(key)
@@ -45,7 +42,6 @@ public class TokenService {
 		log.info("Successfully deleted refresh token for memberId: {}", memberId);
 	}
 
-	@Transactional
 	public void deleteRefreshTokensBulk(final List<Long> memberIds, final Role role) {
 		if (memberIds == null || memberIds.isEmpty()) {
 			log.info("No member IDs provided for bulk deletion");

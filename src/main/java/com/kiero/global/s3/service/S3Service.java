@@ -1,6 +1,8 @@
 package com.kiero.global.s3.service;
 
+import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -10,7 +12,12 @@ import com.kiero.global.s3.dto.PresignedUrlRequest;
 import com.kiero.global.s3.dto.PresignedUrlResponse;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.Delete;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
@@ -18,11 +25,13 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class S3Service {
 
     private final S3Presigner s3Presigner;
+    private final S3Client s3Client;
 
     @Value("${aws.s3.bucket}")
     private String bucketName;
@@ -111,7 +120,40 @@ public class S3Service {
         return presignedRequest.url().toString();
     }
 
-    // UUID를 사용해 고유한 파일명 생성
+    public void deleteObjects(List<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return;
+        }
+
+        List<ObjectIdentifier> objects = imageUrls.stream()
+                .map(this::toS3Key)
+                .map(key -> ObjectIdentifier.builder().key(key).build())
+                .toList();
+
+        DeleteObjectsRequest request = DeleteObjectsRequest.builder()
+                .bucket(bucketName)
+                .delete(Delete.builder().objects(objects).quiet(true).build())
+                .build();
+
+        try {
+            s3Client.deleteObjects(request);
+            log.info("S3 파일 삭제 완료: {}건", objects.size());
+        } catch (Exception e) {
+            log.error("S3 파일 삭제 실패: error={}", e.getMessage(), e);
+        }
+    }
+
+    private String toS3Key(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return imageUrl;
+        }
+        if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+            String path = URI.create(imageUrl).getPath();
+            return path.startsWith("/") ? path.substring(1) : path;
+        }
+        return imageUrl;
+    }
+
     private String generatePath(String prefix, String originalFileName) {
         String uuidFileName = UUID.randomUUID() + "_" + originalFileName;
         return prefix + "/" + uuidFileName;

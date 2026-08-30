@@ -18,6 +18,7 @@ import com.kiero.feed.application.port.out.FeedItemTransferPort;
 import com.kiero.global.auth.enums.Role;
 import com.kiero.global.auth.jwt.application.port.out.TokenCommandPort;
 import com.kiero.global.exception.KieroException;
+import com.kiero.global.s3.service.S3Service;
 import com.kiero.mission.application.port.out.MissionDeletePort;
 import com.kiero.mission.application.port.out.MissionTransferPort;
 import com.kiero.parent.application.dto.ParentWithdrawnEvent;
@@ -35,7 +36,9 @@ import com.kiero.schedule.application.port.out.ScheduleTransferPort;
 import com.kiero.terms.application.port.out.TermsAgreementDeletePort;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -59,6 +62,7 @@ public class ParentWithdrawService implements ParentWithdrawUseCase {
 	private final FeedItemTransferPort feedItemTransferPort;
 	private final TermsAgreementDeletePort termsAgreementDeletePort;
 	private final ChildDeletePort childDeletePort;
+	private final S3Service s3Service;
 
 	@Override
 	public void withdraw(Long parentId) {
@@ -101,11 +105,13 @@ public class ParentWithdrawService implements ParentWithdrawUseCase {
 		// 부모의 약관 동의 내역 삭제
 		termsAgreementDeletePort.deleteAllByParentId(parentId);
 
-		// 부모 refresh token 삭제
-		tokenCommandPort.deleteRefreshToken(parentId, Role.PARENT);
+		// 부모 refresh token 삭제 (이미 만료·삭제된 경우 무시하고 탈퇴 계속 진행)
+		safeDeleteRefreshToken(parentId, Role.PARENT);
 
 		// 유일한 부모였던 아이: 관련 리소스 삭제 + 알림 + refresh token 삭제 + 아이 삭제
 		for (Long childId : soloChildIds) {
+			List<String> imageKeys = scheduleDeletePort.findImageKeysByChildId(childId);
+			s3Service.deleteObjects(imageKeys);
 			scheduleDeletePort.deleteAllByChildId(childId);
 			missionDeletePort.deleteAllByChildId(childId);
 			couponDeletePort.deleteAllByChildId(childId);
@@ -114,11 +120,20 @@ public class ParentWithdrawService implements ParentWithdrawUseCase {
 
 			parentWithdrawEventPort.publish(new ParentWithdrawnEvent(childId));
 			parentWithdrawNotificationPort.storeWithdrawalMarker(childId);
-			tokenCommandPort.deleteRefreshToken(childId, Role.CHILD);
+			safeDeleteRefreshToken(childId, Role.CHILD);
 			childDeletePort.deleteById(childId);
 		}
 
 		// 부모 하드딜리트 (soloChild 리소스 전부 정리 후 마지막에 삭제)
 		parentDeletePort.deleteParent(parentId);
+	}
+
+	// refresh token이 이미 만료·삭제된 경우에도 탈퇴가 중단되지 않도록 방어
+	private void safeDeleteRefreshToken(Long memberId, Role role) {
+		try {
+			tokenCommandPort.deleteRefreshToken(memberId, role);
+		} catch (KieroException e) {
+			log.warn("탈퇴 중 refresh token 삭제 스킵 (이미 없거나 만료됨): memberId={}, role={}", memberId, role);
+		}
 	}
 }
