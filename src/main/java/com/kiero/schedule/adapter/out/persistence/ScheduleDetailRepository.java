@@ -218,4 +218,13 @@ public interface ScheduleDetailRepository extends JpaRepository<ScheduleDetail, 
 		@Param("targetStart") LocalTime targetStart,
 		@Param("targetEnd") LocalTime targetEnd
 	);
+
+	@Query("""
+		SELECT sd.imageUrl
+		FROM ScheduleDetail sd
+		JOIN sd.schedule s
+		WHERE s.child.id = :childId
+		  AND sd.imageUrl IS NOT NULL
+		""")
+	List<String> findImageUrlsByChildId(@Param("childId") Long childId);
 }

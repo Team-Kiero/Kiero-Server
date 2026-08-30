@@ -28,4 +28,9 @@ public class ScheduleDeleteAdapter implements ScheduleDeletePort {
 		}
 		scheduleRepository.deleteAllById(schedules.stream().map(Schedule::getId).toList());
 	}
+
+	@Override
+	public List<String> findImageKeysByChildId(Long childId) {
+		return scheduleDetailRepository.findImageUrlsByChildId(childId);
+	}
 }
