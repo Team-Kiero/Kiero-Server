@@ -27,6 +27,7 @@ import com.kiero.parent.application.dto.InviteCodeCreateResponse;
 import com.kiero.parent.application.dto.InviteStatusResponse;
 import com.kiero.parent.application.dto.ParentLoginResponse;
 import com.kiero.parent.application.dto.ParentMeResponse;
+import com.kiero.parent.application.dto.ReviewerLoginRequest;
 import com.kiero.parent.application.dto.TodayProgressForParentResponse;
 import com.kiero.parent.application.exception.ParentSuccessCode;
 import com.kiero.parent.application.port.in.ParentChildQueryUseCase;
@@ -36,6 +37,7 @@ import com.kiero.parent.application.port.in.ParentWithdrawUseCase;
 import com.kiero.parent.application.service.ScheduleMissionFacade;
 import com.kiero.schedule.application.exception.ScheduleSuccessCode;
 
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -107,6 +109,26 @@ public class ParentController {
 			request.authorizationCode(),
 			request.name()
 		);
+
+		ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN, response.refreshToken())
+			.maxAge(COOKIE_MAX_AGE)
+			.path("/")
+			.secure(true)
+			.sameSite("None")
+			.httpOnly(true)
+			.build();
+
+		return ResponseEntity.ok()
+			.header(HttpHeaders.SET_COOKIE, cookie.toString())
+			.body(SuccessResponse.of(ParentSuccessCode.LOGIN_SUCCESS, response));
+	}
+
+	@PostMapping("/login/reviewer")
+	@Operation(summary = "Reviewer Login", description = "Reviewer password로 카카오/Apple 로그인 없이 부모 심사용 계정에 로그인합니다.")
+	public ResponseEntity<SuccessResponse<ParentLoginResponse>> loginAsReviewer(
+		@Valid @RequestBody ReviewerLoginRequest request
+	) {
+		ParentLoginResponse response = parentLoginUseCase.loginAsReviewer(request.password());
 
 		ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN, response.refreshToken())
 			.maxAge(COOKIE_MAX_AGE)

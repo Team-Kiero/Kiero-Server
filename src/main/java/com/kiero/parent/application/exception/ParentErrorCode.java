@@ -11,6 +11,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ParentErrorCode implements BaseCode {
 	/*
+	401 UNAUTHORIZED
+	 */
+	INVALID_REVIEWER_PASSWORD(HttpStatus.UNAUTHORIZED, "Reviewer password is invalid."),
+
+	/*
 	403 FORBIDDEN
 	 */
 	NOT_ALLOWED_TO_CHILD(HttpStatus.FORBIDDEN, "자신의 아이에만 접근할 수 있습니다."),

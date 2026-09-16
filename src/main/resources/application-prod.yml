@@ -67,6 +67,7 @@ apple:
 review:
   invite-code: ${REVIEW_INVITE_CODE:}
   parent-id: ${REVIEW_PARENT_ID:0}
+  parent-login-password: ${REVIEW_PARENT_LOGIN_PASSWORD}
   child-last-name: ${REVIEW_CHILD_LAST_NAME:}
   child-first-name: ${REVIEW_CHILD_FIRST_NAME:}
 #  ------ 앱 심사용 고정 초대코드------

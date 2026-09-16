@@ -30,3 +30,7 @@ logging:
     com.kiero: DEBUG
     org.testcontainers: INFO
     com.github.dockerjava: WARN
+
+review:
+  parent-login-password: test-reviewer-password
+  parent-id: 1

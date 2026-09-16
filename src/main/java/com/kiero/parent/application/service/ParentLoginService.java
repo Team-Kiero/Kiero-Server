@@ -1,5 +1,6 @@
 package com.kiero.parent.application.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +11,7 @@ import com.kiero.global.auth.client.exception.ClientErrorCode;
 import com.kiero.global.auth.enums.Role;
 import com.kiero.global.exception.KieroException;
 import com.kiero.parent.application.dto.ParentLoginResponse;
+import com.kiero.parent.application.exception.ParentErrorCode;
 import com.kiero.parent.application.port.in.ParentLoginUseCase;
 import com.kiero.parent.application.port.out.AppleAuthPort;
 import com.kiero.parent.application.port.out.AppleSocialLoginPort;
@@ -31,6 +33,12 @@ public class ParentLoginService implements ParentLoginUseCase {
 	private final ParentLoadPort parentLoadPort;
 	private final ParentSavePort parentSavePort;
 	private final AuthGeneratePort authGeneratePort;
+
+	@Value("${review.parent-login-password}")
+	private String reviewParentLoginPassword;
+
+	@Value("${review.parent-id:0}")
+	private Long reviewParentId;
 
 	@Override
 	@Transactional
@@ -79,6 +87,19 @@ public class ParentLoginService implements ParentLoginUseCase {
 				newParent.updateAppleRefreshToken(appleRefreshToken);
 				return parentSavePort.save(newParent);
 			});
+
+		return authGeneratePort.generateLoginResponse(parent);
+	}
+
+	@Override
+	@Transactional
+	public ParentLoginResponse loginAsReviewer(String password) {
+		if (!reviewParentLoginPassword.equals(password)) {
+			throw new KieroException(ParentErrorCode.INVALID_REVIEWER_PASSWORD);
+		}
+
+		Parent parent = parentLoadPort.findById(reviewParentId)
+			.orElseThrow(() -> new KieroException(ParentErrorCode.PARENT_NOT_FOUND));
 
 		return authGeneratePort.generateLoginResponse(parent);
 	}
