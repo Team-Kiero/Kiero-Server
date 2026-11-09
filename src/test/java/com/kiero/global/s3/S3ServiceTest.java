@@ -18,7 +18,10 @@ import com.kiero.global.s3.dto.PresignedUrlRequest;
 import com.kiero.global.s3.dto.PresignedUrlResponse;
 import com.kiero.global.s3.service.S3Service;
 
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
@@ -91,5 +94,40 @@ class S3ServiceTest {
 
         // S3Presigner.presignPutObject가 1번 호출되었는지 확인
         verify(s3Presigner, times(1)).presignPutObject(any(PutObjectPresignRequest.class));
+    }
+
+    @Test
+    void generatePresignedViewUrl_shouldExtractObjectKeyFromFullUrl() throws Exception {
+        URL mockUrl = new URL("https://test-bucket.s3.amazonaws.com/signed-view-url");
+        PresignedGetObjectRequest mockPresignedRequest = mock(PresignedGetObjectRequest.class);
+        when(mockPresignedRequest.url()).thenReturn(mockUrl);
+        when(s3Presigner.presignGetObject(any(GetObjectPresignRequest.class)))
+                .thenReturn(mockPresignedRequest);
+
+        String result = s3Service.generatePresignedViewUrl(
+                "https://test-bucket.s3.ap-northeast-2.amazonaws.com/schedule/example.jpg"
+        );
+
+        assertEquals(mockUrl.toString(), result);
+        verify(s3Presigner).presignGetObject(argThat((GetObjectPresignRequest request) -> {
+            GetObjectRequest getObjectRequest = request.getObjectRequest();
+            return bucketName.equals(getObjectRequest.bucket())
+                    && "schedule/example.jpg".equals(getObjectRequest.key());
+        }));
+    }
+
+    @Test
+    void generatePresignedViewUrl_shouldUseObjectKeyAsIs() throws Exception {
+        URL mockUrl = new URL("https://test-bucket.s3.amazonaws.com/signed-view-url");
+        PresignedGetObjectRequest mockPresignedRequest = mock(PresignedGetObjectRequest.class);
+        when(mockPresignedRequest.url()).thenReturn(mockUrl);
+        when(s3Presigner.presignGetObject(any(GetObjectPresignRequest.class)))
+                .thenReturn(mockPresignedRequest);
+
+        s3Service.generatePresignedViewUrl("schedule/example.jpg");
+
+        verify(s3Presigner).presignGetObject(argThat((GetObjectPresignRequest request) ->
+                "schedule/example.jpg".equals(request.getObjectRequest().key())
+        ));
     }
 }

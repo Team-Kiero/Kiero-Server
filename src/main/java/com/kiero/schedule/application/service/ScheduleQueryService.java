@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
 import com.kiero.global.exception.KieroException;
+import com.kiero.global.s3.service.S3Service;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 import com.kiero.parent.application.port.out.ParentLoadPort;
 import com.kiero.parent.domain.Parent;
@@ -53,6 +54,7 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 	private final DiscardedSchedulePersistencePort discardedSchedulePersistencePort;
 	private final ScheduleDetailPersistencePort scheduleDetailPersistencePort;
 	private final ScheduleCacheableService scheduleCacheableService;
+	private final S3Service s3Service;
 
 	private final Clock clock;
 
@@ -257,7 +259,9 @@ public class ScheduleQueryService implements ScheduleQueryUseCase {
 			throw new KieroException(ScheduleErrorCode.NOT_ALLOWED_TO_CHILD);
 		}
 
-		return new  ScheduleDetailImageResponse(scheduleDetail.getImageUrl());
+		return new ScheduleDetailImageResponse(
+			s3Service.generatePresignedViewUrl(scheduleDetail.getImageUrl())
+		);
 	}
 
 	// 당일 생성된 일정 중, startTime과 stone 사용 여부로 유효한 일정만 필터링하는 private method

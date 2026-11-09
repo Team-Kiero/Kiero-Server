@@ -7,6 +7,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kiero.child.application.exception.ChildErrorCode;
 import com.kiero.child.application.port.out.ChildLoadPort;
 import com.kiero.child.domain.Child;
@@ -18,6 +20,7 @@ import com.kiero.feed.application.port.in.FeedQueryUseCase;
 import com.kiero.feed.application.port.out.FeedItemQueryPort;
 import com.kiero.feed.domain.FeedItem;
 import com.kiero.global.exception.KieroException;
+import com.kiero.global.s3.service.S3Service;
 import com.kiero.parent.application.exception.ParentErrorCode;
 import com.kiero.parent.application.port.out.ParentChildAccessPort;
 
@@ -33,6 +36,7 @@ public class FeedQueryService implements FeedQueryUseCase {
 	private final ChildLoadPort childLoadPort;
 
 	private final FeedCommandService feedCommandService;
+	private final S3Service s3Service;
 
 	@Override
 	@Transactional
@@ -103,7 +107,25 @@ public class FeedQueryService implements FeedQueryUseCase {
 			feedItem.getId(),
 			feedItem.getEventType(),
 			feedItem.getOccurredAt(),
-			feedItem.getMetadata()
+			withPresignedImageUrl(feedItem.getMetadata())
 		);
+	}
+
+	private JsonNode withPresignedImageUrl(JsonNode metadata) {
+		if (metadata == null) {
+			return null;
+		}
+
+		JsonNode responseMetadata = metadata.deepCopy();
+		JsonNode imageUrl = responseMetadata.get("imageUrl");
+
+		if (responseMetadata instanceof ObjectNode objectMetadata
+			&& imageUrl != null
+			&& imageUrl.isTextual()
+			&& !imageUrl.asText().isBlank()) {
+			objectMetadata.put("imageUrl", s3Service.generatePresignedViewUrl(imageUrl.asText()));
+		}
+
+		return responseMetadata;
 	}
 }
