@@ -100,13 +100,19 @@ public class S3Service {
      * - <img src={presignedUrl} /> 형태로 사용
      * - 다운로드가 아닌 화면 표시용
      *
-     * @param fileName S3에 저장된 파일명
+     * @param imageUrlOrKey S3 객체 URL 또는 객체 키
      * @return 조회용 Presigned URL (10분 유효)
      */
-    public String generatePresignedViewUrl(String fileName) {
+    public String generatePresignedViewUrl(String imageUrlOrKey) {
+        if (imageUrlOrKey == null || imageUrlOrKey.isBlank()) {
+            return imageUrlOrKey;
+        }
+
+        String objectKey = toS3Key(imageUrlOrKey);
+
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
-                .key(fileName)
+                .key(objectKey)
                 .build();
 
         // 다운로드 URL은 짧게 설정 (10분)
